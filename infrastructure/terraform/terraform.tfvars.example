@@ -1,0 +1,11 @@
+# Copie para terraform.tfvars e ajuste se necessário
+# Não há nenhum secret aqui — todos ficam no SSM (ver SETUP.md)
+
+project           = "barberstack"
+environment       = "production"
+aws_region        = "us-east-1"
+db_username       = "barberstack"
+db_instance_class = "db.t3.micro"
+ec2_instance_type = "t3.small"
+ec2_key_name      = "barberstack-key"
+# github_repo é injetado automaticamente pela pipeline

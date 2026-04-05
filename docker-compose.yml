@@ -1,0 +1,214 @@
+version: '3.9'
+
+# =============================================================================
+# BARBERSTACK - Docker Compose (Produção Local / Staging)
+# =============================================================================
+
+networks:
+  barberstack-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # DATABASE
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: barberstack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: barberstack
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-barberstack123}
+      POSTGRES_DB: barberstack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - barberstack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barberstack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # REDIS (cache / sessions / queues)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: barberstack-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - barberstack-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # API GATEWAY
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: barberstack-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - BARBERSHOP_SERVICE_URL=http://barbershop-service:3002
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:3003
+      - SUBSCRIPTION_SERVICE_URL=http://subscription-service:3004
+      - PAYMENT_SERVICE_URL=http://payment-service:3005
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE
+  # ---------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: barberstack-auth-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # BARBERSHOP SERVICE
+  # ---------------------------------------------------------------------------
+  barbershop-service:
+    build:
+      context: ./services/barbershop-service
+      dockerfile: Dockerfile
+    container_name: barberstack-barbershop-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # APPOINTMENT SERVICE
+  # ---------------------------------------------------------------------------
+  appointment-service:
+    build:
+      context: ./services/appointment-service
+      dockerfile: Dockerfile
+    container_name: barberstack-appointment-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # SUBSCRIPTION SERVICE
+  # ---------------------------------------------------------------------------
+  subscription-service:
+    build:
+      context: ./services/subscription-service
+      dockerfile: Dockerfile
+    container_name: barberstack-subscription-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - JWT_SECRET=${JWT_SECRET}
+      - PAYMENT_SERVICE_URL=http://payment-service:3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # PAYMENT SERVICE
+  # ---------------------------------------------------------------------------
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: barberstack-payment-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - JWT_SECRET=${JWT_SECRET}
+      - ASAAS_ENV=${ASAAS_ENV:-sandbox}
+      - ASAAS_MASTER_API_KEY=${ASAAS_MASTER_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberstack-network
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION SERVICE
+  # ---------------------------------------------------------------------------
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: barberstack-notification-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+      - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
+      - REDIS_URL=redis://redis:6379
+      - WHATSAPP_API_URL=${WHATSAPP_API_URL}
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - barberstack-network

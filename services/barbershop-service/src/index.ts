@@ -1,0 +1,22 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { barbershopRouter } from './routes/barbershop.routes';
+import { professionalRouter } from './routes/professional.routes';
+import { serviceRouter } from './routes/service.routes';
+
+const app = express();
+const PORT = process.env.PORT || 3002;
+
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'barbershop-service' }));
+
+app.use('/barbershops', barbershopRouter);
+app.use('/professionals', professionalRouter);
+app.use('/services', serviceRouter);
+
+app.listen(PORT, () => console.log(`✂️  Barbershop Service running on port ${PORT}`));

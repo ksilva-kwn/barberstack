@@ -1,0 +1,28 @@
+name: Service — api-gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/api-gateway/**'
+      - 'packages/database/**'
+      - '.github/workflows/svc-api-gateway.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/api-gateway/**'
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    uses: ./.github/workflows/_service-build-push.yml
+    with:
+      service_name: api-gateway
+      service_port: 3000
+    secrets:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION:            ${{ secrets.AWS_REGION }}
+      EC2_HOST:              ${{ secrets.EC2_HOST }}
+      EC2_SSH_KEY:           ${{ secrets.EC2_SSH_KEY }}
+      DATABASE_URL:          ${{ secrets.DATABASE_URL }}

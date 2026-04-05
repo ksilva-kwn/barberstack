@@ -1,0 +1,43 @@
+version: '3.9'
+
+# =============================================================================
+# BARBERSTACK - Docker Compose (Desenvolvimento)
+# Apenas infra (postgres + redis). Serviços rodam localmente com hot-reload.
+# =============================================================================
+
+networks:
+  barberstack-network:
+    driver: bridge
+
+volumes:
+  postgres-data-dev:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: barberstack-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: barberstack
+      POSTGRES_PASSWORD: barberstack123
+      POSTGRES_DB: barberstack_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+    networks:
+      - barberstack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barberstack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: barberstack-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - barberstack-network

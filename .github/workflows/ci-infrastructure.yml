@@ -1,0 +1,128 @@
+name: Infrastructure — Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/ci-infrastructure.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/terraform/**'
+  workflow_dispatch:
+
+# ─── Apenas variáveis de conexão AWS + backend ───────────────────────────────
+# Todos os secrets da aplicação (db_password, jwt_secret, etc.)
+# vivem no SSM Parameter Store e são lidos pelo Terraform via data sources.
+env:
+  TF_VERSION:    '1.7.5'
+  TF_WORKING_DIR: infrastructure/terraform
+
+  # Conexão AWS
+  AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+
+  # Backend S3
+  TF_BACKEND_BUCKET:         ${{ secrets.TF_BACKEND_BUCKET }}
+  TF_BACKEND_DYNAMODB_TABLE: ${{ secrets.TF_BACKEND_DYNAMODB_TABLE }}
+  TF_BACKEND_REGION:         ${{ secrets.AWS_REGION }}
+  TF_BACKEND_KEY:            production/terraform.tfstate
+
+  # Única TF_VAR necessária — não é secret, derivada do contexto do repositório
+  TF_VAR_github_repo: ${{ github.server_url }}/${{ github.repository }}
+
+defaults:
+  run:
+    working-directory: infrastructure/terraform
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # PLAN — roda em PRs, posta resultado como comentário
+  # ─────────────────────────────────────────────────────────────────────────
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=$TF_BACKEND_BUCKET" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="region=$TF_BACKEND_REGION" \
+            -backend-config="dynamodb_table=$TF_BACKEND_DYNAMODB_TABLE" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+        continue-on-error: true
+
+      - name: Post plan to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8').slice(-50000);
+            const outcome = '${{ steps.plan.outcome }}';
+            const icon = outcome === 'success' ? '✅' : '❌';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `#### ${icon} Terraform Plan \`${outcome}\`\n<details><summary>Detalhes</summary>\n\n\`\`\`hcl\n${plan}\n\`\`\`\n</details>`
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # APPLY — push para main (com aprovação de environment no GitHub)
+  # ─────────────────────────────────────────────────────────────────────────
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=$TF_BACKEND_BUCKET" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="region=$TF_BACKEND_REGION" \
+            -backend-config="dynamodb_table=$TF_BACKEND_DYNAMODB_TABLE" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Show outputs
+        run: |
+          echo "## Infra Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          terraform output >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

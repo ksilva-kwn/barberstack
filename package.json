@@ -1,0 +1,29 @@
+{
+  "name": "barberstack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaaS Multi-tenant para gestão de barbearias",
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "frontend/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose -f docker-compose.dev.yml up",
+    "dev:frontend": "pnpm --filter @barberstack/web dev",
+    "dev:services": "pnpm --filter './services/*' dev",
+    "build": "pnpm --filter './packages/*' build && pnpm --filter './services/*' build && pnpm --filter './frontend/*' build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @barberstack/database prisma:generate",
+    "db:migrate": "pnpm --filter @barberstack/database prisma:migrate",
+    "db:studio": "pnpm --filter @barberstack/database prisma:studio",
+    "db:seed": "pnpm --filter @barberstack/database prisma:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0"
+  }
+}

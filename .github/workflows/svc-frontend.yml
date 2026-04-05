@@ -1,0 +1,50 @@
+name: Service — frontend (web)
+
+# O deploy no Amplify é automático via webhook do GitHub (configurado pelo Terraform).
+# Esta pipeline valida o build antes de mergar.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/web/**'
+      - '.github/workflows/svc-frontend.yml'
+  pull_request:
+    branches: [main]
+    paths: ['frontend/web/**']
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  build:
+    name: Build & Validate — frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter @barberstack/web exec tsc --noEmit
+
+      - name: Build
+        run: pnpm --filter @barberstack/web build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
+
+      # Amplify faz o deploy automaticamente via webhook ao detectar push em main.
+      # Nenhum passo adicional necessário aqui.

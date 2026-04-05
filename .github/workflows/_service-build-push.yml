@@ -1,0 +1,124 @@
+# =============================================================================
+# Workflow REUTILIZÁVEL — build, push ECR e deploy EC2
+# Chamado por cada pipeline de microserviço via `workflow_call`
+# =============================================================================
+name: _service-build-push (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+        description: "Ex: api-gateway, auth-service"
+      service_port:
+        required: true
+        type: number
+        description: "Porta do serviço dentro do container"
+    secrets:
+      AWS_ACCESS_KEY_ID:     { required: true }
+      AWS_SECRET_ACCESS_KEY: { required: true }
+      AWS_REGION:            { required: true }
+      EC2_HOST:              { required: true }
+      EC2_SSH_KEY:           { required: true }
+      DATABASE_URL:          { required: true }
+
+jobs:
+  build-push:
+    name: Build & Push — ${{ inputs.service_name }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create ECR repository if not exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names barberstack-${{ inputs.service_name }} \
+            --region ${{ secrets.AWS_REGION }} \
+          || aws ecr create-repository \
+            --repository-name barberstack-${{ inputs.service_name }} \
+            --image-scanning-configuration scanOnPush=true \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/barberstack-${{ inputs.service_name }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/${{ inputs.service_name }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha,scope=${{ inputs.service_name }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.service_name }}
+
+  deploy:
+    name: Deploy — ${{ inputs.service_name }}
+    runs-on: ubuntu-latest
+    needs: build-push
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy service via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+            SERVICE="${{ inputs.service_name }}"
+            IMAGE_TAG="${{ needs.build-push.outputs.image_tag }}"
+
+            # Login ECR no EC2
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+            # Pull e reinicia apenas este serviço
+            docker pull "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG"
+            docker stop "barberstack-$SERVICE" 2>/dev/null || true
+            docker rm   "barberstack-$SERVICE" 2>/dev/null || true
+            docker run -d \
+              --name "barberstack-$SERVICE" \
+              --network barberstack-network \
+              --restart unless-stopped \
+              --env-file /opt/barberstack/.env \
+              -p ${{ inputs.service_port }}:${{ inputs.service_port }} \
+              "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG"
+
+            echo "✅ $SERVICE deployed: $IMAGE_TAG"

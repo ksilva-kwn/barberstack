@@ -1,0 +1,465 @@
+// =============================================================================
+// BARBERSTACK - Prisma Schema
+// Multi-tenant SaaS para gestão de barbearias
+// Isolamento via barbershop_id em todas as tabelas operacionais
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  SUPER_ADMIN   // Dono do SaaS (Barberstack)
+  ADMIN         // Dono da barbearia
+  BARBER        // Profissional/Barbeiro
+  CLIENT        // Cliente final
+}
+
+enum SaasPlan {
+  BRONZE  // 1 profissional, 80 cortes/mês
+  SILVER  // 4 profissionais, 400 cortes/mês
+  GOLD    // Ilimitado
+}
+
+enum SaasSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+enum AppointmentStatus {
+  SCHEDULED   // Agendado (cinza)
+  CONFIRMED   // Confirmado via WhatsApp
+  IN_PROGRESS // Em atendimento
+  COMPLETED   // Finalizado (azul)
+  NO_SHOW     // Faltou (rosa)
+  CANCELED    // Cancelado
+  BLOCKED     // Horário bloqueado (rosa)
+}
+
+enum AppointmentOrigin {
+  APP         // Pelo app/online
+  RECEPTION   // Pela recepção
+}
+
+enum ClientSubscriptionStatus {
+  ACTIVE
+  DEFAULTING  // Inadimplente
+  CANCELED
+  SUSPENDED
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  CASH
+  DEBIT_CARD
+  BOLETO
+}
+
+enum TransactionType {
+  INCOME    // Entrada
+  EXPENSE   // Saída
+  COMMISSION
+  WITHDRAWAL
+}
+
+enum ProductCategory {
+  SHAMPOO
+  CONDITIONER
+  POMADE
+  BEARD_OIL
+  RAZOR
+  OTHER
+}
+
+// =============================================================================
+// TABELAS DO SAAS (PLATAFORMA)
+// =============================================================================
+
+// Barbearia - tenant principal do sistema
+model Barbershop {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // URL amigável: barberstack.app/barbearia-xyz
+  document    String   @unique // CNPJ ou CPF
+  phone       String
+  email       String   @unique
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  logoUrl     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Plano SaaS
+  saasPlan   SaasPlan @default(BRONZE)
+  saasSub    SaasSubscription?
+
+  // Integração Asaas (subconta white-label)
+  asaasAccountId  String? @unique // ID da subconta no Asaas
+  asaasApiKey     String? // API Key da subconta
+  asaasWalletId   String? // Wallet ID para saques
+
+  // Relações
+  users         User[]
+  professionals Professional[]
+  services      Service[]
+  appointments  Appointment[]
+  clientPlans   ClientPlan[]
+  clientSubs    ClientSubscription[]
+  products      Product[]
+  transactions  FinancialTransaction[]
+  commissions   Commission[]
+
+  @@map("barbershops")
+}
+
+// Assinatura do SaaS (plano da barbearia na plataforma)
+model SaasSubscription {
+  id            String                 @id @default(cuid())
+  barbershopId  String                 @unique
+  barbershop    Barbershop             @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  plan          SaasPlan
+  status        SaasSubscriptionStatus @default(TRIALING)
+  price         Decimal                @db.Decimal(10, 2)
+  billingCycle  String                 @default("monthly") // monthly | annual
+  trialEndsAt   DateTime?
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  asaasSubId    String?  // ID da cobrança recorrente no Asaas (conta master)
+  canceledAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("saas_subscriptions")
+}
+
+// =============================================================================
+// USUÁRIOS E AUTENTICAÇÃO
+// =============================================================================
+
+model User {
+  id           String   @id @default(cuid())
+  barbershopId String?  // null para SUPER_ADMIN
+  barbershop   Barbershop? @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         UserRole @default(CLIENT)
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relações
+  professional       Professional?
+  clientSubscriptions ClientSubscription[]
+  appointments        Appointment[]        @relation("ClientAppointments")
+  refreshTokens       RefreshToken[]
+
+  @@index([barbershopId])
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// =============================================================================
+// PROFISSIONAIS (BARBEIROS)
+// =============================================================================
+
+model Professional {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  userId       String     @unique
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nickname       String?
+  bio            String?
+  commissionRate Decimal  @default(0) @db.Decimal(5, 2) // % de comissão
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relações
+  appointments Appointment[]
+  schedules    Schedule[]
+  commissions  Commission[]
+
+  @@index([barbershopId])
+  @@map("professionals")
+}
+
+// Grade de horários do profissional
+model Schedule {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  dayOfWeek  Int     // 0=Dom, 1=Seg, ..., 6=Sáb
+  startTime  String  // "09:00"
+  endTime    String  // "18:00"
+  isActive   Boolean @default(true)
+
+  @@unique([professionalId, dayOfWeek])
+  @@index([professionalId])
+  @@map("schedules")
+}
+
+// =============================================================================
+// SERVIÇOS
+// =============================================================================
+
+model Service {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  durationMins  Int      // Duração em minutos
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relações
+  appointmentServices AppointmentService[]
+  clientPlanServices  ClientPlanService[]
+
+  @@index([barbershopId])
+  @@map("services")
+}
+
+// =============================================================================
+// AGENDAMENTOS (COMANDAS)
+// =============================================================================
+
+model Appointment {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+
+  clientId  String?
+  client    User?   @relation("ClientAppointments", fields: [clientId], references: [id])
+  clientName String? // Para clientes sem conta
+
+  scheduledAt    DateTime
+  durationMins   Int
+  status         AppointmentStatus @default(SCHEDULED)
+  origin         AppointmentOrigin @default(RECEPTION)
+  notes          String?
+  totalAmount    Decimal           @db.Decimal(10, 2) @default(0)
+
+  confirmedAt  DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  canceledAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  services     AppointmentService[]
+  transaction  FinancialTransaction?
+  commission   Commission?
+
+  @@index([barbershopId])
+  @@index([professionalId])
+  @@index([clientId])
+  @@index([scheduledAt])
+  @@map("appointments")
+}
+
+// Serviços dentro de uma comanda (many-to-many)
+model AppointmentService {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id])
+
+  price        Decimal @db.Decimal(10, 2) // Preço no momento do agendamento
+  durationMins Int
+
+  @@index([appointmentId])
+  @@map("appointment_services")
+}
+
+// =============================================================================
+// PLANOS DE ASSINATURA DO CLIENTE (RECORRÊNCIA)
+// =============================================================================
+
+// Plano criado pelo dono da barbearia (ex: "Corte Ilimitado - R$99/mês")
+model ClientPlan {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  billingCycle  String   @default("monthly") // monthly | weekly
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  services      ClientPlanService[]
+  subscriptions ClientSubscription[]
+
+  @@index([barbershopId])
+  @@map("client_plans")
+}
+
+// Serviços incluídos no plano
+model ClientPlanService {
+  id           String     @id @default(cuid())
+  clientPlanId String
+  clientPlan   ClientPlan @relation(fields: [clientPlanId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service    @relation(fields: [serviceId], references: [id])
+
+  limitPerCycle Int? // null = ilimitado no ciclo
+
+  @@unique([clientPlanId, serviceId])
+  @@map("client_plan_services")
+}
+
+// Assinatura do cliente com a barbearia
+model ClientSubscription {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  clientId    String
+  client      User       @relation(fields: [clientId], references: [id])
+  clientPlanId String
+  clientPlan   ClientPlan @relation(fields: [clientPlanId], references: [id])
+
+  status             ClientSubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  usedServicesCount  Int                      @default(0)
+
+  asaasSubId     String? // ID da recorrência no Asaas (subconta da barbearia)
+  lastPaymentAt  DateTime?
+  nextPaymentAt  DateTime?
+  canceledAt     DateTime?
+  suspendedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([barbershopId])
+  @@index([clientId])
+  @@map("client_subscriptions")
+}
+
+// =============================================================================
+// FINANCEIRO
+// =============================================================================
+
+model FinancialTransaction {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  appointmentId String?      @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  type          TransactionType
+  amount        Decimal         @db.Decimal(10, 2)
+  grossAmount   Decimal         @db.Decimal(10, 2) // Bruto
+  netAmount     Decimal         @db.Decimal(10, 2) // Líquido (após taxas Asaas)
+  feeAmount     Decimal         @db.Decimal(10, 2) @default(0) // Taxas Asaas
+  paymentMethod PaymentMethod?
+  description   String?
+
+  asaasPaymentId String? // ID do pagamento no Asaas
+
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([barbershopId])
+  @@index([paidAt])
+  @@map("financial_transactions")
+}
+
+// Comissões por atendimento
+model Commission {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  appointmentId  String       @unique
+  appointment    Appointment  @relation(fields: [appointmentId], references: [id])
+
+  grossAmount      Decimal @db.Decimal(10, 2)
+  commissionRate   Decimal @db.Decimal(5, 2) // % no momento do atendimento
+  commissionAmount Decimal @db.Decimal(10, 2)
+
+  isPaid    Boolean  @default(false)
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([barbershopId])
+  @@index([professionalId])
+  @@map("commissions")
+}
+
+// =============================================================================
+// ESTOQUE
+// =============================================================================
+
+model Product {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  name           String
+  category       ProductCategory @default(OTHER)
+  description    String?
+  price          Decimal         @db.Decimal(10, 2)
+  costPrice      Decimal?        @db.Decimal(10, 2)
+  stock          Int             @default(0)
+  minStockAlert  Int             @default(5)
+  unit           String          @default("un")
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([barbershopId])
+  @@map("products")
+}
