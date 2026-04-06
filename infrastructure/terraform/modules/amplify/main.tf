@@ -30,11 +30,8 @@ resource "aws_amplify_app" "frontend" {
     NODE_ENV            = var.environment
   }
 
-  custom_rule {
-    source = "/<*>"
-    status = "404"
-    target = "/index.html"
-  }
+  # Next.js SSR — Amplify gerencia o roteamento automaticamente via compute.
+  # Regra SPA (/<*> → /index.html) não se aplica aqui e causa redirect loop.
 
   tags = {
     Project     = var.project
