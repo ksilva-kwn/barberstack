@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
 import { z } from 'zod';
 
-export const subscriptionRouter = Router();
+export const subscriptionRouter: Router = Router();
 
 // ─── Planos (criados pelo dono da barbearia) ──────────────────────────────────
 subscriptionRouter.get('/plans', async (req: Request, res: Response) => {

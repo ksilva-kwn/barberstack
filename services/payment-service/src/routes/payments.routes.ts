@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 // import { createAsaasSubAccount, getBarbershopBalance, requestWithdrawal } from '../services/asaas-account.service';
 
-export const paymentsRouter = Router();
+export const paymentsRouter: Router = Router();
 
 // ─── Rotas Asaas desabilitadas temporariamente (integração pendente) ──────────
 

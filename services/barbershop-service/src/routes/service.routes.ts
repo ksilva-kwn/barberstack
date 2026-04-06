@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
 import { z } from 'zod';
 
-export const serviceRouter = Router();
+export const serviceRouter: Router = Router();
 
 const serviceSchema = z.object({
   name: z.string().min(2),

@@ -1,10 +1,10 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { authRouter } from './routes/auth.routes';
 
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(helmet());

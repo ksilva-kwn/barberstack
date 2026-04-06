@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
 import { checkProfessionalQuota } from '../middlewares/quota.middleware';
 
-export const professionalRouter = Router();
+export const professionalRouter: Router = Router();
 
 // Listar profissionais da barbearia
 professionalRouter.get('/', async (req: Request, res: Response) => {

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -7,7 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
 
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Security & Logging ──────────────────────────────────────────────────────

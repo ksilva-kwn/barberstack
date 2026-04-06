@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma, AppointmentStatus } from '@barberstack/database';
 import { z } from 'zod';
 
-export const appointmentRouter = Router();
+export const appointmentRouter: Router = Router();
 
 const createSchema = z.object({
   professionalId: z.string(),

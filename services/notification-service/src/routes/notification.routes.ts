@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 
-export const notificationRouter = Router();
+export const notificationRouter: Router = Router();
 
 /**
  * Envia lembrete de agendamento via WhatsApp

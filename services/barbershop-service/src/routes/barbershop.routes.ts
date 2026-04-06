@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@barberstack/database';
 // import axios from 'axios';
 
-export const barbershopRouter = Router();
+export const barbershopRouter: Router = Router();
 
 const createSchema = z.object({
   name: z.string().min(2),
