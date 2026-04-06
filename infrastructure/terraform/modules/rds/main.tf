@@ -8,7 +8,7 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_db_instance" "postgres" {
   identifier        = "${var.project}-${var.environment}-postgres"
   engine            = "postgres"
-  engine_version    = "16.2"
+  engine_version    = "16.4"
   instance_class    = var.db_instance_class
   allocated_storage = 20
   storage_type      = "gp3"
