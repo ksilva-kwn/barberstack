@@ -1,0 +1,200 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+
+    {
+      "Sid": "S3TerraformState",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:ListBucket",
+        "s3:GetBucketVersioning",
+        "s3:PutBucketVersioning",
+        "s3:GetBucketLocation",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::barberstack-*",
+        "arn:aws:s3:::barberstack-*/*"
+      ]
+    },
+
+    {
+      "Sid": "DynamoDBStateLock",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:TagResource",
+        "dynamodb:ListTagsOfResource"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/barberstack-*"
+    },
+
+    {
+      "Sid": "EC2VPCFull",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc", "ec2:DeleteVpc", "ec2:DescribeVpcs",
+        "ec2:ModifyVpcAttribute", "ec2:DescribeVpcAttribute",
+        "ec2:CreateSubnet", "ec2:DeleteSubnet", "ec2:DescribeSubnets",
+        "ec2:CreateInternetGateway", "ec2:DeleteInternetGateway",
+        "ec2:AttachInternetGateway", "ec2:DetachInternetGateway",
+        "ec2:DescribeInternetGateways",
+        "ec2:CreateRouteTable", "ec2:DeleteRouteTable",
+        "ec2:CreateRoute", "ec2:DeleteRoute",
+        "ec2:AssociateRouteTable", "ec2:DisassociateRouteTable",
+        "ec2:DescribeRouteTables",
+        "ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress", "ec2:RevokeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress", "ec2:RevokeSecurityGroupEgress",
+        "ec2:DescribeSecurityGroups", "ec2:DescribeSecurityGroupRules",
+        "ec2:RunInstances", "ec2:TerminateInstances",
+        "ec2:DescribeInstances", "ec2:DescribeInstanceAttribute",
+        "ec2:ModifyInstanceAttribute", "ec2:StopInstances", "ec2:StartInstances",
+        "ec2:AllocateAddress", "ec2:ReleaseAddress",
+        "ec2:AssociateAddress", "ec2:DisassociateAddress",
+        "ec2:DescribeAddresses",
+        "ec2:ImportKeyPair", "ec2:DescribeKeyPairs",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeAccountAttributes",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribeIamInstanceProfileAssociations",
+        "ec2:AssociateIamInstanceProfile",
+        "ec2:DisassociateIamInstanceProfile",
+        "ec2:CreateTags", "ec2:DeleteTags", "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    },
+
+    {
+      "Sid": "RDS",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBInstance", "rds:DeleteDBInstance",
+        "rds:ModifyDBInstance", "rds:DescribeDBInstances",
+        "rds:CreateDBSubnetGroup", "rds:DeleteDBSubnetGroup",
+        "rds:DescribeDBSubnetGroups", "rds:ModifyDBSubnetGroup",
+        "rds:CreateDBSnapshot", "rds:DeleteDBSnapshot",
+        "rds:DescribeDBSnapshots",
+        "rds:AddTagsToResource", "rds:ListTagsForResource",
+        "rds:RemoveTagsFromResource"
+      ],
+      "Resource": "*"
+    },
+
+    {
+      "Sid": "IAMScopedToBarberstack",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole", "iam:DeleteRole",
+        "iam:GetRole", "iam:UpdateRole",
+        "iam:TagRole", "iam:UntagRole",
+        "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:CreatePolicy", "iam:DeletePolicy",
+        "iam:GetPolicy", "iam:GetPolicyVersion",
+        "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
+        "iam:ListPolicyVersions", "iam:TagPolicy",
+        "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile",
+        "iam:GetInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:ListInstanceProfilesForRole",
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/barberstack-*",
+        "arn:aws:iam::*:policy/barberstack-*",
+        "arn:aws:iam::*:instance-profile/barberstack-*"
+      ]
+    },
+
+    {
+      "Sid": "SSMBarberstack",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath",
+        "ssm:PutParameter",
+        "ssm:DeleteParameter",
+        "ssm:AddTagsToResource",
+        "ssm:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:ssm:*:*:parameter/barberstack/*"
+    },
+
+    {
+      "Sid": "KMSForSSMDecrypt",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringLike": {
+          "kms:ViaService": "ssm.*.amazonaws.com"
+        }
+      }
+    },
+
+    {
+      "Sid": "ECRToken",
+      "Effect": "Allow",
+      "Action": ["ecr:GetAuthorizationToken"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRBarberstack",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository", "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage",
+        "ecr:InitiateLayerUpload", "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload", "ecr:PutImage",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:PutLifecyclePolicy",
+        "ecr:TagResource"
+      ],
+      "Resource": "arn:aws:ecr:*:*:repository/barberstack-*"
+    },
+
+    {
+      "Sid": "Amplify",
+      "Effect": "Allow",
+      "Action": [
+        "amplify:CreateApp", "amplify:DeleteApp",
+        "amplify:GetApp", "amplify:ListApps", "amplify:UpdateApp",
+        "amplify:CreateBranch", "amplify:DeleteBranch",
+        "amplify:GetBranch", "amplify:UpdateBranch",
+        "amplify:TagResource", "amplify:UntagResource",
+        "amplify:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+
+    {
+      "Sid": "STSIdentity",
+      "Effect": "Allow",
+      "Action": ["sts:GetCallerIdentity"],
+      "Resource": "*"
+    }
+
+  ]
+}

@@ -6,9 +6,13 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.50"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
-  # Backend S3 configurado via -backend-config na pipeline (ver ci-infrastructure.yml)
+  # Backend S3 criado automaticamente pela pipeline antes do terraform init
   backend "s3" {}
 }
 
@@ -28,8 +32,7 @@ provider "aws" {
 # MÓDULOS
 # =============================================================================
 
-# SSM é o primeiro: lê os secrets que existem no Parameter Store
-# (criados manualmente via SETUP.md antes do primeiro apply)
+# SSM primeiro: cria os parâmetros (ou lê se já existem via ignore_changes)
 module "ssm" {
   source      = "./modules/ssm"
   project     = var.project
@@ -58,7 +61,7 @@ module "rds" {
   private_subnet_ids    = module.vpc.private_subnet_ids
   rds_security_group_id = module.security.rds_sg_id
   db_username           = var.db_username
-  db_password           = module.ssm.db_password   # ← vem do SSM, não do GitHub
+  db_password           = module.ssm.db_password   # gerado e guardado no SSM
   db_instance_class     = var.db_instance_class
 }
 
@@ -81,6 +84,6 @@ module "amplify" {
   project      = var.project
   environment  = var.environment
   github_repo  = var.github_repo
-  github_token = module.ssm.github_token   # ← vem do SSM
+  github_token = module.ssm.github_token   # lido do SSM
   api_url      = "http://${module.ec2.public_ip}:3000"
 }
