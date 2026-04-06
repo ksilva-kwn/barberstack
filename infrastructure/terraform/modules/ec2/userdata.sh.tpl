@@ -5,25 +5,30 @@ exec > >(tee /var/log/barberstack-userdata.log | logger -t userdata) 2>&1
 echo "=== Barberstack EC2 Setup — $(date) ==="
 
 # ─── Dependências do sistema ─────────────────────────────────────────────────
-apt-get update -y
-apt-get install -y \
-  curl git unzip \
-  docker.io docker-compose-v2 \
-  awscli jq
+dnf update -y
+dnf install -y curl git unzip jq
 
+# ─── Docker ──────────────────────────────────────────────────────────────────
+dnf install -y docker
 systemctl enable docker
 systemctl start docker
-usermod -aG docker ubuntu
+usermod -aG docker ec2-user
+
+# Docker Compose plugin
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # ─── Node.js 20 ──────────────────────────────────────────────────────────────
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+dnf install -y nodejs
 npm install -g pnpm
 
 # ─── Diretório da aplicação ───────────────────────────────────────────────────
 APP_DIR="/opt/barberstack"
 mkdir -p "$APP_DIR"
-chown ubuntu:ubuntu "$APP_DIR"
+chown ec2-user:ec2-user "$APP_DIR"
 
 # ─── Função: busca todos os parâmetros do SSM e gera o .env ──────────────────
 generate_env_file() {
@@ -42,7 +47,7 @@ generate_env_file() {
   >> "$env_file"
 
   chmod 600 "$env_file"
-  chown ubuntu:ubuntu "$env_file"
+  chown ec2-user:ec2-user "$env_file"
   echo "[SSM] .env gerado com $(grep -c '=' "$env_file") variáveis"
 }
 
@@ -56,7 +61,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-User=ubuntu
+User=ec2-user
 WorkingDirectory=/opt/barberstack
 ExecStart=/usr/local/bin/barberstack-refresh-env.sh
 RemainAfterExit=yes

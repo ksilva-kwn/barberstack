@@ -8,7 +8,7 @@ variable "key_name"              { type = string }
 
 variable "instance_type" {
   type    = string
-  default = "t3.small"
+  default = "t4g.small"
 }
 
 variable "ssm_path_prefix" {
