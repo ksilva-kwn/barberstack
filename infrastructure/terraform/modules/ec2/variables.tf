@@ -4,9 +4,19 @@ variable "aws_region"            { type = string }
 variable "vpc_id"                { type = string }
 variable "public_subnet_id"      { type = string }
 variable "ec2_security_group_id" { type = string }
-variable "instance_type"         { type = string; default = "t3.small" }
 variable "key_name"              { type = string }
 
-# SSM — nenhum segredo direto neste módulo
-variable "ssm_path_prefix" { type = string; description = "Prefixo SSM ex: /barberstack/production" }
-variable "ssm_policy_arn"  { type = string; description = "ARN da IAM policy de leitura SSM" }
+variable "instance_type" {
+  type    = string
+  default = "t3.small"
+}
+
+variable "ssm_path_prefix" {
+  type        = string
+  description = "Prefixo SSM ex: /barberstack/production"
+}
+
+variable "ssm_policy_arn" {
+  type        = string
+  description = "ARN da IAM policy de leitura SSM"
+}
