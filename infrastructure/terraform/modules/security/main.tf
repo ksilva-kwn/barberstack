@@ -9,19 +9,27 @@ resource "aws_security_group" "ec2" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "API Gateway"
+    description = "API ports - VPC only"
     from_port   = 3000
     to_port     = 3006
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.100.0.0/16"]
   }
 
   ingress {
-    description = "SSH"
+    description = "API ports - admin IP"
+    from_port   = 3000
+    to_port     = 3006
+    protocol    = "tcp"
+    cidr_blocks = ["177.221.17.218/32"]
+  }
+
+  ingress {
+    description = "SSH - admin IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["177.221.17.218/32"]
   }
 
   egress {

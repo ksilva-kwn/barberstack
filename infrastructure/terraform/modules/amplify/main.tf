@@ -11,7 +11,7 @@ resource "aws_amplify_app" "frontend" {
         preBuild:
           commands:
             - npm install -g pnpm
-            - pnpm install --frozen-lockfile
+            - pnpm install --no-frozen-lockfile
         build:
           commands:
             - pnpm --filter @barberstack/web build
