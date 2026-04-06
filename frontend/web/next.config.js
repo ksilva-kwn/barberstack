@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Necessário para deploy no Amplify/Docker
   experimental: {
     serverComponentsExternalPackages: [],
   },
