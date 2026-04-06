@@ -13,11 +13,11 @@ RUN pnpm install --no-frozen-lockfile
 # ─── Build ───────────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
+COPY --from=deps /app/services/auth-service/node_modules ./services/auth-service/node_modules
 COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
-COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
 COPY services/auth-service ./services/auth-service
-# Gera Prisma client e compila pacotes
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/auth-service build
@@ -25,7 +25,6 @@ RUN pnpm --filter @barberstack/auth-service build
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
-RUN npm install -g pnpm
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
