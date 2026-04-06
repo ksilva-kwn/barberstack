@@ -39,6 +39,7 @@ jobs:
     steps:
       - name: Derive backend names from AWS Account ID
         id: backend
+        working-directory: .
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           BUCKET="barberstack-tfstate-${ACCOUNT_ID}"
@@ -52,6 +53,7 @@ jobs:
           echo "✅ Table:  $TABLE"
 
       - name: Ensure S3 bucket exists
+        working-directory: .
         run: |
           BUCKET="${{ steps.backend.outputs.bucket }}"
 
@@ -79,6 +81,7 @@ jobs:
               "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 
       - name: Ensure DynamoDB table exists
+        working-directory: .
         run: |
           TABLE="${{ steps.backend.outputs.dynamodb_table }}"
 
