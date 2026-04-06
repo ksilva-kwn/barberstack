@@ -31,7 +31,7 @@ variable "db_instance_class" {
 
 variable "ec2_instance_type" {
   type    = string
-  default = "t3.small"
+  default = "t4g.small"
 }
 
 variable "ec2_key_name" {
