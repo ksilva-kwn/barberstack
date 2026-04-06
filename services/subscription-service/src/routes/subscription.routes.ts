@@ -82,14 +82,13 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
   return res.status(201).json(sub);
 });
 
-// Forçar recobrança (inadimplentes)
-subscriptionRouter.post('/:id/force-charge', async (req: Request, res: Response) => {
-  const sub = await prisma.clientSubscription.findUnique({ where: { id: req.params.id } });
-  if (!sub) return res.status(404).json({ error: 'Assinatura não encontrada' });
-
-  // TODO: integrar com payment-service para gerar cobrança no Asaas
-  return res.json({ message: 'Recobrança solicitada', subscriptionId: sub.id });
-});
+// Forçar recobrança (inadimplentes) — desabilitado até integração Asaas
+// subscriptionRouter.post('/:id/force-charge', async (req: Request, res: Response) => {
+//   const sub = await prisma.clientSubscription.findUnique({ where: { id: req.params.id } });
+//   if (!sub) return res.status(404).json({ error: 'Assinatura não encontrada' });
+//   // TODO: integrar com payment-service para gerar cobrança no Asaas
+//   return res.json({ message: 'Recobrança solicitada', subscriptionId: sub.id });
+// });
 
 // Cancelar assinatura
 subscriptionRouter.delete('/:id', async (req: Request, res: Response) => {

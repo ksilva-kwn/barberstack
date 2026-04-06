@@ -1,20 +1,38 @@
+# Build from monorepo root: docker build -f services/auth-service/Dockerfile .
 FROM node:20-alpine AS base
 RUN npm install -g pnpm
 WORKDIR /app
 
+# ─── Install all dependencies ────────────────────────────────────────────────
 FROM base AS deps
-COPY package.json ./
-RUN pnpm install --frozen-lockfile --prod
+COPY package.json pnpm-workspace.yaml ./
+COPY packages/database/package.json ./packages/database/
+COPY services/auth-service/package.json ./services/auth-service/
+RUN pnpm install --no-frozen-lockfile
 
+# ─── Build ───────────────────────────────────────────────────────────────────
 FROM base AS builder
-COPY package.json tsconfig.json ./
-RUN pnpm install --frozen-lockfile
-COPY src ./src
-RUN pnpm build
-
-FROM base AS runner
-ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY tsconfig.base.json ./
+COPY packages/database ./packages/database
+COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
+COPY services/auth-service ./services/auth-service
+# Gera Prisma client e compila pacotes
+RUN cd packages/database && npx prisma generate
+RUN pnpm --filter @barberstack/database build
+RUN pnpm --filter @barberstack/auth-service build
+
+# ─── Runtime ─────────────────────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+ENV NODE_ENV=production
+RUN npm install -g pnpm
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
+COPY packages/database/package.json ./packages/database/
+# Prisma schema e migrations (necessários para migrate deploy)
+COPY packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/services/auth-service/dist ./dist
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

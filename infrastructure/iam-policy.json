@@ -74,6 +74,7 @@
         "ec2:DescribeIamInstanceProfileAssociations",
         "ec2:AssociateIamInstanceProfile",
         "ec2:DisassociateIamInstanceProfile",
+        "ec2:DescribeVolumes", "ec2:DescribeVolumeAttribute",
         "ec2:CreateTags", "ec2:DeleteTags", "ec2:DescribeTags"
       ],
       "Resource": "*"
@@ -114,6 +115,7 @@
         "iam:RemoveRoleFromInstanceProfile",
         "iam:ListInstanceProfilesForRole",
         "iam:ListRolePolicies",
+        "iam:TagInstanceProfile",
         "iam:PassRole"
       ],
       "Resource": [

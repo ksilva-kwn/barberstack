@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@barberstack/database';
-import axios from 'axios';
+// import axios from 'axios';
 
 export const barbershopRouter = Router();
 
@@ -32,20 +32,20 @@ barbershopRouter.post('/', async (req: Request, res: Response) => {
     data: { ...data, slug },
   });
 
-  // Cria subconta no Asaas (fire and forget — não bloqueia o cadastro)
-  axios.post(
-    `${process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005'}/payments/subaccount`,
-    {
-      barbershopId: shop.id,
-      name: shop.name,
-      email: shop.email,
-      cpfCnpj: shop.document,
-      phone: shop.phone,
-      address: shop.address,
-      city: shop.city,
-      state: shop.state,
-    },
-  ).catch((err) => console.error('[Asaas] Falha ao criar subconta:', err.message));
+  // // Cria subconta no Asaas (fire and forget — não bloqueia o cadastro)
+  // axios.post(
+  //   `${process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005'}/payments/subaccount`,
+  //   {
+  //     barbershopId: shop.id,
+  //     name: shop.name,
+  //     email: shop.email,
+  //     cpfCnpj: shop.document,
+  //     phone: shop.phone,
+  //     address: shop.address,
+  //     city: shop.city,
+  //     state: shop.state,
+  //   },
+  // ).catch((err) => console.error('[Asaas] Falha ao criar subconta:', err.message));
 
   return res.status(201).json(shop);
 });

@@ -9,8 +9,7 @@ on:
       - '.github/workflows/svc-api-gateway.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'services/api-gateway/**'
+    paths: ['services/api-gateway/**']
   workflow_dispatch:
 
 jobs:
@@ -25,4 +24,3 @@ jobs:
       AWS_REGION:            ${{ secrets.AWS_REGION }}
       EC2_HOST:              ${{ secrets.EC2_HOST }}
       EC2_SSH_KEY:           ${{ secrets.EC2_SSH_KEY }}
-      DATABASE_URL:          ${{ secrets.DATABASE_URL }}

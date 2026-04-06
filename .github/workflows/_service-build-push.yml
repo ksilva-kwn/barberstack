@@ -1,6 +1,9 @@
 # =============================================================================
 # Workflow REUTILIZÁVEL — build, push ECR e deploy EC2
 # Chamado por cada pipeline de microserviço via `workflow_call`
+# Todos os secrets de runtime ficam no SSM Parameter Store.
+# GitHub Secrets necessários: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+#                             AWS_REGION, EC2_HOST, EC2_SSH_KEY
 # =============================================================================
 name: _service-build-push (reusable)
 
@@ -15,13 +18,17 @@ on:
         required: true
         type: number
         description: "Porta do serviço dentro do container"
+      run_migrations:
+        required: false
+        type: boolean
+        default: false
+        description: "Rodar prisma migrate deploy antes de subir o container"
     secrets:
       AWS_ACCESS_KEY_ID:     { required: true }
       AWS_SECRET_ACCESS_KEY: { required: true }
       AWS_REGION:            { required: true }
       EC2_HOST:              { required: true }
       EC2_SSH_KEY:           { required: true }
-      DATABASE_URL:          { required: true }
 
 jobs:
   build-push:
@@ -69,8 +76,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ inputs.service_name }}
+          context: .
+          file: ./services/${{ inputs.service_name }}/Dockerfile
           push: true
+          platforms: linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha,scope=${{ inputs.service_name }}
           cache-to: type=gha,mode=max,scope=${{ inputs.service_name }}
@@ -98,16 +107,31 @@ jobs:
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
             SERVICE="${{ inputs.service_name }}"
             IMAGE_TAG="${{ needs.build-push.outputs.image_tag }}"
 
+            # Garante que a rede existe
+            docker network inspect barberstack-network >/dev/null 2>&1 \
+              || docker network create barberstack-network
+
             # Login ECR no EC2
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
               | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+            # Migrations (apenas quando run_migrations=true)
+            if [ "${{ inputs.run_migrations }}" = "true" ]; then
+              echo "▶ Rodando migrations..."
+              docker run --rm \
+                --network barberstack-network \
+                --env-file /opt/barberstack/.env \
+                "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG" \
+                npx prisma migrate deploy
+              echo "✅ Migrations concluídas"
+            fi
 
             # Pull e reinicia apenas este serviço
             docker pull "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG"

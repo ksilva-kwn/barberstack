@@ -87,3 +87,69 @@ module "amplify" {
   github_token = module.ssm.github_token   # lido do SSM
   api_url      = "http://${module.ec2.public_ip}:3000"
 }
+
+# =============================================================================
+# SSM — Parâmetros adicionais (construídos após RDS e SSM estarem prontos)
+# =============================================================================
+
+# DATABASE_URL — construído com endpoint RDS + senha gerada pelo SSM
+resource "aws_ssm_parameter" "database_url" {
+  name        = "/barberstack/${var.environment}/DATABASE_URL"
+  type        = "SecureString"
+  value       = "postgresql://${var.db_username}:${module.ssm.db_password}@${module.rds.endpoint}/barberstack"
+  description = "Barberstack — URL de conexão com o banco PostgreSQL"
+
+  depends_on = [module.rds, module.ssm]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# JWT_EXPIRES_IN — padrão 7d, editável no console SSM
+resource "aws_ssm_parameter" "jwt_expires_in" {
+  name        = "/barberstack/${var.environment}/JWT_EXPIRES_IN"
+  type        = "String"
+  value       = "7d"
+  description = "Barberstack — expiração do JWT"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# WHATSAPP_API_TOKEN — placeholder até integração WhatsApp
+resource "aws_ssm_parameter" "whatsapp_api_token" {
+  name        = "/barberstack/${var.environment}/WHATSAPP_API_TOKEN"
+  type        = "SecureString"
+  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
+  description = "Barberstack — Token da API WhatsApp | Atualize em: SSM Console"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# WHATSAPP_API_URL — placeholder até integração WhatsApp
+resource "aws_ssm_parameter" "whatsapp_api_url" {
+  name        = "/barberstack/${var.environment}/WHATSAPP_API_URL"
+  type        = "String"
+  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
+  description = "Barberstack — URL da API WhatsApp | Atualize em: SSM Console"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# ALLOWED_ORIGINS — atualizar com URL do Amplify após primeiro deploy
+resource "aws_ssm_parameter" "allowed_origins" {
+  name        = "/barberstack/${var.environment}/ALLOWED_ORIGINS"
+  type        = "String"
+  value       = "*"
+  description = "Barberstack — Origins permitidas no CORS | Atualize com a URL do Amplify"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
