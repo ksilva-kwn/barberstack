@@ -4,7 +4,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-jammy-22.04-amd64-server-*"]
+    values = ["ubuntu*22.04*amd64*"]
   }
 
   filter {
@@ -13,8 +13,13 @@ data "aws_ami" "ubuntu" {
   }
 
   filter {
-    name   = "architecture"
-    values = ["x86_64"]
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
   }
 }
 
