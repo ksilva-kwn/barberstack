@@ -26,8 +26,9 @@ resource "aws_amplify_app" "frontend" {
   EOT
 
   environment_variables = {
-    NEXT_PUBLIC_API_URL = var.api_url
-    NODE_ENV            = var.environment
+    # EC2_URL: server-side apenas (sem NEXT_PUBLIC_) — nunca exposto ao browser
+    EC2_URL  = var.ec2_url
+    NODE_ENV = var.environment
   }
 
   # Next.js SSR — Amplify gerencia o roteamento automaticamente via compute.

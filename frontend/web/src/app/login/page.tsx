@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Scissors, Eye, EyeOff } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function LoginPage() {
   const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,22 +22,21 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // Mock login — qualquer email/senha válidos entram
-    await new Promise((r) => setTimeout(r, 800));
-
-    if (!email || !password) {
-      setError('Preencha email e senha.');
+    try {
+      const { data } = await api.post('/api/auth/login', { email, password });
+      setAuth(data.token, data.refreshToken, data.user);
+      router.push('/dashboard');
+    } catch (err: any) {
+      const msg = err.response?.data?.error;
+      setError(msg || 'Email ou senha inválidos.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push('/dashboard');
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
             <Scissors className="w-5 h-5 text-primary-foreground" />
@@ -41,16 +44,13 @@ export default function LoginPage() {
           <span className="font-bold text-2xl text-foreground">Barberstack</span>
         </div>
 
-        {/* Card */}
         <div className="bg-card border border-border rounded-xl p-8">
           <h1 className="text-xl font-semibold text-foreground mb-1">Bem-vindo de volta</h1>
           <p className="text-sm text-muted-foreground mb-6">Entre com sua conta para continuar</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                E-mail
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">E-mail</label>
               <input
                 type="email"
                 value={email}
@@ -62,9 +62,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Senha
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Senha</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -84,9 +82,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
             <button
               type="submit"
