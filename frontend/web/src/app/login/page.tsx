@@ -77,6 +77,12 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
+          Não tem conta?{' '}
+          <Link href="/register" className="text-primary hover:underline">
+            Cadastrar barbearia
+          </Link>
+        </p>
+        <p className="text-center text-sm text-muted-foreground mt-2">
           <Link href="/" className="hover:text-foreground transition-colors">
             ← Voltar ao início
           </Link>
