@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Calendar,
@@ -15,43 +15,31 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/store/auth.store';
-import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/use-auth';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/agenda',    label: 'Agenda',         icon: Calendar },
-  { href: '/clientes',  label: 'Clientes',       icon: Users },
-  { href: '/assinaturas', label: 'Assinaturas',  icon: Repeat2 },
-  { href: '/financeiro',  label: 'Financeiro',   icon: DollarSign },
-  { href: '/estoque',     label: 'Estoque',      icon: Package },
-  { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/agenda',       label: 'Agenda',         icon: Calendar },
+  { href: '/clientes',     label: 'Clientes',       icon: Users },
+  { href: '/assinaturas',  label: 'Assinaturas',    icon: Repeat2 },
+  { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign },
+  { href: '/estoque',      label: 'Estoque',        icon: Package },
+  { href: '/configuracoes',label: 'Configurações',  icon: Settings },
 ];
+
+const planLabel: Record<string, string> = {
+  BRONZE: 'Plano Bronze',
+  PRATA:  'Plano Prata',
+  OURO:   'Plano Ouro',
+};
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, clearAuth } = useAuthStore();
-
-  const handleLogout = async () => {
-    try {
-      await api.post('/api/auth/logout');
-    } catch {
-      // ignora erros no logout
-    }
-    clearAuth();
-    router.push('/login');
-  };
+  const { user, logout } = useAuth();
 
   const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    ? user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?';
-
-  const planLabel: Record<string, string> = {
-    BRONZE: 'Plano Bronze',
-    PRATA:  'Plano Prata',
-    OURO:   'Plano Ouro',
-  };
 
   return (
     <aside className="w-64 bg-card border-r border-border flex flex-col h-full shrink-0">
@@ -73,13 +61,12 @@ export function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors group',
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
@@ -95,7 +82,7 @@ export function Sidebar() {
 
       {/* User / Logout */}
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm">
           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
             {initials}
           </div>
@@ -103,13 +90,13 @@ export function Sidebar() {
             <p className="text-foreground font-medium truncate text-xs">{user?.name ?? '—'}</p>
             <p className="text-muted-foreground truncate text-xs">
               {user?.barbershop?.saasPlan
-                ? planLabel[user.barbershop.saasPlan] ?? user.barbershop.saasPlan
-                : user?.role ?? '—'}
+                ? (planLabel[user.barbershop.saasPlan] ?? user.barbershop.saasPlan)
+                : (user?.role ?? '—')}
             </p>
           </div>
           <button
-            onClick={handleLogout}
-            className="hover:text-destructive transition-colors"
+            onClick={logout}
+            className="text-muted-foreground hover:text-destructive transition-colors"
             title="Sair"
           >
             <LogOut className="w-4 h-4" />

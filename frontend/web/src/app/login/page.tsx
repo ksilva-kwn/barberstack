@@ -1,37 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Scissors, Eye, EyeOff } from 'lucide-react';
-import { api } from '@/lib/api';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
-
+  const { login, loading, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const { data } = await api.post('/api/auth/login', { email, password });
-      setAuth(data.token, data.refreshToken, data.user);
-      router.push('/dashboard');
-    } catch (err: any) {
-      const msg = err.response?.data?.error;
-      setError(msg || 'Email ou senha inválidos.');
-    } finally {
-      setLoading(false);
-    }
+    await login(email, password);
   };
 
   return (

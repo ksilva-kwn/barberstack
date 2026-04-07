@@ -142,6 +142,81 @@ export class AuthController {
     }
   };
 
+  registerBarbershop = async (req: Request, res: Response) => {
+    const schema = z.object({
+      // Dados do dono
+      name:     z.string().min(2),
+      email:    z.string().email(),
+      password: z.string().min(6),
+      phone:    z.string().optional(),
+      // Dados da barbearia
+      barbershopName:  z.string().min(2),
+      document:        z.string().min(11), // CNPJ sem formatação
+      barbershopPhone: z.string().min(10),
+      barbershopEmail: z.string().email(),
+      address:         z.string().optional(),
+      city:            z.string().optional(),
+      state:           z.string().optional(),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten() });
+    }
+
+    const {
+      name, email, password, phone,
+      barbershopName, document, barbershopPhone, barbershopEmail,
+      address, city, state,
+    } = parsed.data;
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ error: 'Email já cadastrado' });
+    }
+
+    const slug =
+      barbershopName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') +
+      '-' + Date.now();
+
+    const { user, barbershop } = await prisma.$transaction(async (tx: typeof prisma) => {
+      const barbershop = await tx.barbershop.create({
+        data: { name: barbershopName, document, phone: barbershopPhone, email: barbershopEmail, address, city, state, slug },
+      });
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      const user = await tx.user.create({
+        data: { name, email, passwordHash, phone, role: 'OWNER', barbershopId: barbershop.id },
+      });
+
+      return { user, barbershop };
+    });
+
+    const token = this.generateToken({ ...user, barbershopId: barbershop.id });
+    const refreshToken = this.generateRefreshToken(user.id);
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return res.status(201).json({
+      token,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        barbershopId: barbershop.id,
+        barbershop: { id: barbershop.id, name: barbershop.name, saasPlan: barbershop.saasPlan },
+      },
+    });
+  };
+
   private generateToken(user: { id: string; email: string; role: string; barbershopId?: string | null }) {
     return jwt.sign(
       {
@@ -149,13 +224,14 @@ export class AuthController {
         email: user.email,
         role: user.role,
         barbershopId: user.barbershopId ?? null,
+        type: 'access',
       },
       process.env.JWT_SECRET!,
-      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any },
+      { expiresIn: '15m' as any },
     );
   }
 
   private generateRefreshToken(userId: string) {
-    return jwt.sign({ sub: userId, type: 'refresh' }, process.env.JWT_SECRET!, { expiresIn: '30d' });
+    return jwt.sign({ sub: userId, type: 'refresh' }, process.env.JWT_SECRET!, { expiresIn: '7d' as any });
   }
 }

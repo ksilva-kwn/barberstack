@@ -1,12 +1,9 @@
 import axios from 'axios';
 
-// Sem baseURL absoluta — chama /api/* no próprio Amplify.
-// O Amplify repassa para a EC2 via EC2_URL (variável server-side, nunca exposta ao browser).
 export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Injeta o token em toda requisição
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     try {
@@ -24,14 +21,57 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Em 401, limpa a sessão e redireciona pro login
+let refreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('barberstack-auth');
-      window.location.href = '/login';
+  async (error: any) => {
+    const original = error.config;
+
+    if (error.response?.status === 401 && !original._retry && typeof window !== 'undefined') {
+      original._retry = true;
+
+      try {
+        const raw = localStorage.getItem('barberstack-auth');
+        if (!raw) throw new Error('no session');
+        const { state } = JSON.parse(raw);
+        if (!state?.refreshToken) throw new Error('no refresh token');
+
+        if (refreshing) {
+          // Aguarda o refresh em andamento
+          return new Promise((resolve) => {
+            refreshQueue.push((newToken: string) => {
+              original.headers.Authorization = `Bearer ${newToken}`;
+              resolve(api(original));
+            });
+          });
+        }
+
+        refreshing = true;
+
+        const { data } = await axios.post('/api/auth/refresh', { refreshToken: state.refreshToken });
+        const newToken: string = data.token;
+
+        // Atualiza o store no localStorage
+        const updated = { ...JSON.parse(raw), state: { ...state, token: newToken } };
+        localStorage.setItem('barberstack-auth', JSON.stringify(updated));
+
+        refreshQueue.forEach((cb) => cb(newToken));
+        refreshQueue = [];
+        refreshing = false;
+
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return api(original);
+      } catch {
+        refreshing = false;
+        refreshQueue = [];
+        localStorage.removeItem('barberstack-auth');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
     }
+
     return Promise.reject(error);
   },
 );

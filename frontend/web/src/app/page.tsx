@@ -12,12 +12,20 @@ export default function LandingPage() {
           </div>
           <span className="font-bold text-xl text-foreground">Barberstack</span>
         </div>
-        <Link
-          href="/login"
-          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          Entrar
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Entrar
+          </Link>
+          <Link
+            href="/register"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Cadastrar
+          </Link>
+        </div>
       </header>
 
       {/* Hero */}
@@ -36,7 +44,7 @@ export default function LandingPage() {
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link
-            href="/login"
+            href="/register"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
           >
             Começar agora
@@ -46,7 +54,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-accent transition-colors"
           >
-            Ver demonstração
+            Já tenho conta
           </Link>
         </div>
       </section>

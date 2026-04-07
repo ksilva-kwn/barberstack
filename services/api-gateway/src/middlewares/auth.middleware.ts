@@ -2,10 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface JwtPayload {
-  sub: string;        // userId
+  sub: string;
   barbershopId: string | null;
   role: string;
   email: string;
+  type: 'access' | 'refresh';
 }
 
 declare global {
@@ -27,6 +28,11 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+    if (payload.type !== 'access') {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
     req.user = payload;
 
     // Propaga contexto do tenant para os microserviços downstream
