@@ -186,7 +186,7 @@ export class AuthController {
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await tx.user.create({
-        data: { name, email, passwordHash, phone, role: UserRole.OWNER, barbershopId: barbershop.id },
+        data: { name, email, passwordHash, phone, role: UserRole.ADMIN, barbershopId: barbershop.id },
       });
 
       return { user, barbershop };
