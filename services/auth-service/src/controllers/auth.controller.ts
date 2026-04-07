@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@barberstack/database';
+import { prisma, UserRole, Prisma } from '@barberstack/database';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -179,14 +179,14 @@ export class AuthController {
       barbershopName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') +
       '-' + Date.now();
 
-    const { user, barbershop } = await prisma.$transaction(async (tx: typeof prisma) => {
+    const { user, barbershop } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const barbershop = await tx.barbershop.create({
         data: { name: barbershopName, document, phone: barbershopPhone, email: barbershopEmail, address, city, state, slug },
       });
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await tx.user.create({
-        data: { name, email, passwordHash, phone, role: 'OWNER', barbershopId: barbershop.id },
+        data: { name, email, passwordHash, phone, role: UserRole.OWNER, barbershopId: barbershop.id },
       });
 
       return { user, barbershop };
