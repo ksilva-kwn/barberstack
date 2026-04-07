@@ -25,11 +25,11 @@ resource "aws_security_group" "ec2" {
   }
 
   ingress {
-    description = "SSH - admin IP"
+    description = "SSH - public (key-based auth)"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["177.221.17.218/32"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
