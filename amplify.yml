@@ -1,24 +1,19 @@
 version: 1
-applications:
-  - appRoot: frontend/web
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - npm install -g pnpm@9
-            # Instala a partir da raiz do monorepo e volta para frontend/web
-            - cd ../.. && NODE_ENV=development pnpm install --no-frozen-lockfile && cd frontend/web
-        build:
-          commands:
-            - pnpm run build
-            # standalone não inclui static/public — copiar manualmente
-            - cp -r public .next/standalone/public
-            - cp -r .next/static .next/standalone/.next/static
-      artifacts:
-        # standalone: servidor Node.js auto-contido para Amplify WEB_COMPUTE
-        baseDirectory: .next/standalone
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - .next/cache/**/*
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm install -g pnpm@9
+        - NODE_ENV=development pnpm install --no-frozen-lockfile
+    build:
+      commands:
+        - cd frontend/web && pnpm run build
+        - cp -r frontend/web/public frontend/web/.next/standalone/public
+        - cp -r frontend/web/.next/static frontend/web/.next/standalone/.next/static
+  artifacts:
+    baseDirectory: frontend/web/.next/standalone
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/web/.next/cache/**/*
