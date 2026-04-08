@@ -10,13 +10,29 @@ import { Users, Scissors, TrendingUp, CreditCard, AlertTriangle, CalendarClock, 
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const barbershopId = user?.barbershopId ?? '';
 
   const { data: kpis, isLoading } = useQuery({
     queryKey: ['kpis', barbershopId],
     queryFn: () => barbershopApi.kpis(barbershopId).then((r) => r.data),
-    enabled: !!barbershopId,
+    enabled: !!barbershopId && !isSuperAdmin,
   });
+
+  if (isSuperAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">SaaS Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Visão geral da plataforma Barberstack</p>
+        </div>
+
+        <div className="flex items-center justify-center py-20 bg-card border border-border rounded-xl">
+          <p className="text-muted-foreground font-medium">Bem-vindo, {user?.name}. As métricas gerais da plataforma estarão disponíveis em breve.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

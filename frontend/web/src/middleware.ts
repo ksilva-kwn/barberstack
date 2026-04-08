@@ -33,13 +33,26 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // RBAC: barbeiros só acessam /dashboard e /agenda
     const role = request.cookies.get('barberstack-role')?.value;
-    if (role && role !== 'ADMIN') {
-      const isAdminOnly = ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
-      if (isAdminOnly) {
+
+    if (role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN accesses /dashboard for SaaS metrics, but shouldn't access barbershop-specific routes
+      const isSuperAdminOnly = ['/dashboard'].some((p) => pathname.startsWith(p));
+      if (!isSuperAdminOnly) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    } else if (role === 'BARBER') {
+      // BARBER accesses only /agenda
+      const isBarberOnly = ['/agenda'].some((p) => pathname.startsWith(p));
+      if (!isBarberOnly) {
         return NextResponse.redirect(new URL('/agenda', request.url));
       }
+    } else if (role === 'ADMIN') {
+      // ADMIN (Barbershop Owner) has access to all protected prefixes
+      // No redirection needed
+    } else {
+      // CLIENT or other roles should not be in the management panel
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
