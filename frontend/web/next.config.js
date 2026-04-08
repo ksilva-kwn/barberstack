@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
+  // SSR — Amplify Web Compute
 };
 
 module.exports = nextConfig;

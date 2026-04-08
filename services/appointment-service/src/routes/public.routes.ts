@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
+import jwt from 'jsonwebtoken';
 
 export const publicAppointmentRouter: Router = Router();
 
@@ -61,7 +62,6 @@ publicAppointmentRouter.post('/appointments', async (req: Request, res: Response
   let barbershopId: string;
 
   try {
-    const jwt = await import('jsonwebtoken');
     const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET!) as any;
     clientId = payload.sub;
     barbershopId = payload.barbershopId;
