@@ -9,7 +9,7 @@ resource "aws_security_group" "ec2" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP - público para frontend SPA"
+    description = "HTTP - public for frontend SPA"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
