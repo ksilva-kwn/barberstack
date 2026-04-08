@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { barbershopRouter } from './routes/barbershop.routes';
 import { professionalRouter } from './routes/professional.routes';
 import { serviceRouter } from './routes/service.routes';
+import { requireTenant } from './middlewares/tenant.middleware';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'barbershop-service' }));
 
+app.use(requireTenant);
 app.use('/barbershops', barbershopRouter);
 app.use('/professionals', professionalRouter);
 app.use('/services', serviceRouter);

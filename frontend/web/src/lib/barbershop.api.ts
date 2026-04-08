@@ -1,5 +1,23 @@
 import { api } from './api';
 
+export interface Professional {
+  id: string;
+  userId: string;
+  nickname: string | null;
+  commissionRate: number;
+  isActive: boolean;
+  user: { name: string; email: string; phone: string | null; avatarUrl: string | null };
+}
+
+export interface BarbershopService {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  durationMins: number;
+  isActive: boolean;
+}
+
 export interface DashboardKpis {
   professionals: number;
   appointmentsMonth: number;
@@ -28,4 +46,10 @@ export const barbershopApi = {
 
   originChart: (barbershopId: string) =>
     api.get<OriginDataPoint[]>(`/api/barbershops/${barbershopId}/origin-chart`),
+
+  professionals: () =>
+    api.get<Professional[]>('/api/professionals'),
+
+  services: () =>
+    api.get<BarbershopService[]>('/api/services'),
 };

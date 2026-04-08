@@ -24,10 +24,18 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       refreshToken: null,
       user: null,
-      setAuth: (token, refreshToken, user) =>
-        set({ token, refreshToken, user }),
-      clearAuth: () =>
-        set({ token: null, refreshToken: null, user: null }),
+      setAuth: (token, refreshToken, user) => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'barberstack-session=1; path=/; max-age=604800; SameSite=Lax';
+        }
+        set({ token, refreshToken, user });
+      },
+      clearAuth: () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'barberstack-session=; path=/; max-age=0';
+        }
+        set({ token: null, refreshToken: null, user: null });
+      },
     }),
     { name: 'barberstack-auth' },
   ),
