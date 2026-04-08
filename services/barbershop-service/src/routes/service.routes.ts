@@ -8,7 +8,7 @@ const serviceSchema = z.object({
   name: z.string().min(2),
   price: z.number().positive(),
   durationMins: z.number().int().positive(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
 });
 
 serviceRouter.get('/', async (req: Request, res: Response) => {
