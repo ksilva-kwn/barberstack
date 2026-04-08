@@ -12,6 +12,9 @@ RUN pnpm install --no-frozen-lockfile
 
 # ─── Build ───────────────────────────────────────────────────────────────────
 FROM base AS builder
+# Workspace root (required for pnpm deploy + pnpm --filter)
+COPY package.json pnpm-workspace.yaml ./
+COPY --from=deps /app/pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
 COPY --from=deps /app/services/auth-service/node_modules ./services/auth-service/node_modules
@@ -21,27 +24,15 @@ COPY services/auth-service ./services/auth-service
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/auth-service build
+# Self-contained deploy: real node_modules, no symlinks
+RUN pnpm --filter @barberstack/auth-service deploy --prod /deploy
+RUN cp -r services/auth-service/dist /deploy/dist
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
-
-# Root node_modules (pnpm virtual store — symlink target)
-COPY --from=builder /app/node_modules ./node_modules
-
-# Shared database package
-COPY --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
-COPY packages/database/package.json ./packages/database/
-# Prisma schema e migrations (necessarios para migrate deploy)
-COPY packages/database/prisma ./packages/database/prisma
-
-# Service — keep at original path so pnpm symlinks resolve correctly
-COPY --from=builder /app/services/auth-service/node_modules ./services/auth-service/node_modules
-COPY --from=builder /app/services/auth-service/dist ./services/auth-service/dist
-COPY services/auth-service/package.json ./services/auth-service/
-
-WORKDIR /app/services/auth-service
+COPY --from=builder /deploy/node_modules ./node_modules
+COPY --from=builder /deploy/dist ./dist
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
