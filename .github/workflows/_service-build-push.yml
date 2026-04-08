@@ -85,14 +85,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./services/${{ inputs.service_name }}/Dockerfile
+          file: ./Dockerfile.service
           push: true
           platforms: linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            SERVICE=${{ inputs.service_name }}
+            PORT=${{ inputs.service_port }}
           cache-from: type=gha,scope=${{ inputs.service_name }}
           cache-to: type=gha,mode=max,scope=${{ inputs.service_name }}
-          build-args: |
-            PNPM_FLAGS=--ignore-scripts
 
   deploy:
     name: Deploy — ${{ inputs.service_name }}

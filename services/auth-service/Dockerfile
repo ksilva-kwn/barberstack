@@ -24,7 +24,7 @@ COPY services/auth-service ./services/auth-service
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/auth-service build
-RUN pnpm --filter @barberstack/auth-service deploy --prod /deploy --ignore-scripts
+RUN pnpm --filter @barberstack/auth-service deploy --prod /deploy
 RUN cp -r services/auth-service/dist /deploy/dist
 # Copia o cliente Prisma gerado do virtual store do builder para o do deploy
 RUN find /app/node_modules/.pnpm -name ".prisma" -type d | \
