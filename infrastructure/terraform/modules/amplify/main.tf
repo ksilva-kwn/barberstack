@@ -28,8 +28,10 @@ resource "aws_amplify_app" "frontend" {
 
   environment_variables = {
     # EC2_URL: server-side apenas (sem NEXT_PUBLIC_) — nunca exposto ao browser
-    EC2_URL  = var.ec2_url
-    NODE_ENV = var.environment
+    EC2_URL                   = var.ec2_url
+    NODE_ENV                  = var.environment
+    # Necessário para WEB_COMPUTE detectar Next.js em monorepo
+    AMPLIFY_MONOREPO_APP_ROOT = "frontend/web"
   }
 
   # Next.js SSR — Amplify gerencia o roteamento automaticamente via compute.
