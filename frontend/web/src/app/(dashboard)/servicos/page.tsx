@@ -28,7 +28,7 @@ function AddServiceModal({ onClose, onCreated, isBarber, commissionRate }: { onC
         name: form.name,
         price: parseFloat(form.price),
         durationMins: parseInt(form.durationMins, 10),
-        description: form.description || undefined,
+        description: form.description || null,
       });
       onCreated();
     } catch (err: any) {
