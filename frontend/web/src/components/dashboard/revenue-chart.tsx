@@ -44,7 +44,7 @@ export function RevenueChart({ barbershopId }: { barbershopId: string }) {
             <Tooltip
               contentStyle={{ backgroundColor: 'hsl(222.2, 47%, 11%)', border: '1px solid hsl(217.2, 32.6%, 17.5%)', borderRadius: 8 }}
               labelStyle={{ color: 'hsl(210, 40%, 98%)' }}
-              formatter={(v: number) => [`R$ ${v.toFixed(2)}`, 'Faturamento']}
+              formatter={(v: number) => [`R$ ${(v ?? 0).toFixed(2)}`, 'Faturamento']}
             />
             <Area type="monotone" dataKey="revenue" stroke="hsl(35, 100%, 50%)" strokeWidth={2} fill="url(#revenueGrad)" />
           </AreaChart>
