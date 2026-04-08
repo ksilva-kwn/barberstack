@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/use-auth';
 const navItems = [
   { href: '/dashboard',     label: 'Dashboard',    icon: LayoutDashboard, adminOnly: false },
   { href: '/agenda',        label: 'Agenda',        icon: Calendar,        adminOnly: false },
+  { href: '/servicos',      label: 'Serviços',      icon: Scissors,        adminOnly: false },
   { href: '/barbeiros',     label: 'Barbeiros',     icon: UserCog,         adminOnly: true },
   { href: '/clientes',      label: 'Clientes',      icon: Users,           adminOnly: true },
   { href: '/assinaturas',   label: 'Assinaturas',   icon: Repeat2,         adminOnly: true },

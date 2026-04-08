@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   '/financeiro',
   '/estoque',
   '/configuracoes',
+  '/servicos',
 ];
 
 // Rotas acessíveis apenas por ADMIN (dono da barbearia)
@@ -42,8 +43,8 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     } else if (role === 'BARBER') {
-      // BARBER accesses only /agenda
-      const isBarberOnly = ['/agenda'].some((p) => pathname.startsWith(p));
+      // BARBER accesses only /agenda and /servicos
+      const isBarberOnly = ['/agenda', '/servicos'].some((p) => pathname.startsWith(p));
       if (!isBarberOnly) {
         return NextResponse.redirect(new URL('/agenda', request.url));
       }

@@ -13,16 +13,41 @@ const serviceSchema = z.object({
 
 serviceRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
+  const role = req.headers['x-user-role'] as string;
+  const userId = req.headers['x-user-id'] as string;
+
+  if (role === 'BARBER') {
+    const prof = await prisma.professional.findUnique({
+      where: { userId },
+      include: { professionalServices: { include: { service: true } } }
+    });
+    const services = prof ? prof.professionalServices.map((ps: any) => ps.service).filter((s: any) => s.isActive) : [];
+    return res.json(services);
+  }
+
   const services = await prisma.service.findMany({ where: { barbershopId, isActive: true } });
   return res.json(services);
 });
 
 serviceRouter.post('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
+  const role = req.headers['x-user-role'] as string;
+  const userId = req.headers['x-user-id'] as string;
+
   const parsed = serviceSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const service = await prisma.service.create({ data: { ...parsed.data, barbershopId } });
+
+  if (role === 'BARBER') {
+    const prof = await prisma.professional.findUnique({ where: { userId } });
+    if (prof) {
+      await prisma.professionalService.create({
+        data: { professionalId: prof.id, serviceId: service.id },
+      });
+    }
+  }
+
   return res.status(201).json(service);
 });
 
