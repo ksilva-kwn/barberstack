@@ -12,7 +12,6 @@ RUN pnpm install --no-frozen-lockfile
 
 # ─── Build ───────────────────────────────────────────────────────────────────
 FROM base AS builder
-# Workspace root (required for pnpm deploy + pnpm --filter)
 COPY package.json pnpm-workspace.yaml ./
 COPY --from=deps /app/pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules ./node_modules
@@ -24,13 +23,16 @@ COPY services/auth-service ./services/auth-service
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/auth-service build
-# Self-contained deploy: real node_modules, no symlinks
+# pnpm deploy cria um novo virtual store — rodar prisma generate dentro dele
 RUN pnpm --filter @barberstack/auth-service deploy --prod /deploy
 RUN cp -r services/auth-service/dist /deploy/dist
+RUN cd /deploy && node_modules/.bin/prisma generate \
+    --schema node_modules/@barberstack/database/prisma/schema.prisma
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=builder /deploy/node_modules ./node_modules
 COPY --from=builder /deploy/dist ./dist
