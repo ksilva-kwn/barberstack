@@ -140,6 +140,7 @@ jobs:
             docker run -d \
               --name "barberstack-$SERVICE" \
               --network barberstack-network \
+              --network-alias "$SERVICE" \
               --restart unless-stopped \
               --env-file /opt/barberstack/.env \
               -p ${{ inputs.service_port }}:${{ inputs.service_port }} \
