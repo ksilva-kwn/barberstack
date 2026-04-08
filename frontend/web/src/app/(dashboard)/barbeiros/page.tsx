@@ -32,7 +32,8 @@ function AddBarberModal({ onClose, onCreated }: { onClose: () => void; onCreated
       });
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Erro ao criar barbeiro');
+      const raw = err.response?.data?.error;
+      setError(typeof raw === 'string' ? raw : 'Erro ao criar barbeiro');
     } finally { setSubmitting(false); }
   };
 

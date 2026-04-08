@@ -33,14 +33,18 @@ usersRouter.get('/', async (req: Request, res: Response) => {
 const clientSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  phone: z.string().min(10).optional(),
+  phone: z.string().optional(),
   password: z.string().min(6).default('barberstack123'),
 });
 
 usersRouter.post('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const parsed = clientSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) {
+    const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+      .flatMap(([, errs]) => errs as string[]);
+    return res.status(400).json({ error: msgs[0] ?? 'Dados inválidos' });
+  }
 
   const { name, email, phone, password } = parsed.data;
 
@@ -61,7 +65,7 @@ usersRouter.post('/', async (req: Request, res: Response) => {
 const barberSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  phone: z.string().min(10).optional(),
+  phone: z.string().optional(),
   password: z.string().min(6),
   nickname: z.string().optional(),
   commissionRate: z.number().min(0).max(100).default(40),
@@ -70,7 +74,11 @@ const barberSchema = z.object({
 usersRouter.post('/barber', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const parsed = barberSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) {
+    const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+      .flatMap(([, errs]) => errs as string[]);
+    return res.status(400).json({ error: msgs[0] ?? 'Dados inválidos' });
+  }
 
   const { name, email, phone, password, nickname, commissionRate } = parsed.data;
 

@@ -219,7 +219,8 @@ export function NewAppointmentModal({ professionals, services, defaultDate, onCl
       await appointmentApi.create(payload);
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Erro ao criar agendamento');
+      const raw = err.response?.data?.error;
+      setError(typeof raw === 'string' ? raw : 'Erro ao criar agendamento');
     } finally { setSubmitting(false); }
   };
 

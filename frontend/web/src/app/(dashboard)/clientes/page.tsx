@@ -27,7 +27,8 @@ function AddClientModal({ onClose, onCreated }: { onClose: () => void; onCreated
       await barbershopApi.createClient({ name: form.name, email: form.email, phone: form.phone || undefined });
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Erro ao cadastrar cliente');
+      const raw = err.response?.data?.error;
+      setError(typeof raw === 'string' ? raw : 'Erro ao cadastrar cliente');
     } finally { setSubmitting(false); }
   };
 
