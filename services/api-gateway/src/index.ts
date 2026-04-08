@@ -13,8 +13,9 @@ const PORT = process.env.PORT || 3000;
 // ─── Security & Logging ──────────────────────────────────────────────────────
 app.use(helmet());
 app.use(morgan('combined'));
+const allowedOrigins = process.env.ALLOWED_ORIGINS || '*';
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map(o => o.trim()),
   credentials: true,
 }));
 
