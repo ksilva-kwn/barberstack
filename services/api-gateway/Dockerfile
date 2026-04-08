@@ -24,11 +24,10 @@ COPY services/api-gateway ./services/api-gateway
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/api-gateway build
-# pnpm deploy cria um novo virtual store — rodar prisma generate dentro dele
 RUN pnpm --filter @barberstack/api-gateway deploy --prod /deploy
 RUN cp -r services/api-gateway/dist /deploy/dist
-RUN cd /deploy && node_modules/.bin/prisma generate \
-    --schema node_modules/@barberstack/database/prisma/schema.prisma
+# Copia o cliente Prisma gerado do virtual store do builder para o do deploy
+RUN find /app/node_modules/.pnpm -name ".prisma" -type d |     while read src; do       dst=$(echo "$src" | sed 's|/app/node_modules/|/deploy/node_modules/|');       mkdir -p "$(dirname "$dst")";       cp -r "$src" "$(dirname "$dst")/";     done
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
