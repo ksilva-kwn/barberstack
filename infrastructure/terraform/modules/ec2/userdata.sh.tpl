@@ -107,13 +107,20 @@ systemctl daemon-reload
 systemctl enable barberstack-refresh-env.timer
 systemctl start barberstack-refresh-env.timer
 
-# ─── Nginx (proxy 80 → api-gateway :3000) ────────────────────────────────────
-dnf install -y nginx
+# ─── Nginx + Certbot ─────────────────────────────────────────────────────────
+dnf install -y nginx python3 augeas-libs
 
+# Certbot via pip (Amazon Linux 2023 não tem pacote certbot no dnf)
+python3 -m venv /opt/certbot/
+/opt/certbot/bin/pip install --upgrade pip
+/opt/certbot/bin/pip install certbot certbot-nginx
+ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
+
+# Config Nginx inicial (HTTP) — Certbot vai reescrever para HTTPS
 cat > /etc/nginx/conf.d/barberstack.conf << 'NGINX'
 server {
     listen 80;
-    server_name _;
+    server_name api.barberstack.kwnsilva.com.br;
 
     location / {
         proxy_pass         http://127.0.0.1:3000;
@@ -127,10 +134,29 @@ server {
 }
 NGINX
 
-# Remove default config
 rm -f /etc/nginx/conf.d/default.conf
-
 systemctl enable nginx
 systemctl start nginx
+
+# Aguarda DNS propagar antes de emitir certificado (até 5 min)
+echo "Aguardando DNS propagar..."
+for i in $(seq 1 30); do
+  if host api.barberstack.kwnsilva.com.br &>/dev/null; then
+    echo "DNS resolvido!"
+    break
+  fi
+  sleep 10
+done
+
+# Emite certificado SSL (não-interativo)
+certbot --nginx \
+  --non-interactive \
+  --agree-tos \
+  --email admin@kwnsilva.com.br \
+  --domains api.barberstack.kwnsilva.com.br \
+  --redirect || echo "[WARN] Certbot falhou — verifique DNS e rode manualmente: certbot --nginx -d api.barberstack.kwnsilva.com.br"
+
+# Renovação automática diária
+echo "0 3 * * * root certbot renew --quiet" > /etc/cron.d/certbot-renew
 
 echo "=== Setup concluído — ${project}/${environment} ==="

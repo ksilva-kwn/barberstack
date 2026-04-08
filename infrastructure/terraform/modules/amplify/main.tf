@@ -53,3 +53,19 @@ resource "aws_amplify_branch" "main" {
 
   enable_auto_build = true
 }
+
+# Custom domain — barberstack.kwnsilva.com.br
+# Após o terraform apply, o Amplify vai gerar registros DNS para validação.
+# Adicione-os no Cloudflare conforme o output "dns_validation_records".
+resource "aws_amplify_domain_association" "frontend" {
+  app_id      = aws_amplify_app.frontend.id
+  domain_name = var.custom_domain
+
+  sub_domain {
+    branch_name = aws_amplify_branch.main.branch_name
+    prefix      = ""  # apex do subdomínio (barberstack.kwnsilva.com.br)
+  }
+
+  # Cloudflare gerencia o DNS — desabilita verificação automática via Route53
+  enable_auto_sub_domain = false
+}
