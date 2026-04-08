@@ -1,6 +1,9 @@
 import axios from 'axios';
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+
 export const api = axios.create({
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -39,7 +42,6 @@ api.interceptors.response.use(
         if (!state?.refreshToken) throw new Error('no refresh token');
 
         if (refreshing) {
-          // Aguarda o refresh em andamento
           return new Promise((resolve) => {
             refreshQueue.push((newToken: string) => {
               original.headers.Authorization = `Bearer ${newToken}`;
@@ -50,10 +52,9 @@ api.interceptors.response.use(
 
         refreshing = true;
 
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken: state.refreshToken });
+        const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken: state.refreshToken });
         const newToken: string = data.token;
 
-        // Atualiza o store no localStorage
         const updated = { ...JSON.parse(raw), state: { ...state, token: newToken } };
         localStorage.setItem('barberstack-auth', JSON.stringify(updated));
 

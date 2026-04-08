@@ -9,7 +9,15 @@ resource "aws_security_group" "ec2" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "API ports - VPC only"
+    description = "HTTP - público para frontend SPA"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "API Gateway (3000) - VPC only"
     from_port   = 3000
     to_port     = 3006
     protocol    = "tcp"

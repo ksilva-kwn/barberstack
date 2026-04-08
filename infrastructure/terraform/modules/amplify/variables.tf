@@ -7,7 +7,7 @@ variable "github_token" {
   sensitive = true
 }
 
-variable "ec2_url" {
+variable "api_url" {
   type        = string
-  description = "URL interna da EC2 (api-gateway). Usada server-side pelo Amplify — nunca exposta ao browser."
+  description = "URL pública da EC2 (http://<IP>). Exposta ao browser via NEXT_PUBLIC_API_URL."
 }

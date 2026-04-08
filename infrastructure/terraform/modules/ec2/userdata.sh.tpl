@@ -107,4 +107,30 @@ systemctl daemon-reload
 systemctl enable barberstack-refresh-env.timer
 systemctl start barberstack-refresh-env.timer
 
+# ─── Nginx (proxy 80 → api-gateway :3000) ────────────────────────────────────
+dnf install -y nginx
+
+cat > /etc/nginx/conf.d/barberstack.conf << 'NGINX'
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+}
+NGINX
+
+# Remove default config
+rm -f /etc/nginx/conf.d/default.conf
+
+systemctl enable nginx
+systemctl start nginx
+
 echo "=== Setup concluído — ${project}/${environment} ==="

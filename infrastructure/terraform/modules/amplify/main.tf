@@ -1,7 +1,7 @@
 resource "aws_amplify_app" "frontend" {
   name       = "${var.project}-${var.environment}"
   repository = var.github_repo
-  platform   = "WEB_COMPUTE"
+  platform   = "WEB"
 
   access_token = var.github_token
 
@@ -17,7 +17,7 @@ resource "aws_amplify_app" "frontend" {
           commands:
             - pnpm --filter @barberstack/web build
       artifacts:
-        baseDirectory: frontend/web/.next
+        baseDirectory: frontend/web/out
         files:
           - '**/*'
       cache:
@@ -27,15 +27,16 @@ resource "aws_amplify_app" "frontend" {
   EOT
 
   environment_variables = {
-    # EC2_URL: server-side apenas (sem NEXT_PUBLIC_) — nunca exposto ao browser
-    EC2_URL                   = var.ec2_url
-    NODE_ENV                  = var.environment
-    # Necessário para WEB_COMPUTE detectar Next.js em monorepo
-    AMPLIFY_MONOREPO_APP_ROOT = "frontend/web"
+    NEXT_PUBLIC_API_URL = var.api_url
+    NODE_ENV            = var.environment
   }
 
-  # Next.js SSR — Amplify gerencia o roteamento automaticamente via compute.
-  # Regra SPA (/<*> → /index.html) não se aplica aqui e causa redirect loop.
+  # SPA redirect: todas as rotas → index.html
+  custom_rule {
+    source = "/<*>"
+    target = "/index.html"
+    status = "404-200"
+  }
 
   tags = {
     Project     = var.project

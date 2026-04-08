@@ -85,8 +85,8 @@ module "amplify" {
   environment  = var.environment
   github_repo  = var.github_repo
   github_token = module.ssm.github_token   # lido do SSM
-  # EC2_URL: server-side no Amplify — browser nunca vê essa URL
-  ec2_url      = "http://${module.ec2.public_ip}:3000"
+  # URL pública do nginx (porta 80) — usada como NEXT_PUBLIC_API_URL no browser
+  api_url      = "http://${module.ec2.public_ip}"
 }
 
 # =============================================================================
