@@ -115,8 +115,8 @@ jobs:
             IMAGE_TAG="${{ needs.build-push.outputs.image_tag }}"
 
             # Garante que a rede existe
-            docker network inspect barberstack-network >/dev/null 2>&1 \
-              || docker network create barberstack-network
+            docker network inspect barberstack-net >/dev/null 2>&1 \
+              || docker network create barberstack-net
 
             # Login ECR no EC2
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
@@ -126,7 +126,7 @@ jobs:
             if [ "${{ inputs.run_migrations }}" = "true" ]; then
               echo "▶ Rodando migrations..."
               docker run --rm \
-                --network barberstack-network \
+                --network barberstack-net \
                 --env-file /opt/barberstack/.env \
                 "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG" \
                 npx prisma migrate deploy --schema /app/node_modules/@barberstack/database/prisma/schema.prisma
@@ -139,7 +139,7 @@ jobs:
             docker rm   "barberstack-$SERVICE" 2>/dev/null || true
             docker run -d \
               --name "barberstack-$SERVICE" \
-              --network barberstack-network \
+              --network barberstack-net \
               --network-alias "$SERVICE" \
               --restart unless-stopped \
               --env-file /opt/barberstack/.env \
