@@ -10,10 +10,13 @@ applications:
             - cd ../.. && NODE_ENV=development pnpm install --no-frozen-lockfile && cd frontend/web
         build:
           commands:
-            # Roda de dentro de frontend/web (appRoot) — next build gera .next aqui
             - pnpm run build
+            # standalone não inclui static/public — copiar manualmente
+            - cp -r public .next/standalone/public
+            - cp -r .next/static .next/standalone/.next/static
       artifacts:
-        baseDirectory: .next
+        # standalone: servidor Node.js auto-contido para Amplify WEB_COMPUTE
+        baseDirectory: .next/standalone
         files:
           - '**/*'
       cache:
