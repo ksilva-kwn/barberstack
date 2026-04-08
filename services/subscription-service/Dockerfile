@@ -26,12 +26,20 @@ RUN pnpm --filter @barberstack/subscription-service build
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+
+# Root node_modules (pnpm virtual store — symlink target)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Shared database package
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
 COPY packages/database/package.json ./packages/database/
 
-COPY --from=builder /app/services/subscription-service/node_modules ./node_modules
-COPY --from=builder /app/services/subscription-service/dist ./dist
+# Service — keep at original path so pnpm symlinks resolve correctly
+COPY --from=builder /app/services/subscription-service/node_modules ./services/subscription-service/node_modules
+COPY --from=builder /app/services/subscription-service/dist ./services/subscription-service/dist
+COPY services/subscription-service/package.json ./services/subscription-service/
+
+WORKDIR /app/services/subscription-service
 EXPOSE 3004
 CMD ["node", "dist/index.js"]

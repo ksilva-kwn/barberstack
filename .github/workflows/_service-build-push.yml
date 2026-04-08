@@ -129,7 +129,7 @@ jobs:
                 --network barberstack-network \
                 --env-file /opt/barberstack/.env \
                 "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG" \
-                npx prisma migrate deploy
+                npx prisma migrate deploy --schema /app/packages/database/prisma/schema.prisma
               echo "✅ Migrations concluídas"
             fi
 

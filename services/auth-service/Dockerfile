@@ -26,13 +26,22 @@ RUN pnpm --filter @barberstack/auth-service build
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+
+# Root node_modules (pnpm virtual store — symlink target)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Shared database package
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
 COPY packages/database/package.json ./packages/database/
-# Prisma schema e migrations (necessários para migrate deploy)
+# Prisma schema e migrations (necessarios para migrate deploy)
 COPY packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/services/auth-service/node_modules ./node_modules
-COPY --from=builder /app/services/auth-service/dist ./dist
+
+# Service — keep at original path so pnpm symlinks resolve correctly
+COPY --from=builder /app/services/auth-service/node_modules ./services/auth-service/node_modules
+COPY --from=builder /app/services/auth-service/dist ./services/auth-service/dist
+COPY services/auth-service/package.json ./services/auth-service/
+
+WORKDIR /app/services/auth-service
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

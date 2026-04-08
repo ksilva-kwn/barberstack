@@ -26,12 +26,20 @@ RUN pnpm --filter @barberstack/notification-service build
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+
+# Root node_modules (pnpm virtual store — symlink target)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Shared database package
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
 COPY packages/database/package.json ./packages/database/
 
-COPY --from=builder /app/services/notification-service/node_modules ./node_modules
-COPY --from=builder /app/services/notification-service/dist ./dist
+# Service — keep at original path so pnpm symlinks resolve correctly
+COPY --from=builder /app/services/notification-service/node_modules ./services/notification-service/node_modules
+COPY --from=builder /app/services/notification-service/dist ./services/notification-service/dist
+COPY services/notification-service/package.json ./services/notification-service/
+
+WORKDIR /app/services/notification-service
 EXPOSE 3006
 CMD ["node", "dist/index.js"]

@@ -26,12 +26,20 @@ RUN pnpm --filter @barberstack/api-gateway build
 FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+
+# Root node_modules (pnpm virtual store — symlink target)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Shared database package
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
 COPY packages/database/package.json ./packages/database/
 
-COPY --from=builder /app/services/api-gateway/node_modules ./node_modules
-COPY --from=builder /app/services/api-gateway/dist ./dist
+# Service — keep at original path so pnpm symlinks resolve correctly
+COPY --from=builder /app/services/api-gateway/node_modules ./services/api-gateway/node_modules
+COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
+COPY services/api-gateway/package.json ./services/api-gateway/
+
+WORKDIR /app/services/api-gateway
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
