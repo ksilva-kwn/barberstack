@@ -30,13 +30,9 @@ COPY services/${SERVICE} ./services/${SERVICE}
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/${SERVICE} build
-
-# Copia node_modules de produção sem rodar pnpm deploy (evita pnpm install no QEMU)
-RUN mkdir -p /deploy/node_modules
-RUN cp -r services/${SERVICE}/node_modules /deploy/ 2>/dev/null || true
-RUN cp -r node_modules/. /deploy/node_modules/ 2>/dev/null || true
+RUN pnpm --filter @barberstack/${SERVICE} deploy --prod /deploy --ignore-scripts
 RUN cp -r services/${SERVICE}/dist /deploy/dist
-# Copia o cliente Prisma gerado
+# Copia o cliente Prisma gerado do virtual store para o deploy
 RUN find /app/node_modules/.pnpm -name ".prisma" -type d | \
     while read src; do \
       dst=$(echo "$src" | sed 's|/app/node_modules/|/deploy/node_modules/|'); \
