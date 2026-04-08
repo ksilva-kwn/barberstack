@@ -1,6 +1,7 @@
 resource "aws_amplify_app" "frontend" {
   name       = "${var.project}-${var.environment}"
   repository = var.github_repo
+  platform   = "WEB_COMPUTE"
 
   access_token = var.github_token
 
