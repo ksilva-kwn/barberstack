@@ -209,9 +209,10 @@ model Professional {
   updatedAt      DateTime @updatedAt
 
   // Relações
-  appointments Appointment[]
-  schedules    Schedule[]
-  commissions  Commission[]
+  appointments        Appointment[]
+  schedules           Schedule[]
+  commissions         Commission[]
+  professionalServices ProfessionalService[]
 
   @@index([barbershopId])
   @@map("professionals")
@@ -251,8 +252,9 @@ model Service {
   updatedAt     DateTime @updatedAt
 
   // Relações
-  appointmentServices AppointmentService[]
-  clientPlanServices  ClientPlanService[]
+  appointmentServices  AppointmentService[]
+  clientPlanServices   ClientPlanService[]
+  professionalServices ProfessionalService[]
 
   @@index([barbershopId])
   @@map("services")
@@ -299,6 +301,19 @@ model Appointment {
   @@index([clientId])
   @@index([scheduledAt])
   @@map("appointments")
+}
+
+// Serviços que cada profissional executa
+model ProfessionalService {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, serviceId])
+  @@index([professionalId])
+  @@map("professional_services")
 }
 
 // Serviços dentro de uma comanda (many-to-many)

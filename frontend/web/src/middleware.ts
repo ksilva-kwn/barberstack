@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/agenda',
+  '/barbeiros',
   '/clientes',
   '/assinaturas',
   '/financeiro',

@@ -13,6 +13,7 @@ import {
   Scissors,
   LogOut,
   ChevronRight,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,6 +21,7 @@ import { useAuth } from '@/hooks/use-auth';
 const navItems = [
   { href: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
   { href: '/agenda',       label: 'Agenda',         icon: Calendar },
+  { href: '/barbeiros',    label: 'Barbeiros',      icon: UserCog },
   { href: '/clientes',     label: 'Clientes',       icon: Users },
   { href: '/assinaturas',  label: 'Assinaturas',    icon: Repeat2 },
   { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign },

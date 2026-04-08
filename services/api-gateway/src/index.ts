@@ -63,6 +63,12 @@ app.use('/api/professionals', createProxyMiddleware({
   pathRewrite: (path) => `/professionals${path}`,
 }));
 
+app.use('/api/clients', createProxyMiddleware({
+  target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
+  changeOrigin: true,
+  pathRewrite: (path) => `/users${path}`,
+}));
+
 app.use('/api/services', createProxyMiddleware({
   target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
   changeOrigin: true,

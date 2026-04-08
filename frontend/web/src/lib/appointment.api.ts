@@ -44,6 +44,11 @@ export interface CreateAppointmentPayload {
   origin?: 'APP' | 'RECEPTION';
 }
 
+export interface TimeSlot {
+  time: string;
+  available: boolean;
+}
+
 export const appointmentApi = {
   list: (params: { date?: string; professionalId?: string; status?: string }) =>
     api.get<Appointment[]>('/api/appointments', { params }),
@@ -53,4 +58,9 @@ export const appointmentApi = {
 
   updateStatus: (id: string, status: AppointmentStatus) =>
     api.patch<Appointment>(`/api/appointments/${id}/status`, { status }),
+
+  availableSlots: (professionalId: string, date: string, durationMins: number) =>
+    api.get<TimeSlot[]>('/api/appointments/available-slots', {
+      params: { professionalId, date, durationMins },
+    }),
 };

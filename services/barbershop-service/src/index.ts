@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { barbershopRouter } from './routes/barbershop.routes';
 import { professionalRouter } from './routes/professional.routes';
 import { serviceRouter } from './routes/service.routes';
+import { usersRouter } from './routes/users.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
 
 const app = express();
@@ -20,5 +21,6 @@ app.use(requireTenant);
 app.use('/barbershops', barbershopRouter);
 app.use('/professionals', professionalRouter);
 app.use('/services', serviceRouter);
+app.use('/users', usersRouter);
 
 app.listen(PORT, () => console.log(`✂️  Barbershop Service running on port ${PORT}`));

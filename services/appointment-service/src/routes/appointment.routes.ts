@@ -104,6 +104,54 @@ appointmentRouter.patch('/:id/status', async (req: Request, res: Response) => {
   return res.json(appointment);
 });
 
+// Horários disponíveis de um profissional em uma data
+appointmentRouter.get('/available-slots', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { professionalId, date, durationMins } = req.query;
+
+  if (!professionalId || !date) {
+    return res.status(400).json({ error: 'professionalId e date são obrigatórios' });
+  }
+
+  const duration = parseInt(durationMins as string) || 30;
+  const [year, month, day] = (date as string).split('-').map(Number);
+
+  const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
+  const endOfDay   = new Date(year, month - 1, day, 23, 59, 59);
+
+  const existing = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      professionalId: professionalId as string,
+      scheduledAt: { gte: startOfDay, lte: endOfDay },
+      status: { notIn: ['CANCELED', 'NO_SHOW'] },
+    },
+    select: { scheduledAt: true, durationMins: true },
+  });
+
+  const BUSINESS_START = 8 * 60;  // 08:00
+  const BUSINESS_END   = 20 * 60; // 20:00
+  const SLOT_INTERVAL  = 30;
+
+  const slots = [];
+  for (let min = BUSINESS_START; min + duration <= BUSINESS_END; min += SLOT_INTERVAL) {
+    const slotStart = new Date(year, month - 1, day, Math.floor(min / 60), min % 60, 0);
+    const slotEnd   = new Date(slotStart.getTime() + duration * 60000);
+
+    const overlaps = existing.some((apt) => {
+      const aptStart = new Date(apt.scheduledAt);
+      const aptEnd   = new Date(aptStart.getTime() + apt.durationMins * 60000);
+      return slotStart < aptEnd && slotEnd > aptStart;
+    });
+
+    const h = Math.floor(min / 60).toString().padStart(2, '0');
+    const m = (min % 60).toString().padStart(2, '0');
+    slots.push({ time: `${h}:${m}`, available: !overlaps });
+  }
+
+  return res.json(slots);
+});
+
 // Heatmap de ocupação (últimos 30 dias)
 appointmentRouter.get('/heatmap', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
