@@ -32,6 +32,7 @@ COPY --from=builder /app/packages/database/node_modules ./packages/database/node
 COPY packages/database/package.json ./packages/database/
 # Prisma schema e migrations (necessários para migrate deploy)
 COPY packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/services/auth-service/node_modules ./node_modules
 COPY --from=builder /app/services/auth-service/dist ./dist
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

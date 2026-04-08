@@ -31,6 +31,7 @@ COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
 COPY packages/database/package.json ./packages/database/
 
+COPY --from=builder /app/services/api-gateway/node_modules ./node_modules
 COPY --from=builder /app/services/api-gateway/dist ./dist
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
