@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // SSR — Amplify faz proxy para EC2, browser nunca fala com EC2 diretamente
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  },
+  // standalone: gera servidor Node.js auto-contido em .next/standalone
+  // necessário para Amplify WEB_COMPUTE rodar o SSR via Lambda
+  output: 'standalone',
 };
 
 module.exports = nextConfig;
