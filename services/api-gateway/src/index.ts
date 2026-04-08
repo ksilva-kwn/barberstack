@@ -34,10 +34,12 @@ app.get('/health', (_req, res) => {
 });
 
 // ─── Public Routes (sem auth) ─────────────────────────────────────────────────
+// Nota: Express faz strip do mount path antes do proxy, então req.url = '/<resto>'
+// pathRewrite prepend o prefixo do serviço de volta
 app.use('/api/auth', createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
   changeOrigin: true,
-  pathRewrite: { '^/api/auth': '/auth' },
+  pathRewrite: (path) => `/auth${path}`,
 }));
 
 // ─── Protected Routes (com auth) ─────────────────────────────────────────────
@@ -46,31 +48,31 @@ app.use(authMiddleware);
 app.use('/api/barbershops', createProxyMiddleware({
   target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
   changeOrigin: true,
-  pathRewrite: { '^/api/barbershops': '/barbershops' },
+  pathRewrite: (path) => `/barbershops${path}`,
 }));
 
 app.use('/api/appointments', createProxyMiddleware({
   target: process.env.APPOINTMENT_SERVICE_URL || 'http://appointment-service:3003',
   changeOrigin: true,
-  pathRewrite: { '^/api/appointments': '/appointments' },
+  pathRewrite: (path) => `/appointments${path}`,
 }));
 
 app.use('/api/subscriptions', createProxyMiddleware({
   target: process.env.SUBSCRIPTION_SERVICE_URL || 'http://subscription-service:3004',
   changeOrigin: true,
-  pathRewrite: { '^/api/subscriptions': '/subscriptions' },
+  pathRewrite: (path) => `/subscriptions${path}`,
 }));
 
 app.use('/api/payments', createProxyMiddleware({
   target: process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005',
   changeOrigin: true,
-  pathRewrite: { '^/api/payments': '/payments' },
+  pathRewrite: (path) => `/payments${path}`,
 }));
 
 app.use('/api/notifications', createProxyMiddleware({
   target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3006',
   changeOrigin: true,
-  pathRewrite: { '^/api/notifications': '/notifications' },
+  pathRewrite: (path) => `/notifications${path}`,
 }));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
