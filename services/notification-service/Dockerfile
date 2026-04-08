@@ -1,5 +1,6 @@
 # Build from monorepo root: docker build -f services/notification-service/Dockerfile .
 FROM node:20-alpine AS base
+RUN apk add --no-cache openssl
 RUN npm install -g pnpm
 WORKDIR /app
 
