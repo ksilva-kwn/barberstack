@@ -83,8 +83,10 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
 
   return res.json({
     professionals,
-    appointmentsThisMonth: appointmentsMonth,
+    appointmentsMonth,
     activeSubscriptions,
-    revenueThisMonth: revenue._sum.netAmount ?? 0,
+    revenueMonth: revenue._sum.netAmount ? Number(revenue._sum.netAmount) : 0,
+    openCommands: 0,
+    defaulting: 0,
   });
 });
