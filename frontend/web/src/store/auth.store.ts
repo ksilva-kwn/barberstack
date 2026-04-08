@@ -7,7 +7,7 @@ export interface AuthUser {
   email: string;
   role: string;
   barbershopId?: string | null;
-  barbershop?: { id: string; name: string; saasPlan: string } | null;
+  barbershop?: { id: string; name: string; saasPlan: string; slug: string } | null;
 }
 
 interface AuthState {
@@ -27,12 +27,14 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (token, refreshToken, user) => {
         if (typeof document !== 'undefined') {
           document.cookie = 'barberstack-session=1; path=/; max-age=604800; SameSite=Lax';
+          document.cookie = `barberstack-role=${user.role}; path=/; max-age=604800; SameSite=Lax`;
         }
         set({ token, refreshToken, user });
       },
       clearAuth: () => {
         if (typeof document !== 'undefined') {
           document.cookie = 'barberstack-session=; path=/; max-age=0';
+          document.cookie = 'barberstack-role=; path=/; max-age=0';
         }
         set({ token: null, refreshToken: null, user: null });
       },

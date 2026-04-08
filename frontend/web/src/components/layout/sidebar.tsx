@@ -14,19 +14,20 @@ import {
   LogOut,
   ChevronRight,
   UserCog,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 
 const navItems = [
-  { href: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/agenda',       label: 'Agenda',         icon: Calendar },
-  { href: '/barbeiros',    label: 'Barbeiros',      icon: UserCog },
-  { href: '/clientes',     label: 'Clientes',       icon: Users },
-  { href: '/assinaturas',  label: 'Assinaturas',    icon: Repeat2 },
-  { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign },
-  { href: '/estoque',      label: 'Estoque',        icon: Package },
-  { href: '/configuracoes',label: 'Configurações',  icon: Settings },
+  { href: '/dashboard',     label: 'Dashboard',    icon: LayoutDashboard, adminOnly: false },
+  { href: '/agenda',        label: 'Agenda',        icon: Calendar,        adminOnly: false },
+  { href: '/barbeiros',     label: 'Barbeiros',     icon: UserCog,         adminOnly: true },
+  { href: '/clientes',      label: 'Clientes',      icon: Users,           adminOnly: true },
+  { href: '/assinaturas',   label: 'Assinaturas',   icon: Repeat2,         adminOnly: true },
+  { href: '/financeiro',    label: 'Financeiro',    icon: DollarSign,      adminOnly: true },
+  { href: '/estoque',       label: 'Estoque',       icon: Package,         adminOnly: true },
+  { href: '/configuracoes', label: 'Configurações', icon: Settings,        adminOnly: true },
 ];
 
 const planLabel: Record<string, string> = {
@@ -60,7 +61,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -81,6 +82,21 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Link do portal do cliente */}
+      {user?.barbershop?.slug && (
+        <div className="px-4 pb-2">
+          <a
+            href={`/${user.barbershop.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Portal do cliente</span>
+          </a>
+        </div>
+      )}
 
       {/* User / Logout */}
       <div className="p-4 border-t border-border">

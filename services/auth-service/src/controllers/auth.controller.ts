@@ -28,7 +28,7 @@ export class AuthController {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { barbershop: { select: { id: true, name: true, saasPlan: true } } },
+      include: { barbershop: { select: { id: true, name: true, saasPlan: true, slug: true } } },
     });
 
     if (!user || !user.isActive) {
@@ -64,6 +64,7 @@ export class AuthController {
         name: user.name,
         email: user.email,
         role: user.role,
+        barbershopId: user.barbershopId,
         barbershop: user.barbershop,
       },
     });

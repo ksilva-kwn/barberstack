@@ -6,6 +6,7 @@ import { barbershopRouter } from './routes/barbershop.routes';
 import { professionalRouter } from './routes/professional.routes';
 import { serviceRouter } from './routes/service.routes';
 import { usersRouter } from './routes/users.routes';
+import { publicRouter } from './routes/public.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
 
 const app = express();
@@ -16,6 +17,9 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'barbershop-service' }));
+
+// Rotas públicas (sem auth)
+app.use('/public', publicRouter);
 
 app.use(requireTenant);
 app.use('/barbershops', barbershopRouter);

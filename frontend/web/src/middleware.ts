@@ -12,6 +12,16 @@ const PROTECTED_PREFIXES = [
   '/configuracoes',
 ];
 
+// Rotas acessíveis apenas por ADMIN (dono da barbearia)
+const ADMIN_ONLY_PREFIXES = [
+  '/barbeiros',
+  '/clientes',
+  '/assinaturas',
+  '/financeiro',
+  '/estoque',
+  '/configuracoes',
+];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -21,6 +31,15 @@ export function middleware(request: NextRequest) {
     const session = request.cookies.get('barberstack-session');
     if (!session?.value) {
       return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // RBAC: barbeiros só acessam /dashboard e /agenda
+    const role = request.cookies.get('barberstack-role')?.value;
+    if (role && role !== 'ADMIN') {
+      const isAdminOnly = ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
+      if (isAdminOnly) {
+        return NextResponse.redirect(new URL('/agenda', request.url));
+      }
     }
   }
 

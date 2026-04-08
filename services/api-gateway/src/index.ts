@@ -34,12 +34,23 @@ app.get('/health', (_req, res) => {
 });
 
 // ─── Public Routes (sem auth) ─────────────────────────────────────────────────
-// Nota: Express faz strip do mount path antes do proxy, então req.url = '/<resto>'
-// pathRewrite prepend o prefixo do serviço de volta
 app.use('/api/auth', createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
   changeOrigin: true,
   pathRewrite: (path) => `/auth${path}`,
+}));
+
+// Rotas públicas do portal do cliente (sem auth)
+app.use('/api/public/shop', createProxyMiddleware({
+  target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
+  changeOrigin: true,
+  pathRewrite: (path) => `/public${path}`,
+}));
+
+app.use('/api/public', createProxyMiddleware({
+  target: process.env.APPOINTMENT_SERVICE_URL || 'http://appointment-service:3003',
+  changeOrigin: true,
+  pathRewrite: (path) => `/public${path}`,
 }));
 
 // ─── Protected Routes (com auth) ─────────────────────────────────────────────
