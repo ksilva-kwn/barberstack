@@ -28,8 +28,9 @@ resource "aws_amplify_app" "frontend" {
   EOT
 
   environment_variables = {
-    NEXT_PUBLIC_API_URL = var.api_url
-    NODE_ENV            = var.environment
+    NEXT_PUBLIC_API_URL       = var.api_url
+    NODE_ENV                  = var.environment
+    AMPLIFY_MONOREPO_APP_ROOT = "frontend/web"
   }
 
   tags = {
