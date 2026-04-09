@@ -66,4 +66,7 @@ export const appointmentApi = {
 
   reschedule: (id: string, scheduledAt: string) =>
     api.patch<Appointment>(`/api/appointments/${id}/reschedule`, { scheduledAt }),
+
+  resizeDuration: (id: string, durationMins: number) =>
+    api.patch<Appointment>(`/api/appointments/${id}/duration`, { durationMins }),
 };

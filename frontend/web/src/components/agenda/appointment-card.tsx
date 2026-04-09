@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MoreVertical, Check, UserX, Play, CheckCircle, X } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,10 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   CANCELED:    'Cancelado',
   BLOCKED:     'Bloqueado',
 };
+
+const PX_PER_MIN = 56 / 30;
+const SNAP_MINS  = 15;
+const MIN_DURATION = 15;
 
 interface Action {
   label: string;
@@ -60,31 +64,75 @@ interface Props {
   height: number;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onDragStart: (e: React.DragEvent, apt: Appointment) => void;
+  onResize: (id: string, newDurationMins: number) => void;
 }
 
-export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart }: Props) {
+export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart, onResize }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liveHeight, setLiveHeight] = useState<number | null>(null);
+  const resizing = useRef(false);
+  const startY = useRef(0);
+  const startHeight = useRef(0);
+
   const actions = getActions(appointment.status);
   const clientLabel = appointment.client?.name ?? appointment.clientName ?? 'Cliente';
   const serviceNames = appointment.services.map((s) => s.service.name).join(', ');
   const startTime = new Date(appointment.scheduledAt);
-  const endTime = new Date(startTime.getTime() + appointment.durationMins * 60000);
+
+  const displayHeight = liveHeight ?? height;
+  const displayDuration = Math.round(displayHeight / PX_PER_MIN);
+  const endTime = new Date(startTime.getTime() + displayDuration * 60000);
   const timeLabel = `${fmt(startTime)}–${fmt(endTime)}`;
-  const compact = height < 56;
+  const compact = displayHeight < 56;
 
   const isDone = appointment.status === 'CANCELED' || appointment.status === 'NO_SHOW' || appointment.status === 'COMPLETED';
 
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    if (isDone) return;
+    e.preventDefault();
+    e.stopPropagation();
+    resizing.current = true;
+    startY.current = e.clientY;
+    startHeight.current = height;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!resizing.current) return;
+      const delta = ev.clientY - startY.current;
+      const newHeight = Math.max(MIN_DURATION * PX_PER_MIN, startHeight.current + delta);
+      // snap to SNAP_MINS
+      const rawMins = newHeight / PX_PER_MIN;
+      const snappedMins = Math.round(rawMins / SNAP_MINS) * SNAP_MINS;
+      setLiveHeight(snappedMins * PX_PER_MIN);
+    };
+
+    const onMouseUp = () => {
+      if (!resizing.current) return;
+      resizing.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      const currentH = liveHeight ?? height;
+      const rawMins = currentH / PX_PER_MIN;
+      const snappedMins = Math.max(MIN_DURATION, Math.round(rawMins / SNAP_MINS) * SNAP_MINS);
+      setLiveHeight(null);
+      onResize(appointment.id, snappedMins);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
   return (
     <div
-      draggable={!isDone}
+      draggable={!isDone && !resizing.current}
       onDragStart={(e) => !isDone && onDragStart(e, appointment)}
       className={cn(
-        'absolute left-1 right-1 rounded border overflow-hidden transition-opacity',
+        'absolute left-1 right-1 rounded border overflow-hidden transition-[border-color,background-color,opacity]',
         !isDone && 'cursor-grab active:cursor-grabbing',
         STATUS_STYLES[appointment.status],
         isDone && 'opacity-50',
       )}
-      style={{ top, height }}
+      style={{ top, height: displayHeight }}
     >
       <div className="flex h-full px-1.5 py-1 gap-1 min-w-0">
         <div className="flex-1 min-w-0">
@@ -111,10 +159,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
 
             {menuOpen && (
               <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setMenuOpen(false)}
-                />
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-5 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[140px]">
                   <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                     {STATUS_LABEL[appointment.status]}
@@ -138,6 +183,17 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
           </div>
         )}
       </div>
+
+      {/* Resize handle — borda inferior */}
+      {!isDone && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute bottom-0 left-0 right-0 h-2.5 cursor-ns-resize flex items-center justify-center group"
+          title="Arrastar para redimensionar"
+        >
+          <div className="w-8 h-0.5 rounded-full bg-current opacity-30 group-hover:opacity-70 transition-opacity" />
+        </div>
+      )}
     </div>
   );
 }

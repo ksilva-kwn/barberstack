@@ -116,6 +116,18 @@ appointmentRouter.patch('/:id/reschedule', async (req: Request, res: Response) =
   return res.json(appointment);
 });
 
+// Redimensionar duração (resize pelo card)
+appointmentRouter.patch('/:id/duration', async (req: Request, res: Response) => {
+  const { durationMins } = req.body;
+  if (!durationMins || durationMins < 15) return res.status(400).json({ error: 'durationMins mínimo: 15' });
+
+  const appointment = await prisma.appointment.update({
+    where: { id: req.params.id },
+    data: { durationMins: Math.round(durationMins) },
+  });
+  return res.json(appointment);
+});
+
 // Horários disponíveis de um profissional em uma data
 appointmentRouter.get('/available-slots', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
