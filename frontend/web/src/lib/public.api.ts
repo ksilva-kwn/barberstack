@@ -39,6 +39,12 @@ export interface TimeSlot {
   available: boolean;
 }
 
+export interface PublicPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+}
+
 export const portalApi = {
   shop: (slug: string) =>
     publicApi.get<PublicShop>(`/api/public/shop/${slug}`),
@@ -60,6 +66,9 @@ export const portalApi = {
     publicApi.post('/api/public/appointments', data, {
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  photos: (slug: string) =>
+    publicApi.get<PublicPhoto[]>(`/api/public/shop/${slug}/photos`),
 
   login: (email: string, password: string) =>
     publicApi.post<{ token: string; refreshToken: string; user: any }>('/api/auth/login', { email, password }),

@@ -126,6 +126,7 @@ model Barbershop {
   products      Product[]
   transactions  FinancialTransaction[]
   commissions   Commission[]
+  photos        BarbershopPhoto[]
 
   @@map("barbershops")
 }
@@ -455,6 +456,24 @@ model Commission {
   @@index([barbershopId])
   @@index([professionalId])
   @@map("commissions")
+}
+
+// =============================================================================
+// FOTOS DO PORTAL
+// =============================================================================
+
+model BarbershopPhoto {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([barbershopId])
+  @@map("barbershop_photos")
 }
 
 // =============================================================================

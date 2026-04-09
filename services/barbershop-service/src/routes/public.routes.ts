@@ -33,6 +33,22 @@ publicRouter.get('/:slug/professionals', async (req: Request, res: Response) => 
   return res.json(professionals);
 });
 
+// Fotos da galeria da barbearia
+publicRouter.get('/:slug/photos', async (req: Request, res: Response) => {
+  const shop = await prisma.barbershop.findUnique({
+    where: { slug: req.params.slug },
+    select: { id: true },
+  });
+  if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
+
+  const photos = await prisma.barbershopPhoto.findMany({
+    where: { barbershopId: shop.id },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, url: true, caption: true, order: true },
+  });
+  return res.json(photos);
+});
+
 // Lista serviços ativos da barbearia
 publicRouter.get('/:slug/services', async (req: Request, res: Response) => {
   const shop = await prisma.barbershop.findUnique({

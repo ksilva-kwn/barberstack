@@ -7,7 +7,7 @@ import {
   Scissors, MapPin, Phone, LogIn, UserPlus, Calendar,
   Loader2, Clock, Info,
 } from 'lucide-react';
-import { portalApi } from '@/lib/public.api';
+import { portalApi, PublicPhoto } from '@/lib/public.api';
 
 export default function PortalPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -30,6 +30,12 @@ export default function PortalPage() {
   const { data: professionals = [] } = useQuery({
     queryKey: ['public-professionals', slug],
     queryFn: () => portalApi.professionals(slug).then(r => r.data),
+    enabled: !!shop,
+  });
+
+  const { data: photos = [] } = useQuery({
+    queryKey: ['public-photos', slug],
+    queryFn: () => portalApi.photos(slug).then(r => r.data),
     enabled: !!shop,
   });
 
@@ -237,6 +243,29 @@ export default function PortalPage() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* Gallery */}
+        {photos.length > 0 && (
+          <section>
+            <h2 className="font-semibold text-foreground mb-3">Galeria</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {photos.map((photo: PublicPhoto) => (
+                <div key={photo.id} className="relative rounded-xl overflow-hidden aspect-square bg-muted">
+                  <img
+                    src={photo.url}
+                    alt={photo.caption ?? ''}
+                    className="w-full h-full object-cover"
+                  />
+                  {photo.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-2">
+                      <p className="text-white text-xs truncate">{photo.caption}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         )}

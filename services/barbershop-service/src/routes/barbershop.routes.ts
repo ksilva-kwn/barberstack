@@ -107,6 +107,31 @@ barbershopRouter.put('/:id/portal', async (req: Request, res: Response) => {
   return res.json(shop);
 });
 
+// Adicionar foto à galeria
+barbershopRouter.post('/:id/photos', async (req: Request, res: Response) => {
+  const schema = z.object({
+    url:     z.string().url(),
+    caption: z.string().max(200).optional(),
+    order:   z.number().int().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const photo = await prisma.barbershopPhoto.create({
+    data: { barbershopId: req.params.id, ...parsed.data },
+    select: { id: true, url: true, caption: true, order: true },
+  });
+  return res.status(201).json(photo);
+});
+
+// Remover foto da galeria
+barbershopRouter.delete('/:id/photos/:photoId', async (req: Request, res: Response) => {
+  await prisma.barbershopPhoto.deleteMany({
+    where: { id: req.params.photoId, barbershopId: req.params.id },
+  });
+  return res.status(204).send();
+});
+
 // Dashboard KPIs
 barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   const { id } = req.params;

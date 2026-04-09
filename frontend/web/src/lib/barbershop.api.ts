@@ -55,12 +55,28 @@ export interface BarbershopPortal {
   description: string | null;
 }
 
+export interface BarbershopPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+  order: number;
+}
+
 export const barbershopApi = {
   getPortal: (barbershopId: string) =>
     api.get<BarbershopPortal>(`/api/barbershops/${barbershopId}`),
 
   updatePortal: (barbershopId: string, data: { slug?: string; coverUrl?: string | null; logoUrl?: string | null; description?: string | null }) =>
     api.put<BarbershopPortal>(`/api/barbershops/${barbershopId}/portal`, data),
+
+  photos: (barbershopId: string) =>
+    api.get<BarbershopPhoto[]>(`/api/barbershops/${barbershopId}/photos`),
+
+  addPhoto: (barbershopId: string, data: { url: string; caption?: string }) =>
+    api.post<BarbershopPhoto>(`/api/barbershops/${barbershopId}/photos`, data),
+
+  deletePhoto: (barbershopId: string, photoId: string) =>
+    api.delete(`/api/barbershops/${barbershopId}/photos/${photoId}`),
 
 
   kpis: (barbershopId: string) =>

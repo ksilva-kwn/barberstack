@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, ExternalLink, Loader2, Image, Globe, FileText, Link2 } from 'lucide-react';
+import { Save, ExternalLink, Loader2, Image, Globe, FileText, Link2, Plus, X, GripVertical } from 'lucide-react';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -18,6 +18,8 @@ export default function ConfiguracoesPage() {
     description: '',
   });
   const [saved, setSaved] = useState(false);
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+  const [newPhotoCaption, setNewPhotoCaption] = useState('');
 
   const { data: portal, isLoading } = useQuery({
     queryKey: ['portal-config', barbershopId],
@@ -35,6 +37,29 @@ export default function ConfiguracoesPage() {
       });
     }
   }, [portal]);
+
+  const { data: photos = [] } = useQuery({
+    queryKey: ['barbershop-photos', barbershopId],
+    queryFn: () => barbershopApi.photos(barbershopId).then(r => r.data),
+    enabled: !!barbershopId,
+  });
+
+  const addPhotoMutation = useMutation({
+    mutationFn: () => barbershopApi.addPhoto(barbershopId, {
+      url: newPhotoUrl,
+      caption: newPhotoCaption || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['barbershop-photos', barbershopId] });
+      setNewPhotoUrl('');
+      setNewPhotoCaption('');
+    },
+  });
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: (photoId: string) => barbershopApi.deletePhoto(barbershopId, photoId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['barbershop-photos', barbershopId] }),
+  });
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -189,6 +214,86 @@ export default function ConfiguracoesPage() {
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Galeria de fotos */}
+      <div className="bg-card border border-border rounded-xl divide-y divide-border">
+        <div className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Image className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-medium text-foreground text-sm">Galeria de Fotos</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Fotos de cortes e do ambiente exibidas no portal. Cole a URL de cada imagem.
+          </p>
+
+          {/* Adicionar foto */}
+          <div className="space-y-2 pt-1">
+            <input
+              type="url"
+              value={newPhotoUrl}
+              onChange={e => setNewPhotoUrl(e.target.value)}
+              placeholder="https://... (URL da foto)"
+              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPhotoCaption}
+                onChange={e => setNewPhotoCaption(e.target.value)}
+                placeholder="Legenda (opcional)"
+                className="flex-1 text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <button
+                onClick={() => newPhotoUrl && addPhotoMutation.mutate()}
+                disabled={!newPhotoUrl || addPhotoMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0"
+              >
+                {addPhotoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Adicionar
+              </button>
+            </div>
+            {/* Preview da nova foto */}
+            {newPhotoUrl && (
+              <div className="rounded-lg overflow-hidden border border-border aspect-video mt-1">
+                <img
+                  src={newPhotoUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Grid de fotos existentes */}
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+              {photos.map(photo => (
+                <div key={photo.id} className="relative group rounded-lg overflow-hidden border border-border aspect-square">
+                  <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-full object-cover" />
+                  {photo.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                      <p className="text-white text-xs truncate">{photo.caption}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => deletePhotoMutation.mutate(photo.id)}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {photos.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+              Nenhuma foto adicionada ainda.
+            </p>
           )}
         </div>
       </div>
