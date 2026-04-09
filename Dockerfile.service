@@ -1,23 +1,29 @@
 # Dockerfile genérico para todos os microserviços do monorepo.
 # Uso: docker build --build-arg SERVICE=barbershop-service --build-arg PORT=3002 -f Dockerfile.service .
+#
+# Builder stages são forçados para linux/amd64 para rodar nativamente nos
+# runners do GitHub Actions (amd64) sem QEMU. O binaryTargets do Prisma
+# garante que o engine arm64 seja baixado durante o build e copiado para
+# a imagem final.
 ARG SERVICE
 ARG PORT=3000
 
-FROM node:20-alpine AS base
+# ─── Base amd64 (build nativo, sem QEMU) ─────────────────────────────────────
+FROM --platform=linux/amd64 node:20-alpine AS base
 RUN apk add --no-cache openssl
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 WORKDIR /app
 
-# ─── Install dependencies ─────────────────────────────────────────────────────
-FROM base AS deps
+# ─── Install dependencies (amd64 nativo) ─────────────────────────────────────
+FROM --platform=linux/amd64 base AS deps
 ARG SERVICE
 COPY package.json pnpm-workspace.yaml ./
 COPY packages/database/package.json ./packages/database/
 COPY services/${SERVICE}/package.json ./services/${SERVICE}/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
-# ─── Build ────────────────────────────────────────────────────────────────────
-FROM base AS builder
+# ─── Build (amd64 nativo) ─────────────────────────────────────────────────────
+FROM --platform=linux/amd64 base AS builder
 ARG SERVICE
 COPY package.json pnpm-workspace.yaml ./
 COPY --from=deps /app/pnpm-lock.yaml ./
@@ -27,12 +33,17 @@ COPY --from=deps /app/services/${SERVICE}/node_modules ./services/${SERVICE}/nod
 COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
 COPY services/${SERVICE} ./services/${SERVICE}
+
+# Gera o cliente Prisma incluindo o engine arm64 (binaryTargets no schema)
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/${SERVICE} build
+
+# Cria bundle de produção (roda em amd64, sem QEMU)
 RUN pnpm --filter @barberstack/${SERVICE} deploy --prod /deploy --ignore-scripts
 RUN cp -r services/${SERVICE}/dist /deploy/dist
-# Copia o cliente Prisma gerado do virtual store para o deploy
+
+# Copia o cliente Prisma gerado (inclui engine arm64) para o deploy
 RUN find /app/node_modules/.pnpm -name ".prisma" -type d | \
     while read src; do \
       dst=$(echo "$src" | sed 's|/app/node_modules/|/deploy/node_modules/|'); \
@@ -40,7 +51,7 @@ RUN find /app/node_modules/.pnpm -name ".prisma" -type d | \
       cp -r "$src" "$(dirname "$dst")/"; \
     done
 
-# ─── Runtime ──────────────────────────────────────────────────────────────────
+# ─── Runtime arm64 (apenas copia, não executa node/pnpm) ─────────────────────
 FROM node:20-alpine AS runner
 ARG PORT
 ENV NODE_ENV=production
