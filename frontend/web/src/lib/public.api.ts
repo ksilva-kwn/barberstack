@@ -23,7 +23,7 @@ export interface PublicProfessional {
   id: string;
   nickname: string | null;
   user: { name: string; avatarUrl: string | null };
-  professionalServices: { service: { id: string; name: string; price: number; durationMins: number; isActive: boolean } }[];
+  professionalServices: { service: { id: string; name: string; description: string | null; price: number; durationMins: number; isActive: boolean } }[];
 }
 
 export interface PublicService {
