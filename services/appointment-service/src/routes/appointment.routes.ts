@@ -17,16 +17,26 @@ const createSchema = z.object({
 // Listar agendamentos com filtros (data, profissional)
 appointmentRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { date, professionalId, status } = req.query;
+  const { date, dateFrom, dateTo, professionalId, status } = req.query;
 
   const where: any = { barbershopId };
 
   if (date) {
-    const day = new Date(date as string);
+    const [y, m, d] = (date as string).split('-').map(Number);
     where.scheduledAt = {
-      gte: new Date(day.setHours(0, 0, 0, 0)),
-      lte: new Date(day.setHours(23, 59, 59, 999)),
+      gte: new Date(y, m - 1, d, 0, 0, 0),
+      lte: new Date(y, m - 1, d, 23, 59, 59),
     };
+  } else if (dateFrom || dateTo) {
+    where.scheduledAt = {};
+    if (dateFrom) {
+      const [y, m, d] = (dateFrom as string).split('-').map(Number);
+      where.scheduledAt.gte = new Date(y, m - 1, d, 0, 0, 0);
+    }
+    if (dateTo) {
+      const [y, m, d] = (dateTo as string).split('-').map(Number);
+      where.scheduledAt.lte = new Date(y, m - 1, d, 23, 59, 59);
+    }
   }
 
   if (professionalId) where.professionalId = professionalId;

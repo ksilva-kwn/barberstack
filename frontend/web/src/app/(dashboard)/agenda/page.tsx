@@ -7,7 +7,8 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
-import { ScheduleGrid } from '@/components/agenda/schedule-grid';
+import { ScheduleGrid, DayOffBlock } from '@/components/agenda/schedule-grid';
+import { api } from '@/lib/api';
 import { NewAppointmentModal } from '@/components/agenda/new-appointment-modal';
 
 export default function AgendaPage() {
@@ -30,6 +31,25 @@ export default function AgendaPage() {
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: () => barbershopApi.services().then((r) => r.data),
+  });
+
+  const professionalIds = professionals.map(p => p.id);
+  const { data: dayOffs = [] } = useQuery<DayOffBlock[]>({
+    queryKey: ['agenda-day-offs', dateStr, professionalIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        professionals.map(async (p) => {
+          try {
+            const r = await api.get(`/api/professionals/${p.id}/day-offs`);
+            return (r.data as { id: string; date: string; reason: string | null }[])
+              .filter(d => d.date === dateStr)
+              .map(d => ({ professionalId: p.id, date: d.date, reason: d.reason }));
+          } catch { return []; }
+        })
+      );
+      return results.flat();
+    },
+    enabled: professionals.length > 0,
   });
 
   const statusMutation = useMutation({
@@ -111,6 +131,7 @@ export default function AgendaPage() {
         <ScheduleGrid
           professionals={professionals}
           appointments={appointments}
+          dayOffs={dayOffs}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}

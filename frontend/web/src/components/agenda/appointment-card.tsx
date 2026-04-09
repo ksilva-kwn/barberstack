@@ -168,7 +168,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
                   <div className="border-t border-border my-1" />
                   <button
                     onClick={() => { setMenuOpen(false); onDelete(appointment.id); }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/15 transition-colors text-left"
                   >
                     <Trash2 className="w-3 h-3" />
                     Excluir

@@ -20,18 +20,22 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
 
   // Verifica se o profissional tem folga neste dia
   const dateStr = date as string;
-  const dayOff = await prisma.professionalDayOff.findUnique({
-    where: { professionalId_date: { professionalId: professionalId as string, date: dateStr } },
-  });
-  if (dayOff) {
-    // Dia de folga: todos os slots indisponíveis
-    const slots = [];
-    for (let min = 8 * 60; min + duration <= 20 * 60; min += 15) {
-      const h = Math.floor(min / 60).toString().padStart(2, '0');
-      const m = (min % 60).toString().padStart(2, '0');
-      slots.push({ time: `${h}:${m}`, available: false });
+  try {
+    const dayOff = await prisma.professionalDayOff.findUnique({
+      where: { professionalId_date: { professionalId: professionalId as string, date: dateStr } },
+    });
+    if (dayOff) {
+      // Dia de folga: todos os slots indisponíveis
+      const slots = [];
+      for (let min = 8 * 60; min + duration <= 20 * 60; min += 15) {
+        const h = Math.floor(min / 60).toString().padStart(2, '0');
+        const m = (min % 60).toString().padStart(2, '0');
+        slots.push({ time: `${h}:${m}`, available: false });
+      }
+      return res.json(slots);
     }
-    return res.json(slots);
+  } catch {
+    // Tabela ainda não existe (migração pendente) — ignora e segue com slots normais
   }
 
   const existing = await prisma.appointment.findMany({

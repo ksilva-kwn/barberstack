@@ -50,7 +50,7 @@ export interface TimeSlot {
 }
 
 export const appointmentApi = {
-  list: (params: { date?: string; professionalId?: string; status?: string }) =>
+  list: (params: { date?: string; dateFrom?: string; dateTo?: string; professionalId?: string; status?: string }) =>
     api.get<Appointment[]>('/api/appointments', { params }),
 
   create: (payload: CreateAppointmentPayload) =>
