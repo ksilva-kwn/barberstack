@@ -41,13 +41,14 @@ export default function BarberAgendaPage() {
     enabled: !!myProfessional,
   });
 
+  const selectedDow = selectedDate.getDay();
+
   const { data: recurringBlocks = [] } = useQuery<RecurringBlockDisplay[]>({
-    queryKey: ['barber-recurring-blocks', myProfessional?.id],
+    queryKey: ['barber-recurring-blocks', myProfessional?.id, selectedDow],
     queryFn: async () => {
       const r = await api.get(`/api/professionals/${myProfessional.id}/recurring-blocks`);
-      const dow = selectedDate.getDay();
       return (r.data as { id: string; dayOfWeek: number | null; startTime: string; endTime: string; reason: string | null }[])
-        .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
+        .filter(b => b.dayOfWeek == null || b.dayOfWeek === selectedDow)
         .map(b => ({ professionalId: myProfessional.id, startTime: b.startTime, endTime: b.endTime, reason: b.reason }));
     },
     enabled: !!myProfessional,
