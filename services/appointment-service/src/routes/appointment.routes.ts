@@ -155,7 +155,7 @@ appointmentRouter.get('/available-slots', async (req: Request, res: Response) =>
 
   const BUSINESS_START = 8 * 60;  // 08:00
   const BUSINESS_END   = 20 * 60; // 20:00
-  const SLOT_INTERVAL  = 30;
+  const SLOT_INTERVAL  = 15;
 
   const existingLocal = existing.map((apt) => {
     const d = new Date(apt.scheduledAt);

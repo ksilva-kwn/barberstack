@@ -25,38 +25,28 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   BLOCKED:     'Bloqueado',
 };
 
-const PX_PER_MIN = 56 / 30;
-const SNAP_MINS  = 15;
+const PX_PER_MIN   = 56 / 30;
+const SNAP_MINS    = 15;
 const MIN_DURATION = 15;
 
-interface Action {
-  label: string;
-  status: AppointmentStatus;
-  icon: React.ReactNode;
-}
-
-function getActions(status: AppointmentStatus): Action[] {
+// Ações extras (além de Cancelar) por status
+function getExtraActions(status: AppointmentStatus) {
   switch (status) {
     case 'SCHEDULED':
-      return [
-        { label: 'Confirmar',  status: 'CONFIRMED',   icon: <Check className="w-3 h-3" /> },
-        { label: 'Cancelar',   status: 'CANCELED',    icon: <X className="w-3 h-3" /> },
-      ];
+      return [{ label: 'Confirmar', status: 'CONFIRMED' as AppointmentStatus, icon: <Check className="w-3 h-3" /> }];
     case 'CONFIRMED':
       return [
-        { label: 'Chegou',     status: 'IN_PROGRESS', icon: <Play className="w-3 h-3" /> },
-        { label: 'Faltou',     status: 'NO_SHOW',     icon: <UserX className="w-3 h-3" /> },
-        { label: 'Cancelar',   status: 'CANCELED',    icon: <X className="w-3 h-3" /> },
+        { label: 'Chegou',  status: 'IN_PROGRESS' as AppointmentStatus, icon: <Play className="w-3 h-3" /> },
+        { label: 'Faltou',  status: 'NO_SHOW'     as AppointmentStatus, icon: <UserX className="w-3 h-3" /> },
       ];
     case 'IN_PROGRESS':
-      return [
-        { label: 'Finalizar',  status: 'COMPLETED',   icon: <CheckCircle className="w-3 h-3" /> },
-        { label: 'Cancelar',   status: 'CANCELED',    icon: <X className="w-3 h-3" /> },
-      ];
+      return [{ label: 'Finalizar', status: 'COMPLETED' as AppointmentStatus, icon: <CheckCircle className="w-3 h-3" /> }];
     default:
       return [];
   }
 }
+
+const CANCELABLE = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'];
 
 interface Props {
   appointment: Appointment;
@@ -68,54 +58,54 @@ interface Props {
 }
 
 export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart, onResize }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
   const [liveHeight, setLiveHeight] = useState<number | null>(null);
-  const resizing = useRef(false);
-  const startY = useRef(0);
-  const startHeight = useRef(0);
+  const liveHeightRef = useRef<number | null>(null);
+  const resizing      = useRef(false);
+  const startY        = useRef(0);
+  const startHeight   = useRef(0);
 
-  const actions = getActions(appointment.status);
-  const clientLabel = appointment.client?.name ?? appointment.clientName ?? 'Cliente';
+  const extraActions = getExtraActions(appointment.status);
+  const canCancel    = CANCELABLE.includes(appointment.status);
+  const clientLabel  = appointment.client?.name ?? appointment.clientName ?? 'Cliente';
   const serviceNames = appointment.services.map((s) => s.service.name).join(', ');
-  const startTime = new Date(appointment.scheduledAt);
+  const startTime    = new Date(appointment.scheduledAt);
 
-  const displayHeight = liveHeight ?? height;
+  const displayHeight   = liveHeight ?? height;
   const displayDuration = Math.round(displayHeight / PX_PER_MIN);
-  const endTime = new Date(startTime.getTime() + displayDuration * 60000);
-  const timeLabel = `${fmt(startTime)}–${fmt(endTime)}`;
-  const compact = displayHeight < 56;
+  const endTime         = new Date(startTime.getTime() + displayDuration * 60000);
+  const timeLabel       = `${fmt(startTime)}–${fmt(endTime)}`;
+  const compact         = displayHeight < 56;
 
-  const isDone = appointment.status === 'CANCELED' || appointment.status === 'NO_SHOW' || appointment.status === 'COMPLETED';
+  const isDone = ['CANCELED', 'NO_SHOW', 'COMPLETED'].includes(appointment.status);
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     if (isDone) return;
     e.preventDefault();
     e.stopPropagation();
-    resizing.current = true;
-    startY.current = e.clientY;
-    startHeight.current = height;
+    resizing.current      = true;
+    startY.current        = e.clientY;
+    startHeight.current   = height;
+    liveHeightRef.current = null;
 
     const onMouseMove = (ev: MouseEvent) => {
       if (!resizing.current) return;
-      const delta = ev.clientY - startY.current;
-      const newHeight = Math.max(MIN_DURATION * PX_PER_MIN, startHeight.current + delta);
-      // snap to SNAP_MINS
-      const rawMins = newHeight / PX_PER_MIN;
-      const snappedMins = Math.round(rawMins / SNAP_MINS) * SNAP_MINS;
-      setLiveHeight(snappedMins * PX_PER_MIN);
+      const delta    = ev.clientY - startY.current;
+      const rawHeight = Math.max(MIN_DURATION * PX_PER_MIN, startHeight.current + delta);
+      const snapped  = Math.max(MIN_DURATION, Math.round((rawHeight / PX_PER_MIN) / SNAP_MINS) * SNAP_MINS);
+      liveHeightRef.current = snapped * PX_PER_MIN;
+      setLiveHeight(snapped * PX_PER_MIN);
     };
 
     const onMouseUp = () => {
-      if (!resizing.current) return;
       resizing.current = false;
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
-
-      const currentH = liveHeight ?? height;
-      const rawMins = currentH / PX_PER_MIN;
-      const snappedMins = Math.max(MIN_DURATION, Math.round(rawMins / SNAP_MINS) * SNAP_MINS);
+      const finalPx   = liveHeightRef.current ?? height;
+      const finalMins = Math.max(MIN_DURATION, Math.round((finalPx / PX_PER_MIN) / SNAP_MINS) * SNAP_MINS);
       setLiveHeight(null);
-      onResize(appointment.id, snappedMins);
+      liveHeightRef.current = null;
+      onResize(appointment.id, finalMins);
     };
 
     document.addEventListener('mousemove', onMouseMove);
@@ -127,14 +117,15 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
       draggable={!isDone && !resizing.current}
       onDragStart={(e) => !isDone && onDragStart(e, appointment)}
       className={cn(
-        'absolute left-1 right-1 rounded border overflow-hidden transition-[border-color,background-color,opacity]',
+        'absolute left-1 right-1 rounded border overflow-visible transition-[border-color,background-color,opacity]',
         !isDone && 'cursor-grab active:cursor-grabbing',
         STATUS_STYLES[appointment.status],
         isDone && 'opacity-50',
       )}
-      style={{ top, height: displayHeight }}
+      style={{ top, height: displayHeight, zIndex: menuOpen ? 30 : 1 }}
     >
-      <div className="flex h-full px-1.5 py-1 gap-1 min-w-0">
+      <div className="flex h-full px-1.5 py-1 gap-1 min-w-0 overflow-hidden">
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate leading-tight">{clientLabel}</p>
           {!compact && (
@@ -148,11 +139,24 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
           )}
         </div>
 
-        {actions.length > 0 && (
+        {/* Botão Cancelar direto */}
+        {canCancel && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onStatusChange(appointment.id, 'CANCELED'); }}
+            title="Cancelar"
+            className="shrink-0 p-0.5 rounded hover:bg-red-500/20 text-current opacity-50 hover:opacity-100 transition-all"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+
+        {/* Menu de ações extras (Confirmar, Chegou, Faltou, Finalizar) */}
+        {extraActions.length > 0 && (
           <div className="relative shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
               className="p-0.5 rounded hover:bg-white/10 transition-colors"
+              title="Mais ações"
             >
               <MoreVertical className="w-3 h-3" />
             </button>
@@ -160,17 +164,14 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-5 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[140px]">
+                <div className="absolute right-0 top-5 z-40 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[150px]">
                   <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                     {STATUS_LABEL[appointment.status]}
                   </p>
-                  {actions.map((action) => (
+                  {extraActions.map((action) => (
                     <button
                       key={action.status}
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onStatusChange(appointment.id, action.status);
-                      }}
+                      onClick={() => { setMenuOpen(false); onStatusChange(appointment.id, action.status); }}
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors text-left"
                     >
                       {action.icon}
@@ -184,12 +185,11 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
         )}
       </div>
 
-      {/* Resize handle — borda inferior */}
+      {/* Resize handle */}
       {!isDone && (
         <div
           onMouseDown={handleResizeMouseDown}
-          className="absolute bottom-0 left-0 right-0 h-2.5 cursor-ns-resize flex items-center justify-center group"
-          title="Arrastar para redimensionar"
+          className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-end justify-center pb-0.5 group"
         >
           <div className="w-8 h-0.5 rounded-full bg-current opacity-30 group-hover:opacity-70 transition-opacity" />
         </div>

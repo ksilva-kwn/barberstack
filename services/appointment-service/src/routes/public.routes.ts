@@ -30,7 +30,7 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
 
   const BUSINESS_START = 8 * 60;
   const BUSINESS_END   = 20 * 60;
-  const SLOT_INTERVAL  = 30;
+  const SLOT_INTERVAL  = 15;
 
   // Normaliza os agendamentos existentes para minutos desde meia-noite LOCAL
   const existingLocal = existing.map((apt) => {
