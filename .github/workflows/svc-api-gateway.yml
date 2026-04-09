@@ -6,6 +6,8 @@ on:
     paths:
       - 'services/api-gateway/**'
       - 'packages/database/**'
+      - 'Dockerfile.service'
+      - '.github/workflows/_service-build-push.yml'
       - '.github/workflows/svc-api-gateway.yml'
   pull_request:
     branches: [main]

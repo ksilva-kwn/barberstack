@@ -6,6 +6,8 @@ on:
     paths:
       - 'services/barbershop-service/**'
       - 'packages/database/**'
+      - 'Dockerfile.service'
+      - '.github/workflows/_service-build-push.yml'
       - '.github/workflows/svc-barbershop-service.yml'
   pull_request:
     branches: [main]
