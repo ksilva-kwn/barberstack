@@ -34,8 +34,8 @@ COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
 COPY services/${SERVICE} ./services/${SERVICE}
 
-# Gera o cliente Prisma incluindo o engine arm64 via env var (evita mudar schema.prisma)
-RUN cd packages/database && PRISMA_CLI_BINARY_TARGETS=linux-arm64-openssl-3.0.x npx prisma generate
+# Gera o cliente Prisma incluindo o engine musl-arm64 (binaryTargets no schema)
+RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
 RUN pnpm --filter @barberstack/${SERVICE} build
 
