@@ -1,3 +1,4 @@
+process.env.TZ = 'America/Sao_Paulo'; // deve ser a primeira linha — Node cacheia TZ no boot
 
 import express from 'express';
 import cors from 'cors';
