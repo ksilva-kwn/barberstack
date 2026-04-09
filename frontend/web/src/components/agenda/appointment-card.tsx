@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { MoreVertical, Check, UserX, Play, CheckCircle, X } from 'lucide-react';
+import { MoreVertical, Check, UserX, Play, CheckCircle, X, Trash2 } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
@@ -54,9 +54,10 @@ interface Props {
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onDragStart: (e: React.DragEvent, apt: Appointment) => void;
   onResize: (id: string, newDurationMins: number) => void;
+  onDelete: (id: string) => void;
 }
 
-export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart, onResize }: Props) {
+export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart, onResize, onDelete }: Props) {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [liveHeight, setLiveHeight] = useState<number | null>(null);
   const liveHeightRef = useRef<number | null>(null);
@@ -137,8 +138,8 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
           )}
         </div>
 
-        {/* Menu de ações */}
-        {actions.length > 0 && (
+        {/* Menu de ações (sempre visível — inclui Excluir mesmo sem outras ações) */}
+        {(actions.length > 0 || isDone) && (
           <div className="relative shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
@@ -164,6 +165,14 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
                       {action.label}
                     </button>
                   ))}
+                  <div className="border-t border-border my-1" />
+                  <button
+                    onClick={() => { setMenuOpen(false); onDelete(appointment.id); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors text-left"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Excluir
+                  </button>
                 </div>
               </>
             )}

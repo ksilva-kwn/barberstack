@@ -69,4 +69,7 @@ export const appointmentApi = {
 
   resizeDuration: (id: string, durationMins: number) =>
     api.patch<Appointment>(`/api/appointments/${id}/duration`, { durationMins }),
+
+  delete: (id: string) =>
+    api.delete(`/api/appointments/${id}`),
 };

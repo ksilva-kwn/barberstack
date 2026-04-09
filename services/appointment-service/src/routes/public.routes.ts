@@ -18,6 +18,22 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
   const endOfDay   = new Date(year, month - 1, day, 23, 59, 59);
 
+  // Verifica se o profissional tem folga neste dia
+  const dateStr = date as string;
+  const dayOff = await prisma.professionalDayOff.findUnique({
+    where: { professionalId_date: { professionalId: professionalId as string, date: dateStr } },
+  });
+  if (dayOff) {
+    // Dia de folga: todos os slots indisponíveis
+    const slots = [];
+    for (let min = 8 * 60; min + duration <= 20 * 60; min += 15) {
+      const h = Math.floor(min / 60).toString().padStart(2, '0');
+      const m = (min % 60).toString().padStart(2, '0');
+      slots.push({ time: `${h}:${m}`, available: false });
+    }
+    return res.json(slots);
+  }
+
   const existing = await prisma.appointment.findMany({
     where: {
       barbershopId: barbershopId as string,

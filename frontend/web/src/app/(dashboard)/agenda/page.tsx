@@ -50,6 +50,11 @@ export default function AgendaPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => appointmentApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] }),
+  });
+
   const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
   return (
@@ -109,6 +114,7 @@ export default function AgendaPage() {
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}
+          onDelete={(id) => deleteMutation.mutate(id)}
         />
       )}
 

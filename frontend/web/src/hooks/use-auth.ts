@@ -17,7 +17,8 @@ export function useAuth() {
     try {
       const { data } = await authApi.login(email, password);
       setAuth(data.token, data.refreshToken, data.user);
-      router.push('/dashboard');
+      const role = data.user?.role;
+      router.push(role === 'BARBER' ? '/barbeiro' : '/dashboard');
     } catch (err: any) {
       const msg = err.response?.data?.error;
       setError(msg || 'Email ou senha inválidos.');

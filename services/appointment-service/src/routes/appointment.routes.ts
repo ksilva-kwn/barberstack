@@ -104,6 +104,12 @@ appointmentRouter.patch('/:id/status', async (req: Request, res: Response) => {
   return res.json(appointment);
 });
 
+// Excluir agendamento
+appointmentRouter.delete('/:id', async (req: Request, res: Response) => {
+  await prisma.appointment.delete({ where: { id: req.params.id } });
+  return res.status(204).send();
+});
+
 // Reagendar (mover horário)
 appointmentRouter.patch('/:id/reschedule', async (req: Request, res: Response) => {
   const { scheduledAt } = req.body;

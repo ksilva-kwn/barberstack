@@ -76,3 +76,33 @@ professionalRouter.delete('/:id/services/:serviceId', async (req: Request, res: 
   });
   return res.json({ message: 'Serviço removido' });
 });
+
+// Listar folgas do profissional
+professionalRouter.get('/:id/day-offs', async (req: Request, res: Response) => {
+  const records = await prisma.professionalDayOff.findMany({
+    where: { professionalId: req.params.id },
+    orderBy: { date: 'asc' },
+  });
+  return res.json(records);
+});
+
+// Adicionar folga
+professionalRouter.post('/:id/day-offs', async (req: Request, res: Response) => {
+  const { date, reason } = req.body;
+  if (!date) return res.status(400).json({ error: 'date obrigatório (yyyy-MM-dd)' });
+
+  const record = await prisma.professionalDayOff.upsert({
+    where: { professionalId_date: { professionalId: req.params.id, date } },
+    create: { professionalId: req.params.id, date, reason },
+    update: { reason },
+  });
+  return res.status(201).json(record);
+});
+
+// Remover folga
+professionalRouter.delete('/:id/day-offs/:dayOffId', async (req: Request, res: Response) => {
+  await prisma.professionalDayOff.deleteMany({
+    where: { id: req.params.dayOffId, professionalId: req.params.id },
+  });
+  return res.status(204).send();
+});

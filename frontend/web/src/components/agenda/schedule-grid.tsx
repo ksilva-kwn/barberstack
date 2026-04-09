@@ -35,9 +35,10 @@ interface Props {
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onReschedule: (id: string, scheduledAt: string) => void;
   onResize: (id: string, durationMins: number) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, onStatusChange, onReschedule, onResize }: Props) {
+export function ScheduleGrid({ professionals, appointments, onStatusChange, onReschedule, onResize, onDelete }: Props) {
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   if (professionals.length === 0) {
@@ -164,6 +165,7 @@ export function ScheduleGrid({ professionals, appointments, onStatusChange, onRe
                 onStatusChange={onStatusChange}
                 onDragStart={handleDragStart}
                 onResize={onResize}
+                onDelete={onDelete}
               />
             ))}
           </div>

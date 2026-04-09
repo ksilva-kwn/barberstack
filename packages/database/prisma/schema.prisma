@@ -217,6 +217,7 @@ model Professional {
   schedules           Schedule[]
   commissions         Commission[]
   professionalServices ProfessionalService[]
+  dayOffs             ProfessionalDayOff[]
 
   @@index([barbershopId])
   @@map("professionals")
@@ -456,6 +457,25 @@ model Commission {
   @@index([barbershopId])
   @@index([professionalId])
   @@map("commissions")
+}
+
+// =============================================================================
+// FOLGAS / BLOQUEIOS DE AGENDA
+// =============================================================================
+
+// Dia ou período em que o profissional não atende
+model ProfessionalDayOff {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  date      String  // "yyyy-MM-dd" — dia bloqueado
+  reason    String? // opcional: "Folga", "Férias", etc.
+  createdAt DateTime @default(now())
+
+  @@unique([professionalId, date])
+  @@index([professionalId])
+  @@map("professional_day_offs")
 }
 
 // =============================================================================
