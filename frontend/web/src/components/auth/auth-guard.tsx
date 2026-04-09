@@ -10,9 +10,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const user  = useAuthStore((s) => s.user);
-  const [checked, setChecked] = useState(false);
+  // hydrated: true após o primeiro mount — momento em que o Zustand persist
+  // já leu o localStorage e preencheu o store.
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return; // aguarda hydration antes de tomar decisão
+
     if (!token) {
       router.replace('/login');
       return;
@@ -21,12 +29,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       // CLIENT tentando acessar o admin — redireciona para o portal da sua barbearia
       const slug = user.barbershop?.slug;
       router.replace(slug ? `/${slug}` : '/login');
-      return;
     }
-    setChecked(true);
-  }, [token, user, router]);
+  }, [hydrated, token, user, router]);
 
-  if (!checked) return null;
+  // Enquanto não hidratou, mostra tela em branco (sem flash de redirect)
+  if (!hydrated) return null;
+  // Após hydration, se não tem token ou role inválido, não renderiza (redirect em curso)
+  if (!token) return null;
+  if (user && !ALLOWED_ROLES.includes(user.role)) return null;
 
   return <>{children}</>;
 }
