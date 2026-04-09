@@ -154,6 +154,7 @@ jobs:
               --network-alias "$SERVICE" \
               --restart unless-stopped \
               --env-file /opt/barberstack/.env \
+              -e TZ=America/Sao_Paulo \
               -p ${{ inputs.service_port }}:${{ inputs.service_port }} \
               "$ECR_REGISTRY/barberstack-$SERVICE:$IMAGE_TAG"
 

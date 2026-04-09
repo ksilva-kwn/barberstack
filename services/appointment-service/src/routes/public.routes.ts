@@ -4,6 +4,10 @@ import jwt from 'jsonwebtoken';
 
 export const publicAppointmentRouter: Router = Router();
 
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
 // Slots disponíveis (sem auth — barbershopId via query param)
 publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const { barbershopId, professionalId, date, durationMins } = req.query;
@@ -78,9 +82,16 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
 
   const BUSINESS_START = 8 * 60;
   const BUSINESS_END   = 20 * 60;
-  // Intervalo = duração do serviço selecionado, cap 30min
-  // Ex: sobrancelha 10min → slots a cada 10min; barba 20min → a cada 20min; combos 60min → a cada 30min
-  const SLOT_INTERVAL = Math.min(Math.max(duration, 5), 30);
+
+  // Intervalo dinâmico: MDC de todos os serviços ativos da barbearia
+  // Cada barbearia tem seu próprio intervalo automático baseado nos tempos de serviço
+  const activeServices = await prisma.service.findMany({
+    where: { barbershopId: barbershopId as string, isActive: true },
+    select: { durationMins: true },
+  });
+  const durations = activeServices.map(s => s.durationMins).filter(d => d > 0);
+  const rawInterval = durations.length > 0 ? durations.reduce(gcd) : 15;
+  const SLOT_INTERVAL = Math.min(Math.max(rawInterval, 5), 30); // clamp 5–30min
 
   // Normaliza os agendamentos existentes para minutos BRT (TZ=America/Sao_Paulo no container)
   const existingLocal = existing.map((apt) => {
