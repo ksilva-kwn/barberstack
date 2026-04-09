@@ -46,7 +46,23 @@ export interface OriginDataPoint {
   value: number;
 }
 
+export interface BarbershopPortal {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  description: string | null;
+}
+
 export const barbershopApi = {
+  getPortal: (barbershopId: string) =>
+    api.get<BarbershopPortal>(`/api/barbershops/${barbershopId}`),
+
+  updatePortal: (barbershopId: string, data: { slug?: string; coverUrl?: string | null; logoUrl?: string | null; description?: string | null }) =>
+    api.put<BarbershopPortal>(`/api/barbershops/${barbershopId}/portal`, data),
+
+
   kpis: (barbershopId: string) =>
     api.get<DashboardKpis>(`/api/barbershops/${barbershopId}/kpis`),
 

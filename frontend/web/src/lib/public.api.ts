@@ -11,6 +11,8 @@ export interface PublicShop {
   id: string;
   name: string;
   logoUrl: string | null;
+  coverUrl: string | null;
+  description: string | null;
   city: string | null;
   state: string | null;
   phone: string | null;

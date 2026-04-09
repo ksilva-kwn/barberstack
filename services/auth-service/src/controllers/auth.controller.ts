@@ -176,9 +176,17 @@ export class AuthController {
       return res.status(409).json({ error: 'Email já cadastrado' });
     }
 
-    const slug =
-      barbershopName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') +
-      '-' + Date.now();
+    const baseSlug = barbershopName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 50);
+    let slug = baseSlug;
+    let counter = 2;
+    while (await prisma.barbershop.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}${counter++}`;
+    }
 
     const { user, barbershop } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const barbershop = await tx.barbershop.create({

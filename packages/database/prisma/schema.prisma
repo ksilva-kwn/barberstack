@@ -100,6 +100,8 @@ model Barbershop {
   state       String?
   zipCode     String?
   logoUrl     String?
+  coverUrl    String?
+  description String?  @db.Text
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

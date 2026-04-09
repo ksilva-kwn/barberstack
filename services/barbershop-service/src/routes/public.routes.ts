@@ -7,7 +7,7 @@ export const publicRouter: Router = Router();
 publicRouter.get('/:slug', async (req: Request, res: Response) => {
   const shop = await prisma.barbershop.findUnique({
     where: { slug: req.params.slug },
-    select: { id: true, name: true, logoUrl: true, city: true, state: true, phone: true, slug: true },
+    select: { id: true, name: true, logoUrl: true, coverUrl: true, description: true, city: true, state: true, phone: true, slug: true },
   });
   if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
   return res.json(shop);

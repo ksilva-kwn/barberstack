@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Scissors, MapPin, Phone, LogIn, UserPlus, Calendar, ChevronRight, Loader2 } from 'lucide-react';
+import {
+  Scissors, MapPin, Phone, LogIn, UserPlus, Calendar,
+  Loader2, Clock, ChevronRight, Info,
+} from 'lucide-react';
 import { portalApi, PublicShop } from '@/lib/public.api';
 import { PortalLoginModal } from '@/components/portal/portal-login-modal';
 import { PortalBookingModal } from '@/components/portal/portal-booking-modal';
@@ -15,7 +18,6 @@ export default function PortalPage() {
   const [portalToken, setPortalToken] = useState<string | null>(null);
   const [portalUser, setPortalUser] = useState<any>(null);
 
-  // Persiste sessão do portal separado do admin
   useEffect(() => {
     const raw = sessionStorage.getItem(`portal-auth-${slug}`);
     if (raw) {
@@ -49,9 +51,17 @@ export default function PortalPage() {
     setPortalUser(null);
   };
 
+  const handleBookClick = () => {
+    if (portalUser) {
+      setBookingOpen(true);
+    } else {
+      setAuthModal('login');
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -59,107 +69,181 @@ export default function PortalPage() {
 
   if (error || !shop) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
-        <Scissors className="w-12 h-12 text-muted-foreground" />
-        <h1 className="text-xl font-semibold text-foreground">Barbearia não encontrada</h1>
-        <p className="text-muted-foreground text-sm">O link que você acessou não existe ou foi removido.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-background px-4">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+          <Scissors className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h1 className="text-xl font-bold text-foreground">Barbearia não encontrada</h1>
+        <p className="text-muted-foreground text-sm text-center max-w-xs">
+          O link que você acessou não existe ou foi removido.
+        </p>
       </div>
     );
   }
 
   const totalServices = professionals.flatMap(p => p.professionalServices.map(ps => ps.service));
-  const uniqueServices = Array.from(new Map(totalServices.map(s => [s.id, s])).values());
+  const uniqueServices = Array.from(new Map(totalServices.map(s => [s.id, s])).values()).filter(s => s.isActive);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <Scissors className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-sm leading-tight">{shop.name}</h1>
-              {shop.city && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />{shop.city}{shop.state ? `, ${shop.state}` : ''}
-                </p>
-              )}
-            </div>
+      {/* Navbar */}
+      <header className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {shop.logoUrl ? (
+              <img src={shop.logoUrl} alt={shop.name} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                <Scissors className="w-4 h-4 text-primary-foreground" />
+              </div>
+            )}
+            <span className="font-bold text-foreground text-sm truncate">{shop.name}</span>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
             {portalUser ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:block">Olá, {portalUser.name.split(' ')[0]}</span>
+              <>
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  Olá, {portalUser.name.split(' ')[0]}
+                </span>
                 <button
                   onClick={handleLogout}
                   className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 >
                   Sair
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="flex gap-2">
+              <>
                 <button
                   onClick={() => setAuthModal('login')}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent transition-colors"
                 >
-                  <LogIn className="w-3.5 h-3.5" />Entrar
+                  <LogIn className="w-3.5 h-3.5" />
+                  Entrar
                 </button>
                 <button
                   onClick={() => setAuthModal('register')}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                  <UserPlus className="w-3.5 h-3.5" />Cadastrar
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Cadastrar
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* CTA de agendamento */}
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-semibold text-foreground">Agende seu horário</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Escolha o profissional, serviço e horário disponível.</p>
+      {/* Hero / Cover */}
+      <div className="relative">
+        {shop.coverUrl ? (
+          <div className="h-56 sm:h-72 w-full overflow-hidden">
+            <img
+              src={shop.coverUrl}
+              alt={`${shop.name} cover`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
           </div>
-          <button
-            onClick={() => portalUser ? setBookingOpen(true) : setAuthModal('login')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
-          >
-            <Calendar className="w-4 h-4" />
-            Agendar
-          </button>
-        </div>
+        ) : (
+          <div className="h-36 sm:h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
+        )}
 
-        {/* Profissionais */}
+        {/* Hero content */}
+        <div className="max-w-3xl mx-auto px-4">
+          <div className={`relative ${shop.coverUrl ? '-mt-20' : '-mt-6'} pb-6`}>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              {/* Logo / Avatar */}
+              <div className="shrink-0">
+                {shop.logoUrl ? (
+                  <img
+                    src={shop.logoUrl}
+                    alt={shop.name}
+                    className="w-20 h-20 rounded-2xl object-cover border-4 border-background shadow-lg"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center border-4 border-background shadow-lg">
+                    <Scissors className="w-9 h-9 text-primary-foreground" />
+                  </div>
+                )}
+              </div>
+
+              {/* Name + location */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-foreground leading-tight">{shop.name}</h1>
+                {(shop.city || shop.phone) && (
+                  <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                    {shop.city && (
+                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {shop.city}{shop.state ? `, ${shop.state}` : ''}
+                      </span>
+                    )}
+                    {shop.phone && (
+                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Phone className="w-3.5 h-3.5" />
+                        {shop.phone}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* CTA button desktop */}
+              <button
+                onClick={handleBookClick}
+                className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+              >
+                <Calendar className="w-4 h-4" />
+                Agendar horário
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="max-w-3xl mx-auto px-4 pb-24 space-y-8">
+        {/* About */}
+        {shop.description && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="w-4 h-4 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Sobre</h2>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{shop.description}</p>
+          </section>
+        )}
+
+        {/* Team */}
         {professionals.length > 0 && (
-          <div>
-            <h3 className="font-semibold text-foreground mb-3">Nossa equipe</h3>
-            <div className="space-y-2">
+          <section>
+            <h2 className="font-semibold text-foreground mb-3">Nossa equipe</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {professionals.map(p => {
                 const name = p.nickname ?? p.user.name;
                 const initials = name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
                 const services = p.professionalServices.filter(ps => ps.service.isActive);
                 return (
-                  <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                  <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
                       {p.user.avatarUrl
-                        ? <img src={p.user.avatarUrl} className="w-10 h-10 rounded-full object-cover" alt={name} />
+                        ? <img src={p.user.avatarUrl} className="w-full h-full object-cover" alt={name} />
                         : initials}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-sm">{name}</p>
                       {services.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
-                          {services.map(ps => (
+                          {services.slice(0, 3).map(ps => (
                             <span key={ps.service.id} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
                               {ps.service.name}
                             </span>
                           ))}
+                          {services.length > 3 && (
+                            <span className="text-xs text-muted-foreground">+{services.length - 3}</span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -167,44 +251,57 @@ export default function PortalPage() {
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Serviços */}
+        {/* Services */}
         {uniqueServices.length > 0 && (
-          <div>
-            <h3 className="font-semibold text-foreground mb-3">Serviços</h3>
-            <div className="bg-card border border-border rounded-xl divide-y divide-border">
-              {uniqueServices.filter(s => s.isActive).map(s => (
-                <div key={s.id} className="flex items-center justify-between px-4 py-3">
-                  <p className="text-sm text-foreground">{s.name}</p>
+          <section>
+            <h2 className="font-semibold text-foreground mb-3">Serviços</h2>
+            <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+              {uniqueServices.map(s => (
+                <div key={s.id} className="flex items-center justify-between px-4 py-3.5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{s.name}</p>
+                    {s.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                    )}
+                  </div>
                   <div className="text-right shrink-0 ml-4">
-                    <p className="text-sm font-semibold text-foreground">R$ {Number(s.price).toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">{s.durationMins} min</p>
+                    <p className="text-sm font-bold text-foreground">
+                      R$ {Number(s.price).toFixed(2).replace('.', ',')}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center justify-end gap-0.5 mt-0.5">
+                      <Clock className="w-3 h-3" />
+                      {s.durationMins} min
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Contato */}
-        {shop.phone && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="w-4 h-4" />
-            <span>{shop.phone}</span>
-          </div>
+          </section>
         )}
       </main>
 
-      {/* Modais */}
+      {/* Mobile sticky CTA */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-10">
+        <button
+          onClick={handleBookClick}
+          className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+        >
+          <Calendar className="w-4 h-4" />
+          Agendar horário
+        </button>
+      </div>
+
+      {/* Modals */}
       {authModal && (
         <PortalLoginModal
           mode={authModal}
           shopId={shop.id}
           onAuth={handleAuth}
           onClose={() => setAuthModal(null)}
-          onSwitchMode={(m) => setAuthModal(m)}
+          onSwitchMode={m => setAuthModal(m)}
         />
       )}
 
@@ -214,7 +311,7 @@ export default function PortalPage() {
           professionals={professionals}
           token={portalToken}
           onClose={() => setBookingOpen(false)}
-          onBooked={() => { setBookingOpen(false); }}
+          onBooked={() => setBookingOpen(false)}
         />
       )}
     </div>
