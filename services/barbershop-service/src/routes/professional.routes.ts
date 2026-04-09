@@ -88,13 +88,13 @@ professionalRouter.get('/:id/day-offs', async (req: Request, res: Response) => {
 
 // Adicionar folga
 professionalRouter.post('/:id/day-offs', async (req: Request, res: Response) => {
-  const { date, reason } = req.body;
+  const { date, reason, startTime, endTime } = req.body;
   if (!date) return res.status(400).json({ error: 'date obrigatório (yyyy-MM-dd)' });
 
   const record = await prisma.professionalDayOff.upsert({
     where: { professionalId_date: { professionalId: req.params.id, date } },
-    create: { professionalId: req.params.id, date, reason },
-    update: { reason },
+    create: { professionalId: req.params.id, date, reason, startTime: startTime || null, endTime: endTime || null },
+    update: { reason, startTime: startTime || null, endTime: endTime || null },
   });
   return res.status(201).json(record);
 });
@@ -103,6 +103,42 @@ professionalRouter.post('/:id/day-offs', async (req: Request, res: Response) => 
 professionalRouter.delete('/:id/day-offs/:dayOffId', async (req: Request, res: Response) => {
   await prisma.professionalDayOff.deleteMany({
     where: { id: req.params.dayOffId, professionalId: req.params.id },
+  });
+  return res.status(204).send();
+});
+
+// ── Bloqueios recorrentes ─────────────────────────────────────────────────────
+
+// Listar
+professionalRouter.get('/:id/recurring-blocks', async (req: Request, res: Response) => {
+  const records = await prisma.professionalRecurringBlock.findMany({
+    where: { professionalId: req.params.id, isActive: true },
+    orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+  });
+  return res.json(records);
+});
+
+// Adicionar
+professionalRouter.post('/:id/recurring-blocks', async (req: Request, res: Response) => {
+  const { dayOfWeek, startTime, endTime, reason } = req.body;
+  if (!startTime || !endTime) return res.status(400).json({ error: 'startTime e endTime obrigatórios' });
+
+  const record = await prisma.professionalRecurringBlock.create({
+    data: {
+      professionalId: req.params.id,
+      dayOfWeek: dayOfWeek != null ? Number(dayOfWeek) : null,
+      startTime,
+      endTime,
+      reason: reason || null,
+    },
+  });
+  return res.status(201).json(record);
+});
+
+// Remover
+professionalRouter.delete('/:id/recurring-blocks/:blockId', async (req: Request, res: Response) => {
+  await prisma.professionalRecurringBlock.deleteMany({
+    where: { id: req.params.blockId, professionalId: req.params.id },
   });
   return res.status(204).send();
 });

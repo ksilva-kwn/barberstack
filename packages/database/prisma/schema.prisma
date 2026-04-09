@@ -218,6 +218,7 @@ model Professional {
   commissions         Commission[]
   professionalServices ProfessionalService[]
   dayOffs             ProfessionalDayOff[]
+  recurringBlocks     ProfessionalRecurringBlock[]
 
   @@index([barbershopId])
   @@map("professionals")
@@ -469,13 +470,32 @@ model ProfessionalDayOff {
   professionalId String
   professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
-  date      String  // "yyyy-MM-dd" — dia bloqueado
-  reason    String? // opcional: "Folga", "Férias", etc.
+  date      String   // "yyyy-MM-dd" — dia bloqueado
+  startTime String?  // "HH:mm" — null = folga o dia inteiro
+  endTime   String?  // "HH:mm" — null = folga o dia inteiro
+  reason    String?
   createdAt DateTime @default(now())
 
   @@unique([professionalId, date])
   @@index([professionalId])
   @@map("professional_day_offs")
+}
+
+// Bloqueio recorrente de horário (ex: almoço todo dia, folga toda segunda)
+model ProfessionalRecurringBlock {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int?    // 0=Dom,1=Seg..6=Sáb — null = todos os dias
+  startTime String  // "HH:mm"
+  endTime   String  // "HH:mm"
+  reason    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([professionalId])
+  @@map("professional_recurring_blocks")
 }
 
 // =============================================================================

@@ -18,24 +18,52 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
   const endOfDay   = new Date(year, month - 1, day, 23, 59, 59);
 
-  // Verifica se o profissional tem folga neste dia
+  // Blocos de tempo que devem estar indisponíveis (além de agendamentos existentes)
+  const partialBlocks: { startMin: number; endMin: number }[] = [];
   const dateStr = date as string;
+
   try {
     const dayOff = await prisma.professionalDayOff.findUnique({
       where: { professionalId_date: { professionalId: professionalId as string, date: dateStr } },
     });
     if (dayOff) {
-      // Dia de folga: todos os slots indisponíveis
-      const slots = [];
-      for (let min = 8 * 60; min + duration <= 20 * 60; min += 15) {
-        const h = Math.floor(min / 60).toString().padStart(2, '0');
-        const m = (min % 60).toString().padStart(2, '0');
-        slots.push({ time: `${h}:${m}`, available: false });
+      if (!dayOff.startTime || !dayOff.endTime) {
+        // Dia inteiro de folga — todos os slots indisponíveis
+        const slots = [];
+        for (let min = 8 * 60; min + duration <= 20 * 60; min += 15) {
+          const h = Math.floor(min / 60).toString().padStart(2, '0');
+          const m = (min % 60).toString().padStart(2, '0');
+          slots.push({ time: `${h}:${m}`, available: false });
+        }
+        return res.json(slots);
       }
-      return res.json(slots);
+      // Folga parcial — bloqueia apenas o intervalo
+      const [sh, sm] = dayOff.startTime.split(':').map(Number);
+      const [eh, em] = dayOff.endTime.split(':').map(Number);
+      partialBlocks.push({ startMin: sh * 60 + sm, endMin: eh * 60 + em });
     }
   } catch {
-    // Tabela ainda não existe (migração pendente) — ignora e segue com slots normais
+    // Migração pendente — ignora
+  }
+
+  // Bloqueios recorrentes (almoço, etc.)
+  try {
+    const refDate = new Date(year, month - 1, day);
+    const dow = refDate.getDay(); // 0=Dom ... 6=Sáb
+    const recurring = await (prisma as any).professionalRecurringBlock.findMany({
+      where: {
+        professionalId: professionalId as string,
+        isActive: true,
+        OR: [{ dayOfWeek: dow }, { dayOfWeek: null }],
+      },
+    });
+    for (const block of recurring) {
+      const [sh, sm] = block.startTime.split(':').map(Number);
+      const [eh, em] = block.endTime.split(':').map(Number);
+      partialBlocks.push({ startMin: sh * 60 + sm, endMin: eh * 60 + em });
+    }
+  } catch {
+    // Migração pendente — ignora
   }
 
   const existing = await prisma.appointment.findMany({
@@ -62,13 +90,16 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const slots = [];
   for (let min = BUSINESS_START; min + duration <= BUSINESS_END; min += SLOT_INTERVAL) {
     const slotEnd = min + duration;
-    const overlaps = existingLocal.some(({ startMin, endMin }) =>
+    const overlapsApt = existingLocal.some(({ startMin, endMin }) =>
+      min < endMin && slotEnd > startMin
+    );
+    const overlapsBlock = partialBlocks.some(({ startMin, endMin }) =>
       min < endMin && slotEnd > startMin
     );
 
     const h = Math.floor(min / 60).toString().padStart(2, '0');
     const m = (min % 60).toString().padStart(2, '0');
-    slots.push({ time: `${h}:${m}`, available: !overlaps });
+    slots.push({ time: `${h}:${m}`, available: !overlapsApt && !overlapsBlock });
   }
 
   return res.json(slots);

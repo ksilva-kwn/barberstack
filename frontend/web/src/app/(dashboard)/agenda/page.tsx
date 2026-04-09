@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
-import { ScheduleGrid, DayOffBlock } from '@/components/agenda/schedule-grid';
+import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
 import { api } from '@/lib/api';
 import { NewAppointmentModal } from '@/components/agenda/new-appointment-modal';
 
@@ -34,6 +34,8 @@ export default function AgendaPage() {
   });
 
   const professionalIds = professionals.map(p => p.id);
+  const selectedDow = selectedDate.getDay();
+
   const { data: dayOffs = [] } = useQuery<DayOffBlock[]>({
     queryKey: ['agenda-day-offs', dateStr, professionalIds],
     queryFn: async () => {
@@ -41,9 +43,27 @@ export default function AgendaPage() {
         professionals.map(async (p) => {
           try {
             const r = await api.get(`/api/professionals/${p.id}/day-offs`);
-            return (r.data as { id: string; date: string; reason: string | null }[])
+            return (r.data as { id: string; date: string; startTime: string | null; endTime: string | null; reason: string | null }[])
               .filter(d => d.date === dateStr)
-              .map(d => ({ professionalId: p.id, date: d.date, reason: d.reason }));
+              .map(d => ({ professionalId: p.id, date: d.date, reason: d.reason, startTime: d.startTime, endTime: d.endTime }));
+          } catch { return []; }
+        })
+      );
+      return results.flat();
+    },
+    enabled: professionals.length > 0,
+  });
+
+  const { data: recurringBlocks = [] } = useQuery<RecurringBlockDisplay[]>({
+    queryKey: ['agenda-recurring-blocks', professionalIds, selectedDow],
+    queryFn: async () => {
+      const results = await Promise.all(
+        professionals.map(async (p) => {
+          try {
+            const r = await api.get(`/api/professionals/${p.id}/recurring-blocks`);
+            return (r.data as { id: string; dayOfWeek: number | null; startTime: string; endTime: string; reason: string | null }[])
+              .filter(b => b.dayOfWeek == null || b.dayOfWeek === selectedDow)
+              .map(b => ({ professionalId: p.id, startTime: b.startTime, endTime: b.endTime, reason: b.reason }));
           } catch { return []; }
         })
       );
@@ -132,6 +152,7 @@ export default function AgendaPage() {
           professionals={professionals}
           appointments={appointments}
           dayOffs={dayOffs}
+          recurringBlocks={recurringBlocks}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}

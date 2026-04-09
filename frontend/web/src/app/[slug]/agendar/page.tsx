@@ -87,7 +87,8 @@ export default function PortalAgendarPage() {
     try {
       await portalApi.createAppointment(portalToken, {
         professionalId,
-        scheduledAt: new Date(`${scheduledDate}T${selectedTime}:00`).toISOString(),
+        // Força UTC-3 (BRT) para evitar conversão errada no browser
+        scheduledAt: `${scheduledDate}T${selectedTime}:00-03:00`,
         serviceIds: selectedServiceIds,
         notes: notes.trim() || undefined,
       });

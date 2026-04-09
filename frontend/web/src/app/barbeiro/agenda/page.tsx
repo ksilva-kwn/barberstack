@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { api } from '@/lib/api';
 import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
-import { ScheduleGrid, DayOffBlock } from '@/components/agenda/schedule-grid';
+import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
 
 export default function BarberAgendaPage() {
   const { user } = useAuthStore();
@@ -34,9 +34,21 @@ export default function BarberAgendaPage() {
     queryKey: ['barber-day-offs', myProfessional?.id, dateStr],
     queryFn: async () => {
       const r = await api.get(`/api/professionals/${myProfessional.id}/day-offs`);
-      return (r.data as { id: string; date: string; reason: string | null }[])
+      return (r.data as { id: string; date: string; startTime: string | null; endTime: string | null; reason: string | null }[])
         .filter(d => d.date === dateStr)
-        .map(d => ({ professionalId: myProfessional.id, date: d.date, reason: d.reason }));
+        .map(d => ({ professionalId: myProfessional.id, date: d.date, reason: d.reason, startTime: d.startTime, endTime: d.endTime }));
+    },
+    enabled: !!myProfessional,
+  });
+
+  const { data: recurringBlocks = [] } = useQuery<RecurringBlockDisplay[]>({
+    queryKey: ['barber-recurring-blocks', myProfessional?.id],
+    queryFn: async () => {
+      const r = await api.get(`/api/professionals/${myProfessional.id}/recurring-blocks`);
+      const dow = selectedDate.getDay();
+      return (r.data as { id: string; dayOfWeek: number | null; startTime: string; endTime: string; reason: string | null }[])
+        .filter(b => b.dayOfWeek == null || b.dayOfWeek === dow)
+        .map(b => ({ professionalId: myProfessional.id, startTime: b.startTime, endTime: b.endTime, reason: b.reason }));
     },
     enabled: !!myProfessional,
   });
@@ -104,6 +116,7 @@ export default function BarberAgendaPage() {
           professionals={[myProfessional]}
           appointments={appointments}
           dayOffs={dayOffs}
+          recurringBlocks={recurringBlocks}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}

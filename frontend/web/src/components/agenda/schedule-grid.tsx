@@ -7,8 +7,29 @@ import { AppointmentCard } from './appointment-card';
 
 export interface DayOffBlock {
   professionalId: string;
-  date: string;    // yyyy-MM-dd
+  date: string;       // yyyy-MM-dd
   reason: string | null;
+  startTime?: string | null; // "HH:mm" — null = dia inteiro
+  endTime?: string | null;   // "HH:mm" — null = dia inteiro
+}
+
+export interface RecurringBlockDisplay {
+  professionalId: string;
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+  reason: string | null;
+}
+
+function getTopFromTime(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  const mins = (h - START_HOUR) * 60 + m;
+  return Math.max(0, mins * PX_PER_MIN);
+}
+
+function getHeightFromRange(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return Math.max(16, ((eh * 60 + em) - (sh * 60 + sm)) * PX_PER_MIN);
 }
 
 const SLOT_HEIGHT = 56; // px per 30-min block
@@ -39,13 +60,14 @@ interface Props {
   professionals: Professional[];
   appointments: Appointment[];
   dayOffs?: DayOffBlock[];
+  recurringBlocks?: RecurringBlockDisplay[];
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onReschedule: (id: string, scheduledAt: string) => void;
   onResize: (id: string, durationMins: number) => void;
   onDelete: (id: string) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, dayOffs = [], onStatusChange, onReschedule, onResize, onDelete }: Props) {
+export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], onStatusChange, onReschedule, onResize, onDelete }: Props) {
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   if (professionals.length === 0) {
@@ -162,22 +184,49 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], onStat
               />
             ))}
 
-            {/* Day-off overlay */}
-            {dayOffs.some(d => d.professionalId === p.id) && (
-              <div
-                className="absolute inset-0 bg-red-500/10 border border-red-500/30 flex flex-col items-center justify-center gap-1 z-10 pointer-events-none"
-                style={{ top: START_HOUR * 60 * PX_PER_MIN === 0 ? 0 : 0 }}
-              >
-                <div className="bg-red-500/20 border border-red-500/40 rounded-lg px-3 py-2 text-center">
-                  <p className="text-xs font-semibold text-red-400">Folga</p>
-                  {dayOffs.find(d => d.professionalId === p.id)?.reason && (
-                    <p className="text-[10px] text-red-400/70 mt-0.5">
-                      {dayOffs.find(d => d.professionalId === p.id)?.reason}
-                    </p>
-                  )}
+            {/* Day-off overlay (full day or partial) */}
+            {(() => {
+              const dayOff = dayOffs.find(d => d.professionalId === p.id);
+              if (!dayOff) return null;
+              if (!dayOff.startTime || !dayOff.endTime) {
+                // Folga dia inteiro
+                return (
+                  <div className="absolute inset-0 bg-red-500/10 border border-red-500/30 flex flex-col items-center justify-center gap-1 z-10 pointer-events-none">
+                    <div className="bg-red-500/20 border border-red-500/40 rounded-lg px-3 py-2 text-center">
+                      <p className="text-xs font-semibold text-red-400">Folga</p>
+                      {dayOff.reason && <p className="text-[10px] text-red-400/70 mt-0.5">{dayOff.reason}</p>}
+                    </div>
+                  </div>
+                );
+              }
+              // Folga parcial
+              return (
+                <div
+                  className="absolute left-0 right-0 bg-red-500/15 border-l-2 border-red-500/50 z-5 pointer-events-none"
+                  style={{ top: getTopFromTime(dayOff.startTime), height: getHeightFromRange(dayOff.startTime, dayOff.endTime) }}
+                >
+                  <p className="text-[9px] text-red-400 px-1.5 pt-0.5 font-medium truncate">
+                    Folga{dayOff.reason ? ` — ${dayOff.reason}` : ''}
+                  </p>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
+            {/* Bloqueios recorrentes (almoço, etc.) */}
+            {recurringBlocks
+              .filter(b => b.professionalId === p.id)
+              .map((block, i) => (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 bg-orange-500/15 border-l-2 border-orange-500/40 z-5 pointer-events-none"
+                  style={{ top: getTopFromTime(block.startTime), height: getHeightFromRange(block.startTime, block.endTime) }}
+                >
+                  <p className="text-[9px] text-orange-400/90 px-1.5 pt-0.5 font-medium truncate">
+                    {block.reason ?? 'Bloqueado'}
+                  </p>
+                </div>
+              ))
+            }
 
             {/* Appointments */}
             {aptsByProfessional[p.id].map((apt) => (
