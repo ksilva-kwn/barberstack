@@ -104,11 +104,13 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const slots = [];
   for (let min = BUSINESS_START; min + duration <= BUSINESS_END; min += SLOT_INTERVAL) {
     const slotEnd = min + duration;
+    // Bloqueia slots que COMEÇAM dentro do agendamento (não antes)
+    // Ex: agendamento 14:00-14:40 → bloqueia 14:00, 14:10, 14:20, 14:30 — não 13:50
     const overlapsApt = existingLocal.some(({ startMin, endMin }) =>
-      min < endMin && slotEnd > startMin
+      min >= startMin && min < endMin
     );
     const overlapsBlock = partialBlocks.some(({ startMin, endMin }) =>
-      min < endMin && slotEnd > startMin
+      min >= startMin && min < endMin
     );
 
     const h = Math.floor(min / 60).toString().padStart(2, '0');
