@@ -204,7 +204,7 @@ export function NewAppointmentModal({ professionals, services, defaultDate, onCl
 
     setError(''); setSubmitting(true);
 
-    const scheduledAt = new Date(`${scheduledDate}T${selectedTime}:00`).toISOString();
+    const scheduledAt = `${scheduledDate}T${selectedTime}:00-03:00`;
 
     const payload: CreateAppointmentPayload = {
       professionalId,
