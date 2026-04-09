@@ -29,24 +29,23 @@ const PX_PER_MIN   = 56 / 30;
 const SNAP_MINS    = 15;
 const MIN_DURATION = 15;
 
-// Ações extras (além de Cancelar) por status
-function getExtraActions(status: AppointmentStatus) {
+function getActions(status: AppointmentStatus) {
+  const cancel = { label: 'Cancelar', status: 'CANCELED' as AppointmentStatus, icon: <X className="w-3 h-3" /> };
   switch (status) {
     case 'SCHEDULED':
-      return [{ label: 'Confirmar', status: 'CONFIRMED' as AppointmentStatus, icon: <Check className="w-3 h-3" /> }];
+      return [{ label: 'Confirmar', status: 'CONFIRMED' as AppointmentStatus, icon: <Check className="w-3 h-3" /> }, cancel];
     case 'CONFIRMED':
       return [
         { label: 'Chegou',  status: 'IN_PROGRESS' as AppointmentStatus, icon: <Play className="w-3 h-3" /> },
         { label: 'Faltou',  status: 'NO_SHOW'     as AppointmentStatus, icon: <UserX className="w-3 h-3" /> },
+        cancel,
       ];
     case 'IN_PROGRESS':
-      return [{ label: 'Finalizar', status: 'COMPLETED' as AppointmentStatus, icon: <CheckCircle className="w-3 h-3" /> }];
+      return [{ label: 'Finalizar', status: 'COMPLETED' as AppointmentStatus, icon: <CheckCircle className="w-3 h-3" /> }, cancel];
     default:
       return [];
   }
 }
-
-const CANCELABLE = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'];
 
 interface Props {
   appointment: Appointment;
@@ -65,8 +64,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
   const startY        = useRef(0);
   const startHeight   = useRef(0);
 
-  const extraActions = getExtraActions(appointment.status);
-  const canCancel    = CANCELABLE.includes(appointment.status);
+  const actions = getActions(appointment.status);
   const clientLabel  = appointment.client?.name ?? appointment.clientName ?? 'Cliente';
   const serviceNames = appointment.services.map((s) => s.service.name).join(', ');
   const startTime    = new Date(appointment.scheduledAt);
@@ -139,24 +137,12 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
           )}
         </div>
 
-        {/* Botão Cancelar direto */}
-        {canCancel && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onStatusChange(appointment.id, 'CANCELED'); }}
-            title="Cancelar"
-            className="shrink-0 p-0.5 rounded hover:bg-red-500/20 text-current opacity-50 hover:opacity-100 transition-all"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        )}
-
-        {/* Menu de ações extras (Confirmar, Chegou, Faltou, Finalizar) */}
-        {extraActions.length > 0 && (
+        {/* Menu de ações */}
+        {actions.length > 0 && (
           <div className="relative shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
               className="p-0.5 rounded hover:bg-white/10 transition-colors"
-              title="Mais ações"
             >
               <MoreVertical className="w-3 h-3" />
             </button>
@@ -168,7 +154,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
                   <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                     {STATUS_LABEL[appointment.status]}
                   </p>
-                  {extraActions.map((action) => (
+                  {actions.map((action) => (
                     <button
                       key={action.status}
                       onClick={() => { setMenuOpen(false); onStatusChange(appointment.id, action.status); }}
