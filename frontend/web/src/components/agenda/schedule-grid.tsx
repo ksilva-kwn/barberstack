@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { Professional } from '@/lib/barbershop.api';
 import { AppointmentCard } from './appointment-card';
@@ -10,6 +11,7 @@ const START_HOUR = 8;
 const END_HOUR = 21;
 const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2;
 const TOTAL_HEIGHT = TOTAL_SLOTS * SLOT_HEIGHT;
+const SNAP_MINS = 15; // snap granularity
 
 const TIME_SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => {
   const hour = START_HOUR + Math.floor(i / 2);
@@ -31,9 +33,12 @@ interface Props {
   professionals: Professional[];
   appointments: Appointment[];
   onStatusChange: (id: string, status: AppointmentStatus) => void;
+  onReschedule: (id: string, scheduledAt: string) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, onStatusChange }: Props) {
+export function ScheduleGrid({ professionals, appointments, onStatusChange, onReschedule }: Props) {
+  const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   if (professionals.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -47,13 +52,51 @@ export function ScheduleGrid({ professionals, appointments, onStatusChange }: Pr
     return acc;
   }, {});
 
+  const handleDragStart = (e: React.DragEvent, apt: Appointment) => {
+    e.dataTransfer.setData('appointmentId', apt.id);
+    // Store the offset within the card where drag started
+    const card = e.currentTarget as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    e.dataTransfer.setData('offsetY', String(offsetY));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, professionalId: string) => {
+    e.preventDefault();
+    const aptId = e.dataTransfer.getData('appointmentId');
+    const offsetY = parseFloat(e.dataTransfer.getData('offsetY') || '0');
+    const col = columnRefs.current[professionalId];
+    if (!col || !aptId) return;
+
+    const rect = col.getBoundingClientRect();
+    const relY = e.clientY - rect.top - offsetY;
+    const totalMins = START_HOUR * 60 + Math.max(0, relY / PX_PER_MIN);
+    // Snap to SNAP_MINS granularity
+    const snapped = Math.round(totalMins / SNAP_MINS) * SNAP_MINS;
+    const h = Math.floor(snapped / 60);
+    const m = snapped % 60;
+
+    const apt = appointments.find(a => a.id === aptId);
+    if (!apt) return;
+
+    const original = new Date(apt.scheduledAt);
+    const newDate = new Date(original);
+    newDate.setHours(h, m, 0, 0);
+
+    onReschedule(aptId, newDate.toISOString());
+  };
+
   return (
     <div className="flex-1 overflow-auto rounded-lg border border-border bg-card">
       {/* Sticky header row */}
       <div className="flex sticky top-0 z-10 bg-card border-b border-border">
-        {/* Time label column */}
         <div className="w-16 shrink-0 border-r border-border" />
-        {/* Professional name headers */}
         {professionals.map((p) => (
           <div
             key={p.id}
@@ -88,8 +131,11 @@ export function ScheduleGrid({ professionals, appointments, onStatusChange }: Pr
         {professionals.map((p) => (
           <div
             key={p.id}
+            ref={(el) => { columnRefs.current[p.id] = el; }}
             className="flex-1 min-w-[160px] relative border-r border-border last:border-r-0"
             style={{ height: TOTAL_HEIGHT }}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, p.id)}
           >
             {/* Slot grid lines */}
             {TIME_SLOTS.map((time, i) => (
@@ -115,6 +161,7 @@ export function ScheduleGrid({ professionals, appointments, onStatusChange }: Pr
                 top={getTop(apt.scheduledAt)}
                 height={getHeight(apt.durationMins)}
                 onStatusChange={onStatusChange}
+                onDragStart={handleDragStart}
               />
             ))}
           </div>

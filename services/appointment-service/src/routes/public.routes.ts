@@ -32,16 +32,19 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const BUSINESS_END   = 20 * 60;
   const SLOT_INTERVAL  = 30;
 
+  // Normaliza os agendamentos existentes para minutos desde meia-noite LOCAL
+  const existingLocal = existing.map((apt) => {
+    const d = new Date(apt.scheduledAt);
+    const startMin = d.getHours() * 60 + d.getMinutes();
+    return { startMin, endMin: startMin + apt.durationMins };
+  });
+
   const slots = [];
   for (let min = BUSINESS_START; min + duration <= BUSINESS_END; min += SLOT_INTERVAL) {
-    const slotStart = new Date(year, month - 1, day, Math.floor(min / 60), min % 60, 0);
-    const slotEnd   = new Date(slotStart.getTime() + duration * 60000);
-
-    const overlaps = existing.some((apt) => {
-      const aptStart = new Date(apt.scheduledAt);
-      const aptEnd   = new Date(aptStart.getTime() + apt.durationMins * 60000);
-      return slotStart < aptEnd && slotEnd > aptStart;
-    });
+    const slotEnd = min + duration;
+    const overlaps = existingLocal.some(({ startMin, endMin }) =>
+      min < endMin && slotEnd > startMin
+    );
 
     const h = Math.floor(min / 60).toString().padStart(2, '0');
     const m = (min % 60).toString().padStart(2, '0');

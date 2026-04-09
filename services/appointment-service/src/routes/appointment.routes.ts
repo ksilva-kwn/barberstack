@@ -104,6 +104,18 @@ appointmentRouter.patch('/:id/status', async (req: Request, res: Response) => {
   return res.json(appointment);
 });
 
+// Reagendar (mover horário)
+appointmentRouter.patch('/:id/reschedule', async (req: Request, res: Response) => {
+  const { scheduledAt } = req.body;
+  if (!scheduledAt) return res.status(400).json({ error: 'scheduledAt obrigatório' });
+
+  const appointment = await prisma.appointment.update({
+    where: { id: req.params.id },
+    data: { scheduledAt: new Date(scheduledAt) },
+  });
+  return res.json(appointment);
+});
+
 // Horários disponíveis de um profissional em uma data
 appointmentRouter.get('/available-slots', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
@@ -133,16 +145,18 @@ appointmentRouter.get('/available-slots', async (req: Request, res: Response) =>
   const BUSINESS_END   = 20 * 60; // 20:00
   const SLOT_INTERVAL  = 30;
 
+  const existingLocal = existing.map((apt) => {
+    const d = new Date(apt.scheduledAt);
+    const startMin = d.getHours() * 60 + d.getMinutes();
+    return { startMin, endMin: startMin + apt.durationMins };
+  });
+
   const slots = [];
   for (let min = BUSINESS_START; min + duration <= BUSINESS_END; min += SLOT_INTERVAL) {
-    const slotStart = new Date(year, month - 1, day, Math.floor(min / 60), min % 60, 0);
-    const slotEnd   = new Date(slotStart.getTime() + duration * 60000);
-
-    const overlaps = existing.some((apt) => {
-      const aptStart = new Date(apt.scheduledAt);
-      const aptEnd   = new Date(aptStart.getTime() + apt.durationMins * 60000);
-      return slotStart < aptEnd && slotEnd > aptStart;
-    });
+    const slotEnd = min + duration;
+    const overlaps = existingLocal.some(({ startMin, endMin }) =>
+      min < endMin && slotEnd > startMin
+    );
 
     const h = Math.floor(min / 60).toString().padStart(2, '0');
     const m = (min % 60).toString().padStart(2, '0');

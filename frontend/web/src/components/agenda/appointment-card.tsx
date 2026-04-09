@@ -47,6 +47,7 @@ function getActions(status: AppointmentStatus): Action[] {
     case 'IN_PROGRESS':
       return [
         { label: 'Finalizar',  status: 'COMPLETED',   icon: <CheckCircle className="w-3 h-3" /> },
+        { label: 'Cancelar',   status: 'CANCELED',    icon: <X className="w-3 h-3" /> },
       ];
     default:
       return [];
@@ -58,9 +59,10 @@ interface Props {
   top: number;
   height: number;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
+  onDragStart: (e: React.DragEvent, apt: Appointment) => void;
 }
 
-export function AppointmentCard({ appointment, top, height, onStatusChange }: Props) {
+export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const actions = getActions(appointment.status);
   const clientLabel = appointment.client?.name ?? appointment.clientName ?? 'Cliente';
@@ -70,12 +72,17 @@ export function AppointmentCard({ appointment, top, height, onStatusChange }: Pr
   const timeLabel = `${fmt(startTime)}–${fmt(endTime)}`;
   const compact = height < 56;
 
+  const isDone = appointment.status === 'CANCELED' || appointment.status === 'NO_SHOW' || appointment.status === 'COMPLETED';
+
   return (
     <div
+      draggable={!isDone}
+      onDragStart={(e) => !isDone && onDragStart(e, appointment)}
       className={cn(
         'absolute left-1 right-1 rounded border overflow-hidden transition-opacity',
+        !isDone && 'cursor-grab active:cursor-grabbing',
         STATUS_STYLES[appointment.status],
-        (appointment.status === 'CANCELED' || appointment.status === 'NO_SHOW') && 'opacity-50',
+        isDone && 'opacity-50',
       )}
       style={{ top, height }}
     >

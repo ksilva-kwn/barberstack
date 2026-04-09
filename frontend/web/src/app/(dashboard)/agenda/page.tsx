@@ -38,6 +38,12 @@ export default function AgendaPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] }),
   });
 
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ id, scheduledAt }: { id: string; scheduledAt: string }) =>
+      appointmentApi.reschedule(id, scheduledAt),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] }),
+  });
+
   const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
   return (
@@ -95,6 +101,7 @@ export default function AgendaPage() {
           professionals={professionals}
           appointments={appointments}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+          onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
         />
       )}
 

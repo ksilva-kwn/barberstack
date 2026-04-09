@@ -63,4 +63,7 @@ export const appointmentApi = {
     api.get<TimeSlot[]>('/api/appointments/available-slots', {
       params: { professionalId, date, durationMins },
     }),
+
+  reschedule: (id: string, scheduledAt: string) =>
+    api.patch<Appointment>(`/api/appointments/${id}/reschedule`, { scheduledAt }),
 };

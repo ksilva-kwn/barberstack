@@ -149,7 +149,7 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   const appointmentsWhere: any = {
     barbershopId: id,
     scheduledAt: { gte: startOfMonth },
-    status: { notIn: ['CANCELED'] },
+    status: { in: ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED'] },
   };
   if (professionalId) appointmentsWhere.professionalId = professionalId;
 
