@@ -80,9 +80,10 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   const BUSINESS_END   = 20 * 60;
   const SLOT_INTERVAL  = 15;
 
-  // Normaliza os agendamentos existentes para minutos desde meia-noite LOCAL
+  // Normaliza os agendamentos existentes para minutos BRT (TZ=America/Sao_Paulo no container)
   const existingLocal = existing.map((apt) => {
     const d = new Date(apt.scheduledAt);
+    // getHours() usa o TZ do processo (America/Sao_Paulo via env)
     const startMin = d.getHours() * 60 + d.getMinutes();
     return { startMin, endMin: startMin + apt.durationMins };
   });

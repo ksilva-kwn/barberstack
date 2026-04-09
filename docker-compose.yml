@@ -120,6 +120,7 @@ services:
       - PORT=3002
       - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
       - JWT_SECRET=${JWT_SECRET}
+      - TZ=America/Sao_Paulo
     depends_on:
       postgres:
         condition: service_healthy
@@ -140,6 +141,7 @@ services:
       - PORT=3003
       - DATABASE_URL=postgresql://barberstack:${DB_PASSWORD:-barberstack123}@postgres:5432/barberstack
       - JWT_SECRET=${JWT_SECRET}
+      - TZ=America/Sao_Paulo
     depends_on:
       postgres:
         condition: service_healthy
