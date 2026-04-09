@@ -6,13 +6,13 @@ import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  SCHEDULED:   'border-blue-500   bg-blue-500/10   text-blue-400',
-  CONFIRMED:   'border-green-500  bg-green-500/10  text-green-400',
-  IN_PROGRESS: 'border-amber-500  bg-amber-500/10  text-amber-400',
-  COMPLETED:   'border-border     bg-muted/30      text-muted-foreground',
-  NO_SHOW:     'border-red-500/50 bg-red-500/10    text-red-400/70',
-  CANCELED:    'border-border     bg-muted/20      text-muted-foreground line-through',
-  BLOCKED:     'border-border     bg-muted/30      text-muted-foreground',
+  SCHEDULED:   'border-sky-400/50     bg-sky-500/20      text-sky-200',
+  CONFIRMED:   'border-emerald-400/50 bg-emerald-500/20  text-emerald-200',
+  IN_PROGRESS: 'border-amber-400/50   bg-amber-500/20    text-amber-200',
+  COMPLETED:   'border-zinc-500/40    bg-zinc-500/15     text-zinc-400',
+  NO_SHOW:     'border-orange-400/50  bg-orange-500/15   text-orange-300',
+  CANCELED:    'border-red-400/40     bg-red-500/15      text-red-300    line-through opacity-60',
+  BLOCKED:     'border-border         bg-muted/30        text-muted-foreground',
 };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
