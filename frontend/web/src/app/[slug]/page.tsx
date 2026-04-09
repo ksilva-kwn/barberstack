@@ -1,28 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Scissors, MapPin, Phone, LogIn, UserPlus, Calendar,
-  Loader2, Clock, ChevronRight, Info,
+  Loader2, Clock, Info,
 } from 'lucide-react';
-import { portalApi, PublicShop } from '@/lib/public.api';
-import { PortalLoginModal } from '@/components/portal/portal-login-modal';
-import { PortalBookingModal } from '@/components/portal/portal-booking-modal';
+import { portalApi } from '@/lib/public.api';
 
 export default function PortalPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [portalToken, setPortalToken] = useState<string | null>(null);
+  const router = useRouter();
   const [portalUser, setPortalUser] = useState<any>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`portal-auth-${slug}`);
     if (raw) {
-      const { token, user } = JSON.parse(raw);
-      setPortalToken(token);
+      const { user } = JSON.parse(raw);
       setPortalUser(user);
     }
   }, [slug]);
@@ -38,24 +33,16 @@ export default function PortalPage() {
     enabled: !!shop,
   });
 
-  const handleAuth = (token: string, user: any) => {
-    sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token, user }));
-    setPortalToken(token);
-    setPortalUser(user);
-    setAuthModal(null);
-  };
-
   const handleLogout = () => {
     sessionStorage.removeItem(`portal-auth-${slug}`);
-    setPortalToken(null);
     setPortalUser(null);
   };
 
   const handleBookClick = () => {
     if (portalUser) {
-      setBookingOpen(true);
+      router.push(`/${slug}/agendar`);
     } else {
-      setAuthModal('login');
+      router.push(`/${slug}/entrar`);
     }
   };
 
@@ -116,14 +103,14 @@ export default function PortalPage() {
             ) : (
               <>
                 <button
-                  onClick={() => setAuthModal('login')}
+                  onClick={() => router.push(`/${slug}/entrar`)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent transition-colors"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   Entrar
                 </button>
                 <button
-                  onClick={() => setAuthModal('register')}
+                  onClick={() => router.push(`/${slug}/entrar?mode=register`)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
@@ -293,27 +280,6 @@ export default function PortalPage() {
           Agendar horário
         </button>
       </div>
-
-      {/* Modals */}
-      {authModal && (
-        <PortalLoginModal
-          mode={authModal}
-          shopId={shop.id}
-          onAuth={handleAuth}
-          onClose={() => setAuthModal(null)}
-          onSwitchMode={m => setAuthModal(m)}
-        />
-      )}
-
-      {bookingOpen && portalToken && shop && (
-        <PortalBookingModal
-          shop={shop}
-          professionals={professionals}
-          token={portalToken}
-          onClose={() => setBookingOpen(false)}
-          onBooked={() => setBookingOpen(false)}
-        />
-      )}
     </div>
   );
 }
