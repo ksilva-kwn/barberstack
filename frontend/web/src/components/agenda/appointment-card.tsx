@@ -123,7 +123,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
       )}
       style={{ top, height: displayHeight, zIndex: menuOpen ? 30 : 1 }}
     >
-      <div className="flex h-full px-1.5 py-1 gap-1 min-w-0 overflow-hidden">
+      <div className="flex h-full px-1.5 py-1 gap-1 min-w-0 overflow-visible">
         {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate leading-tight">{clientLabel}</p>

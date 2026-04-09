@@ -1,34 +1,101 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Calendar,
+  Scissors,
+  UserCog,
   Users,
   Repeat2,
   DollarSign,
   Package,
   Settings,
-  Scissors,
   LogOut,
-  ChevronRight,
-  UserCog,
+  ChevronDown,
   ExternalLink,
+  FileText,
+  CheckSquare,
+  BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 
-const navItems = [
-  { href: '/dashboard',     label: 'Dashboard',    icon: LayoutDashboard, adminOnly: false },
-  { href: '/agenda',        label: 'Agenda',        icon: Calendar,        adminOnly: false },
-  { href: '/servicos',      label: 'Serviços',      icon: Scissors,        adminOnly: false },
-  { href: '/barbeiros',     label: 'Barbeiros',     icon: UserCog,         adminOnly: true },
-  { href: '/clientes',      label: 'Clientes',      icon: Users,           adminOnly: true },
-  { href: '/assinaturas',   label: 'Assinaturas',   icon: Repeat2,         adminOnly: true },
-  { href: '/financeiro',    label: 'Financeiro',    icon: DollarSign,      adminOnly: true },
-  { href: '/estoque',       label: 'Estoque',       icon: Package,         adminOnly: true },
-  { href: '/configuracoes', label: 'Configurações', icon: Settings,        adminOnly: true },
+interface SubItem {
+  label: string;
+  href: string;
+  icon?: React.ReactNode;
+}
+
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
+  href?: string;       // se tem href = link direto sem submenu
+  adminOnly: boolean;
+  children?: SubItem[];
+}
+
+const navItems: NavItem[] = [
+  {
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    href: '/dashboard',
+    adminOnly: false,
+  },
+  {
+    label: 'Agenda',
+    icon: Calendar,
+    href: '/agenda',
+    adminOnly: false,
+  },
+  {
+    label: 'Serviços',
+    icon: Scissors,
+    href: '/servicos',
+    adminOnly: false,
+  },
+  {
+    label: 'Barbeiros',
+    icon: UserCog,
+    href: '/barbeiros',
+    adminOnly: true,
+  },
+  {
+    label: 'Clientes',
+    icon: Users,
+    href: '/clientes',
+    adminOnly: true,
+  },
+  {
+    label: 'Assinaturas',
+    icon: Repeat2,
+    href: '/assinaturas',
+    adminOnly: true,
+  },
+  {
+    label: 'Financeiro',
+    icon: DollarSign,
+    adminOnly: true,
+    children: [
+      { label: 'Comandas abertas',   href: '/financeiro/comandas',          icon: <FileText className="w-3.5 h-3.5" /> },
+      { label: 'Comandas fechadas',  href: '/financeiro/comandas/fechadas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',         href: '/financeiro/relatorios',        icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
+  },
+  {
+    label: 'Estoque',
+    icon: Package,
+    href: '/estoque',
+    adminOnly: true,
+  },
+  {
+    label: 'Configurações',
+    icon: Settings,
+    href: '/configuracoes',
+    adminOnly: true,
+  },
 ];
 
 const planLabel: Record<string, string> = {
@@ -41,9 +108,33 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Auto-abre o item cujo filho está ativo
+  const initialOpen = navItems
+    .filter(item => item.children?.some(c => pathname.startsWith(c.href)))
+    .map(item => item.label);
+
+  const [openItems, setOpenItems] = useState<string[]>(initialOpen);
+
+  // Reabre quando a rota muda (ex: navegação direta via URL)
+  useEffect(() => {
+    navItems.forEach(item => {
+      if (item.children?.some(c => pathname.startsWith(c.href))) {
+        setOpenItems(prev => prev.includes(item.label) ? prev : [...prev, item.label]);
+      }
+    });
+  }, [pathname]);
+
+  const toggleItem = (label: string) => {
+    setOpenItems(prev =>
+      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+    );
+  };
+
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?';
+
+  const filtered = navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN');
 
   return (
     <aside className="w-64 bg-card border-r border-border flex flex-col h-full shrink-0">
@@ -61,30 +152,93 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
+      <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
+        {filtered.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const hasChildren = !!item.children?.length;
+          const isOpen = openItems.includes(item.label);
+
+          // Ativo: link direto bate com pathname, ou algum filho bate
+          const isActive = item.href
+            ? pathname === item.href || pathname.startsWith(item.href + '/')
+            : item.children?.some(c => pathname.startsWith(c.href)) ?? false;
+
+          if (!hasChildren && item.href) {
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                )}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+              </Link>
+            );
+          }
+
+          // Item com submenus
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-              )}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {isActive && <ChevronRight className="w-3 h-3" />}
-            </Link>
+            <div key={item.label}>
+              <button
+                onClick={() => toggleItem(item.label)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  isActive && !isOpen
+                    ? 'bg-primary text-primary-foreground'
+                    : isActive
+                      ? 'text-foreground bg-accent'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                )}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1 text-left">{item.label}</span>
+                <ChevronDown
+                  className={cn(
+                    'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
+                    isOpen && 'rotate-180',
+                  )}
+                />
+              </button>
+
+              {/* Submenus */}
+              <div
+                className={cn(
+                  'overflow-hidden transition-all duration-200',
+                  isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
+                )}
+              >
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-3 pb-1">
+                  {item.children!.map((child) => {
+                    const childActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={cn(
+                          'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors',
+                          childActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                        )}
+                      >
+                        {child.icon && <span className="shrink-0">{child.icon}</span>}
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           );
         })}
       </nav>
 
-      {/* Link do portal do cliente */}
+      {/* Portal do cliente */}
       {user?.barbershop?.slug && (
         <div className="px-4 pb-2">
           <a
