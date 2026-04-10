@@ -38,7 +38,6 @@ const START_HOUR = 8;
 const END_HOUR = 21;
 const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2;
 const TOTAL_HEIGHT = TOTAL_SLOTS * SLOT_HEIGHT;
-const SNAP_MINS = 15; // snap granularity
 
 const TIME_SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => {
   const hour = START_HOUR + Math.floor(i / 2);
@@ -61,13 +60,14 @@ interface Props {
   appointments: Appointment[];
   dayOffs?: DayOffBlock[];
   recurringBlocks?: RecurringBlockDisplay[];
+  snapMins?: number;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onReschedule: (id: string, scheduledAt: string) => void;
   onResize: (id: string, durationMins: number) => void;
   onDelete: (id: string) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], onStatusChange, onReschedule, onResize, onDelete }: Props) {
+export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], snapMins = 15, onStatusChange, onReschedule, onResize, onDelete }: Props) {
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   if (professionals.length === 0) {
@@ -108,8 +108,7 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
     const rect = col.getBoundingClientRect();
     const relY = e.clientY - rect.top - offsetY;
     const totalMins = START_HOUR * 60 + Math.max(0, relY / PX_PER_MIN);
-    // Snap to SNAP_MINS granularity
-    const snapped = Math.round(totalMins / SNAP_MINS) * SNAP_MINS;
+    const snapped = Math.round(totalMins / snapMins) * snapMins;
     const h = Math.floor(snapped / 60);
     const m = snapped % 60;
 
@@ -235,6 +234,7 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
                 appointment={apt}
                 top={getTop(apt.scheduledAt)}
                 height={getHeight(apt.durationMins)}
+                snapMins={snapMins}
                 onStatusChange={onStatusChange}
                 onDragStart={handleDragStart}
                 onResize={onResize}

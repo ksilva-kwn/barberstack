@@ -26,7 +26,6 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 };
 
 const PX_PER_MIN   = 56 / 30;
-const SNAP_MINS    = 15;
 const MIN_DURATION = 15;
 
 function getActions(status: AppointmentStatus) {
@@ -51,13 +50,14 @@ interface Props {
   appointment: Appointment;
   top: number;
   height: number;
+  snapMins?: number;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onDragStart: (e: React.DragEvent, apt: Appointment) => void;
   onResize: (id: string, newDurationMins: number) => void;
   onDelete: (id: string) => void;
 }
 
-export function AppointmentCard({ appointment, top, height, onStatusChange, onDragStart, onResize, onDelete }: Props) {
+export function AppointmentCard({ appointment, top, height, snapMins = 15, onStatusChange, onDragStart, onResize, onDelete }: Props) {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [liveHeight, setLiveHeight] = useState<number | null>(null);
   const liveHeightRef = useRef<number | null>(null);
@@ -91,7 +91,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
       if (!resizing.current) return;
       const delta    = ev.clientY - startY.current;
       const rawHeight = Math.max(MIN_DURATION * PX_PER_MIN, startHeight.current + delta);
-      const snapped  = Math.max(MIN_DURATION, Math.round((rawHeight / PX_PER_MIN) / SNAP_MINS) * SNAP_MINS);
+      const snapped  = Math.max(MIN_DURATION, Math.round((rawHeight / PX_PER_MIN) / snapMins) * snapMins);
       liveHeightRef.current = snapped * PX_PER_MIN;
       setLiveHeight(snapped * PX_PER_MIN);
     };
@@ -101,7 +101,7 @@ export function AppointmentCard({ appointment, top, height, onStatusChange, onDr
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
       const finalPx   = liveHeightRef.current ?? height;
-      const finalMins = Math.max(MIN_DURATION, Math.round((finalPx / PX_PER_MIN) / SNAP_MINS) * SNAP_MINS);
+      const finalMins = Math.max(MIN_DURATION, Math.round((finalPx / PX_PER_MIN) / snapMins) * snapMins);
       setLiveHeight(null);
       liveHeightRef.current = null;
       onResize(appointment.id, finalMins);

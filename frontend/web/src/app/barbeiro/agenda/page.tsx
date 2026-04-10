@@ -43,6 +43,11 @@ export default function BarberAgendaPage() {
 
   const selectedDow = selectedDate.getDay();
 
+  const { data: services = [] } = useQuery<{ durationMins: number }[]>({
+    queryKey: ['services'],
+    queryFn: () => api.get('/api/services').then(r => r.data),
+  });
+
   const { data: recurringBlocks = [] } = useQuery<RecurringBlockDisplay[]>({
     queryKey: ['barber-recurring-blocks', myProfessional?.id, selectedDow],
     queryFn: async () => {
@@ -76,6 +81,10 @@ export default function BarberAgendaPage() {
     mutationFn: (id: string) => appointmentApi.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['barber-appointments', dateStr, myProfessional?.id] }),
   });
+
+  function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
+  const durations = services.map(s => s.durationMins).filter(d => d > 0);
+  const snapMins = Math.min(Math.max(durations.length > 0 ? durations.reduce(gcd) : 15, 5), 30);
 
   const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
@@ -118,6 +127,7 @@ export default function BarberAgendaPage() {
           appointments={appointments}
           dayOffs={dayOffs}
           recurringBlocks={recurringBlocks}
+          snapMins={snapMins}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}

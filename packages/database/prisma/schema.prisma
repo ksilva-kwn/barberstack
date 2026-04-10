@@ -294,6 +294,11 @@ model Appointment {
   completedAt  DateTime?
   canceledAt   DateTime?
 
+  // Financeiro / comanda
+  paymentStatus  String         @default("PENDING") // PENDING | PAID
+  paymentMethod  PaymentMethod?
+  paidAt         DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

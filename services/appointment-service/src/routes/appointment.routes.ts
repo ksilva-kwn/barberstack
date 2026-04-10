@@ -144,6 +144,34 @@ appointmentRouter.patch('/:id/duration', async (req: Request, res: Response) => 
   return res.json(appointment);
 });
 
+// Registrar pagamento de comanda
+appointmentRouter.patch('/:id/payment', async (req: Request, res: Response) => {
+  const { paymentStatus, paymentMethod } = req.body;
+  if (!['PENDING', 'PAID'].includes(paymentStatus)) {
+    return res.status(400).json({ error: 'paymentStatus deve ser PENDING ou PAID' });
+  }
+
+  const updates: any = { paymentStatus };
+  if (paymentStatus === 'PAID') {
+    updates.paidAt = new Date();
+    if (paymentMethod) updates.paymentMethod = paymentMethod;
+  } else {
+    updates.paidAt = null;
+    updates.paymentMethod = null;
+  }
+
+  const appointment = await prisma.appointment.update({
+    where: { id: req.params.id },
+    data: updates,
+    include: {
+      professional: { include: { user: { select: { name: true } } } },
+      services: { include: { service: true } },
+      client: { select: { name: true, phone: true } },
+    },
+  });
+  return res.json(appointment);
+});
+
 // Horários disponíveis de um profissional em uma data
 appointmentRouter.get('/available-slots', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;

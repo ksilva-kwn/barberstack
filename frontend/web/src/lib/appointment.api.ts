@@ -9,6 +9,10 @@ export type AppointmentStatus =
   | 'CANCELED'
   | 'BLOCKED';
 
+export type PaymentStatus = 'PENDING' | 'PAID';
+
+export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH' | 'BOLETO';
+
 export interface AppointmentService {
   id: string;
   serviceId: string;
@@ -29,6 +33,9 @@ export interface Appointment {
   origin: 'APP' | 'RECEPTION';
   notes: string | null;
   totalAmount: number;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod | null;
+  paidAt: string | null;
   professional: { id: string; user: { name: string }; nickname: string | null };
   services: AppointmentService[];
   client: { name: string; phone: string | null } | null;
@@ -72,4 +79,7 @@ export const appointmentApi = {
 
   delete: (id: string) =>
     api.delete(`/api/appointments/${id}`),
+
+  updatePayment: (id: string, paymentStatus: PaymentStatus, paymentMethod?: PaymentMethod) =>
+    api.patch<Appointment>(`/api/appointments/${id}/payment`, { paymentStatus, paymentMethod }),
 };

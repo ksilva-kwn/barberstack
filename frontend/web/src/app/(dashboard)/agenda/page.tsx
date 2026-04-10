@@ -11,6 +11,10 @@ import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/a
 import { api } from '@/lib/api';
 import { NewAppointmentModal } from '@/components/agenda/new-appointment-modal';
 
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
@@ -97,6 +101,10 @@ export default function AgendaPage() {
 
   const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
+  const durations = (services as { durationMins: number }[]).map(s => s.durationMins).filter(d => d > 0);
+  const rawGcd = durations.length > 0 ? durations.reduce(gcd) : 15;
+  const snapMins = Math.min(Math.max(rawGcd, 5), 30);
+
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Header */}
@@ -153,6 +161,7 @@ export default function AgendaPage() {
           appointments={appointments}
           dayOffs={dayOffs}
           recurringBlocks={recurringBlocks}
+          snapMins={snapMins}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}
