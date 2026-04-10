@@ -42,7 +42,7 @@ function PaymentDropdown({ appointment, onPay }: { appointment: Appointment; onP
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]">
+          <div className="absolute right-0 bottom-8 z-20 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]">
             <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Forma de pagamento</p>
             {METHODS.map((m) => (
               <button
@@ -105,7 +105,7 @@ export default function ComandasAbertasPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-visible">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
