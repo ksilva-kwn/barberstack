@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, ChevronDown } from 'lucide-react';
 import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
@@ -32,26 +32,92 @@ const METHOD_STYLE: Record<PaymentMethod, string> = {
   BOLETO:      'bg-amber-500/15 text-amber-400 border-amber-500/30',
 };
 
+const METHODS: PaymentMethod[] = ['PIX', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH'];
+
 const RANGE_OPTIONS = [
-  { label: 'Hoje',        days: 0 },
+  { label: 'Hoje',           days: 0 },
   { label: 'Últimos 7 dias', days: 7 },
   { label: 'Últimos 30 dias', days: 30 },
 ];
+
+function EditMethodDropdown({ current, onSave }: { current: PaymentMethod | null; onSave: (m: PaymentMethod) => void }) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<PaymentMethod | null>(current);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        title="Editar forma de pagamento"
+        className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setSelected(current); }} />
+          <div className="absolute right-0 bottom-8 z-20 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[200px]">
+            <p className="px-3 pb-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-wide border-b border-border mb-1">
+              Alterar forma de pagamento
+            </p>
+            {METHODS.map((m) => (
+              <button
+                key={m}
+                onClick={() => setSelected(m)}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors text-left',
+                  selected === m ? 'bg-primary/15 text-primary font-medium' : 'text-foreground hover:bg-accent',
+                )}
+              >
+                {PAYMENT_METHOD_ICON[m]}
+                {PAYMENT_METHOD_LABEL[m]}
+                {selected === m && <CheckCircle className="w-3 h-3 ml-auto" />}
+              </button>
+            ))}
+            <div className="border-t border-border mt-1 px-2 pt-2">
+              <button
+                onClick={() => { if (selected) { setOpen(false); onSave(selected); } }}
+                disabled={!selected}
+                className="w-full py-1.5 rounded-md text-xs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function ComandasFechadasPage() {
   const queryClient = useQueryClient();
   const [rangeIdx, setRangeIdx] = useState(1);
   const range = RANGE_OPTIONS[rangeIdx];
 
-  const dateFrom = format(subDays(new Date(), range.days), 'yyyy-MM-dd');
-  const dateTo   = format(new Date(), 'yyyy-MM-dd');
-
-  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
-    queryKey: ['comandas-fechadas', rangeIdx],
+  // Busca TODOS os COMPLETED pagos (sem filtro de data no servidor — filtramos por paidAt no cliente)
+  const { data: all = [], isLoading } = useQuery<Appointment[]>({
+    queryKey: ['comandas-fechadas'],
     queryFn: () =>
-      appointmentApi.list({ dateFrom, dateTo, status: 'COMPLETED' }).then(r =>
+      appointmentApi.list({ status: 'COMPLETED' }).then(r =>
         r.data.filter(a => a.paymentStatus === 'PAID')
       ),
+  });
+
+  // Filtra por paidAt no cliente
+  const rangeStart = range.days === 0
+    ? startOfDay(new Date())
+    : subDays(new Date(), range.days);
+
+  const appointments = all.filter(a => {
+    if (!a.paidAt) return true; // sem paidAt aparece sempre
+    return new Date(a.paidAt) >= rangeStart;
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, method }: { id: string; method: PaymentMethod }) =>
+      appointmentApi.updatePayment(id, 'PAID', method),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-fechadas'] }),
   });
 
   const reopenMutation = useMutation({
@@ -64,7 +130,6 @@ export default function ComandasFechadasPage() {
 
   const totalPaid = appointments.reduce((sum, a) => sum + Number(a.totalAmount), 0);
 
-  // Breakdown por forma de pagamento
   const byMethod = appointments.reduce<Record<string, { count: number; total: number }>>((acc, a) => {
     const m = a.paymentMethod ?? 'Outros';
     if (!acc[m]) acc[m] = { count: 0, total: 0 };
@@ -80,7 +145,6 @@ export default function ComandasFechadasPage() {
           <h1 className="text-2xl font-bold text-foreground">Comandas fechadas</h1>
           <p className="text-muted-foreground text-sm">Atendimentos já pagos</p>
         </div>
-        {/* Range selector */}
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
           {RANGE_OPTIONS.map((opt, i) => (
             <button
@@ -97,7 +161,7 @@ export default function ComandasFechadasPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 col-span-2 md:col-span-1">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Atendimentos</p>
@@ -121,7 +185,7 @@ export default function ComandasFechadasPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-visible">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -176,14 +240,20 @@ export default function ComandasFechadasPage() {
                     <td className="px-4 py-3 text-right font-semibold text-foreground whitespace-nowrap">
                       R$ {Number(apt.totalAmount).toFixed(2).replace('.', ',')}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => reopenMutation.mutate(apt.id)}
-                        title="Reabrir comanda"
-                        className="p-1.5 rounded text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <EditMethodDropdown
+                          current={method}
+                          onSave={(m) => editMutation.mutate({ id: apt.id, method: m })}
+                        />
+                        <button
+                          onClick={() => reopenMutation.mutate(apt.id)}
+                          title="Reabrir comanda"
+                          className="p-1.5 rounded text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

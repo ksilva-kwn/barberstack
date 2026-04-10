@@ -26,8 +26,16 @@ const PAYMENT_METHOD_ICON: Record<PaymentMethod, React.ReactNode> = {
 
 const METHODS: PaymentMethod[] = ['PIX', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH'];
 
-function PaymentDropdown({ appointment, onPay }: { appointment: Appointment; onPay: (method: PaymentMethod) => void }) {
+function PaymentDropdown({ onPay }: { onPay: (method: PaymentMethod) => void }) {
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<PaymentMethod | null>(null);
+
+  const handleConfirm = () => {
+    if (!selected) return;
+    setOpen(false);
+    onPay(selected);
+    setSelected(null);
+  };
 
   return (
     <div className="relative">
@@ -39,21 +47,39 @@ function PaymentDropdown({ appointment, onPay }: { appointment: Appointment; onP
         Receber
         <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
       </button>
+
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 bottom-8 z-20 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]">
-            <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Forma de pagamento</p>
+          <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setSelected(null); }} />
+          <div className="absolute right-0 bottom-9 z-20 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[200px]">
+            <p className="px-3 pb-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-wide border-b border-border mb-1">
+              Forma de pagamento
+            </p>
             {METHODS.map((m) => (
               <button
                 key={m}
-                onClick={() => { setOpen(false); onPay(m); }}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors text-left"
+                onClick={() => setSelected(m)}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors text-left',
+                  selected === m
+                    ? 'bg-primary/15 text-primary font-medium'
+                    : 'text-foreground hover:bg-accent',
+                )}
               >
                 {PAYMENT_METHOD_ICON[m]}
                 {PAYMENT_METHOD_LABEL[m]}
+                {selected === m && <CheckCircle className="w-3 h-3 ml-auto" />}
               </button>
             ))}
+            <div className="border-t border-border mt-1 px-2 pt-2">
+              <button
+                onClick={handleConfirm}
+                disabled={!selected}
+                className="w-full py-1.5 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Fechar comanda
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -153,7 +179,6 @@ export default function ComandasAbertasPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <PaymentDropdown
-                        appointment={apt}
                         onPay={(method) => payMutation.mutate({ id: apt.id, method })}
                       />
                     </td>
