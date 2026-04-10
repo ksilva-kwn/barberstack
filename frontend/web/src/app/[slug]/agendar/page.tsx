@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Scissors, ArrowLeft, Loader2, Check, LogOut } from 'lucide-react';
-import { portalApi } from '@/lib/public.api';
+import { Scissors, ArrowLeft, Loader2, Check, LogOut, MapPin } from 'lucide-react';
+import { portalApi, PublicBranch } from '@/lib/public.api';
 
 const inputCls =
   'w-full px-3 py-2.5 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
@@ -14,10 +14,11 @@ export default function PortalAgendarPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const branchId = searchParams.get('branchId') ?? undefined;
+  const initialBranchId = searchParams.get('branchId') ?? '';
   const [portalToken, setPortalToken] = useState<string | null>(null);
   const [portalUser, setPortalUser] = useState<any>(null);
 
+  const [selectedBranchId, setSelectedBranchId] = useState(initialBranchId);
   const [professionalId, setProfessionalId] = useState('');
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -44,18 +45,43 @@ export default function PortalAgendarPage() {
     queryFn: () => portalApi.shop(slug).then(r => r.data),
   });
 
-  const { data: professionals = [] } = useQuery({
-    queryKey: ['public-professionals', slug, branchId],
-    queryFn: () => portalApi.professionals(slug, branchId).then(r => r.data),
+  const { data: branches = [] } = useQuery<PublicBranch[]>({
+    queryKey: ['public-branches', slug],
+    queryFn: () => portalApi.branches(slug).then(r => r.data),
     enabled: !!shop,
+  });
+
+  // Auto-select branch: if only one or initialBranchId provided
+  useEffect(() => {
+    if (initialBranchId) { setSelectedBranchId(initialBranchId); return; }
+    if (branches.length === 1) { setSelectedBranchId(branches[0].id); return; }
+    if (branches.length > 1 && !selectedBranchId) {
+      const main = branches.find(b => b.isMain);
+      if (main) setSelectedBranchId(main.id);
+    }
+  }, [branches]);
+
+  const hasBranches = branches.length > 0;
+  const branchReady = !hasBranches || !!selectedBranchId;
+
+  const { data: professionals = [] } = useQuery({
+    queryKey: ['public-professionals', slug, selectedBranchId],
+    queryFn: () => portalApi.professionals(slug, selectedBranchId || undefined).then(r => r.data),
+    enabled: !!shop && branchReady,
   });
 
   // Set default professional once loaded
   useEffect(() => {
+    setProfessionalId('');
+    setSelectedServiceIds([]);
+    setSelectedTime('');
+  }, [selectedBranchId]);
+
+  useEffect(() => {
     if (professionals.length > 0 && !professionalId) {
       setProfessionalId(professionals[0].id);
     }
-  }, [professionals, professionalId]);
+  }, [professionals]);
 
   const professional = professionals.find(p => p.id === professionalId);
   const availableServices = (professional?.professionalServices ?? [])
@@ -89,7 +115,6 @@ export default function PortalAgendarPage() {
     try {
       await portalApi.createAppointment(portalToken, {
         professionalId,
-        // Força UTC-3 (BRT) para evitar conversão errada no browser
         scheduledAt: `${scheduledDate}T${selectedTime}:00-03:00`,
         serviceIds: selectedServiceIds,
         notes: notes.trim() || undefined,
@@ -193,18 +218,61 @@ export default function PortalAgendarPage() {
         <h1 className="text-xl font-bold text-foreground mb-6">Novo agendamento</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Filial — só mostra se houver mais de uma */}
+          {branches.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />Unidade</span>
+              </label>
+              <div className="space-y-2">
+                {branches.map(b => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => setSelectedBranchId(b.id)}
+                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-sm transition-colors text-left ${
+                      selectedBranchId === b.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-background hover:bg-accent'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground">{b.name}</p>
+                      {(b.address || b.city) && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {[b.address, b.city, b.state].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                      {b.phone && <p className="text-xs text-muted-foreground">{b.phone}</p>}
+                    </div>
+                    {selectedBranchId === b.id && (
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Profissional */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Profissional</label>
-            <select
-              value={professionalId}
-              onChange={e => setProfessionalId(e.target.value)}
-              className={inputCls}
-            >
-              {professionals.map(p => (
-                <option key={p.id} value={p.id}>{p.nickname ?? p.user.name}</option>
-              ))}
-            </select>
+            {!branchReady ? (
+              <p className="text-sm text-muted-foreground">Selecione uma unidade primeiro.</p>
+            ) : professionals.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum profissional disponível nesta unidade.</p>
+            ) : (
+              <select
+                value={professionalId}
+                onChange={e => setProfessionalId(e.target.value)}
+                className={inputCls}
+              >
+                {professionals.map(p => (
+                  <option key={p.id} value={p.id}>{p.nickname ?? p.user.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Serviços */}
@@ -318,7 +386,7 @@ export default function PortalAgendarPage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !branchReady || !professionalId}
             className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
