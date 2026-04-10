@@ -21,7 +21,16 @@ function BranchModal({
   onClose: () => void;
   onSave: (data: typeof EMPTY_FORM) => Promise<void>;
 }) {
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...initial, state: initial?.state ?? '', zipCode: initial?.zipCode ?? '' });
+  const [form, setForm] = useState({
+    ...EMPTY_FORM,
+    name: initial?.name ?? '',
+    address: initial?.address ?? '',
+    phone: initial?.phone ?? '',
+    city: initial?.city ?? '',
+    state: initial?.state ?? '',
+    zipCode: initial?.zipCode ?? '',
+    isMain: initial?.isMain ?? false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
