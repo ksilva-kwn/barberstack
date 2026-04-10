@@ -155,6 +155,85 @@ barbershopRouter.delete('/:id/photos/:photoId', async (req: Request, res: Respon
   return res.status(204).send();
 });
 
+// ── Filiais ───────────────────────────────────────────────────────────────────
+
+// Listar filiais
+barbershopRouter.get('/:id/branches', async (req: Request, res: Response) => {
+  const branches = await prisma.barbershopBranch.findMany({
+    where: { barbershopId: req.params.id },
+    orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
+  });
+  return res.json(branches);
+});
+
+// Criar filial
+barbershopRouter.post('/:id/branches', async (req: Request, res: Response) => {
+  const schema = z.object({
+    name:    z.string().min(2),
+    address: z.string().nullable().optional(),
+    phone:   z.string().nullable().optional(),
+    city:    z.string().nullable().optional(),
+    state:   z.string().max(2).nullable().optional(),
+    zipCode: z.string().nullable().optional(),
+    isMain:  z.boolean().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  // Se isMain=true, desmarca as outras
+  if (parsed.data.isMain) {
+    await prisma.barbershopBranch.updateMany({
+      where: { barbershopId: req.params.id },
+      data: { isMain: false },
+    });
+  }
+
+  const branch = await prisma.barbershopBranch.create({
+    data: { barbershopId: req.params.id, ...parsed.data },
+  });
+  return res.status(201).json(branch);
+});
+
+// Atualizar filial
+barbershopRouter.put('/:id/branches/:branchId', async (req: Request, res: Response) => {
+  const schema = z.object({
+    name:     z.string().min(2).optional(),
+    address:  z.string().nullable().optional(),
+    phone:    z.string().nullable().optional(),
+    city:     z.string().nullable().optional(),
+    state:    z.string().max(2).nullable().optional(),
+    zipCode:  z.string().nullable().optional(),
+    isMain:   z.boolean().optional(),
+    isActive: z.boolean().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  if (parsed.data.isMain) {
+    await prisma.barbershopBranch.updateMany({
+      where: { barbershopId: req.params.id, id: { not: req.params.branchId } },
+      data: { isMain: false },
+    });
+  }
+
+  const branch = await prisma.barbershopBranch.update({
+    where: { id: req.params.branchId },
+    data: parsed.data,
+  });
+  return res.json(branch);
+});
+
+// Excluir filial
+barbershopRouter.delete('/:id/branches/:branchId', async (req: Request, res: Response) => {
+  // Remove vínculo dos profissionais antes de deletar
+  await prisma.professional.updateMany({
+    where: { branchId: req.params.branchId },
+    data: { branchId: null },
+  });
+  await prisma.barbershopBranch.delete({ where: { id: req.params.branchId } });
+  return res.status(204).send();
+});
+
 // Dashboard KPIs
 barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   const { id } = req.params;

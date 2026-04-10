@@ -7,6 +7,16 @@ export const publicApi = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+export interface PublicBranch {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  isMain: boolean;
+}
+
 export interface PublicShop {
   id: string;
   name: string;
@@ -49,8 +59,13 @@ export const portalApi = {
   shop: (slug: string) =>
     publicApi.get<PublicShop>(`/api/public/shop/${slug}`),
 
-  professionals: (slug: string) =>
-    publicApi.get<PublicProfessional[]>(`/api/public/shop/${slug}/professionals`),
+  branches: (slug: string) =>
+    publicApi.get<PublicBranch[]>(`/api/public/shop/${slug}/branches`),
+
+  professionals: (slug: string, branchId?: string) =>
+    publicApi.get<PublicProfessional[]>(`/api/public/shop/${slug}/professionals`, {
+      params: branchId ? { branchId } : {},
+    }),
 
   slots: (barbershopId: string, professionalId: string, date: string, durationMins: number) =>
     publicApi.get<TimeSlot[]>('/api/public/slots', {

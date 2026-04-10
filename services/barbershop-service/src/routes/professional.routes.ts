@@ -7,11 +7,16 @@ export const professionalRouter: Router = Router();
 // Listar profissionais da barbearia
 professionalRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { branchId } = req.query;
+  const where: any = { barbershopId, isActive: true };
+  if (branchId) where.branchId = branchId as string;
+
   const professionals = await prisma.professional.findMany({
-    where: { barbershopId, isActive: true },
+    where,
     include: {
       user: { select: { name: true, email: true, phone: true, avatarUrl: true } },
       professionalServices: { include: { service: true } },
+      branch: { select: { id: true, name: true } },
     },
   });
   return res.json(professionals);
@@ -20,23 +25,27 @@ professionalRouter.get('/', async (req: Request, res: Response) => {
 // Adicionar profissional — VERIFICA QUOTA ANTES
 professionalRouter.post('/', checkProfessionalQuota, async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { userId, nickname, commissionRate } = req.body;
+  const { userId, nickname, commissionRate, branchId } = req.body;
 
   const professional = await prisma.professional.create({
-    data: { barbershopId, userId, nickname, commissionRate: commissionRate ?? 40 },
-    include: { user: { select: { name: true, email: true } } },
+    data: { barbershopId, userId, nickname, commissionRate: commissionRate ?? 40, branchId: branchId || null },
+    include: { user: { select: { name: true, email: true } }, branch: { select: { id: true, name: true } } },
   });
 
   return res.status(201).json(professional);
 });
 
-// Atualizar profissional (nickname, commissionRate)
+// Atualizar profissional (nickname, commissionRate, branchId)
 professionalRouter.put('/:id', async (req: Request, res: Response) => {
-  const { nickname, commissionRate } = req.body;
+  const { nickname, commissionRate, branchId } = req.body;
   const professional = await prisma.professional.update({
     where: { id: req.params.id },
-    data: { ...(nickname !== undefined && { nickname }), ...(commissionRate !== undefined && { commissionRate }) },
-    include: { user: { select: { name: true, email: true } } },
+    data: {
+      ...(nickname !== undefined && { nickname }),
+      ...(commissionRate !== undefined && { commissionRate }),
+      ...(branchId !== undefined && { branchId: branchId || null }),
+    },
+    include: { user: { select: { name: true, email: true } }, branch: { select: { id: true, name: true } } },
   });
   return res.json(professional);
 });

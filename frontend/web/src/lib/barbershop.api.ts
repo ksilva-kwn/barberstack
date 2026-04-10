@@ -1,11 +1,26 @@
 import { api } from './api';
 
+export interface Branch {
+  id: string;
+  barbershopId: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  isMain: boolean;
+  isActive: boolean;
+}
+
 export interface Professional {
   id: string;
   userId: string;
   nickname: string | null;
   commissionRate: number;
   isActive: boolean;
+  branchId: string | null;
+  branch: { id: string; name: string } | null;
   user: { name: string; email: string; phone: string | null; avatarUrl: string | null };
   professionalServices?: { service: BarbershopService }[];
 }
@@ -124,8 +139,20 @@ export const barbershopApi = {
   removeService: (professionalId: string, serviceId: string) =>
     api.delete(`/api/professionals/${professionalId}/services/${serviceId}`),
 
-  updateProfessional: (id: string, data: { nickname?: string; commissionRate?: number }) =>
+  updateProfessional: (id: string, data: { nickname?: string; commissionRate?: number; branchId?: string | null }) =>
     api.put<Professional>(`/api/professionals/${id}`, data),
+
+  branches: (barbershopId: string) =>
+    api.get<Branch[]>(`/api/barbershops/${barbershopId}/branches`),
+
+  createBranch: (barbershopId: string, data: Omit<Branch, 'id' | 'barbershopId' | 'isActive'>) =>
+    api.post<Branch>(`/api/barbershops/${barbershopId}/branches`, data),
+
+  updateBranch: (barbershopId: string, branchId: string, data: Partial<Omit<Branch, 'id' | 'barbershopId'>>) =>
+    api.put<Branch>(`/api/barbershops/${barbershopId}/branches/${branchId}`, data),
+
+  deleteBranch: (barbershopId: string, branchId: string) =>
+    api.delete(`/api/barbershops/${barbershopId}/branches/${branchId}`),
 
   createBarber: (data: { name: string; email: string; phone?: string; password: string; nickname?: string; commissionRate?: number }) =>
     api.post<Professional>('/api/clients/barber', data),

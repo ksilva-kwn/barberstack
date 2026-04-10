@@ -127,6 +127,7 @@ model Barbershop {
   transactions  FinancialTransaction[]
   commissions   Commission[]
   photos        BarbershopPhoto[]
+  branches      BarbershopBranch[]
 
   @@map("barbershops")
 }
@@ -195,6 +196,33 @@ model RefreshToken {
 }
 
 // =============================================================================
+// FILIAIS
+// =============================================================================
+
+model BarbershopBranch {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  name     String
+  address  String?
+  phone    String?
+  city     String?
+  state    String?
+  zipCode  String?
+  isMain   Boolean  @default(false)
+  isActive Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  professionals Professional[]
+  appointments  Appointment[]
+
+  @@index([barbershopId])
+  @@map("barbershop_branches")
+}
+
+// =============================================================================
 // PROFISSIONAIS (BARBEIROS)
 // =============================================================================
 
@@ -204,6 +232,9 @@ model Professional {
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   userId       String     @unique
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   BarbershopBranch? @relation(fields: [branchId], references: [id])
 
   nickname       String?
   bio            String?
@@ -281,6 +312,9 @@ model Appointment {
   clientId  String?
   client    User?   @relation("ClientAppointments", fields: [clientId], references: [id])
   clientName String? // Para clientes sem conta
+
+  branchId  String?
+  branch    BarbershopBranch? @relation(fields: [branchId], references: [id])
 
   scheduledAt    DateTime
   durationMins   Int

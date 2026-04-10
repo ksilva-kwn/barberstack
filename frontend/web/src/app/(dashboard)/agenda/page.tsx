@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
-import { barbershopApi } from '@/lib/barbershop.api';
+import { barbershopApi, Branch } from '@/lib/barbershop.api';
+import { useAuthStore } from '@/store/auth.store';
 import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
 import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
 import { api } from '@/lib/api';
@@ -18,14 +19,27 @@ function gcd(a: number, b: number): number {
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const barbershopId = (user as any)?.barbershopId ?? '';
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-  const { data: professionals = [], isLoading: loadingProfs } = useQuery({
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ['branches', barbershopId],
+    queryFn: () => barbershopApi.branches(barbershopId).then(r => r.data),
+    enabled: !!barbershopId,
+  });
+
+  const { data: allProfessionals = [], isLoading: loadingProfs } = useQuery({
     queryKey: ['professionals'],
     queryFn: () => barbershopApi.professionals().then((r) => r.data),
   });
+
+  const professionals = selectedBranchId
+    ? allProfessionals.filter(p => p.branchId === selectedBranchId)
+    : allProfessionals;
 
   const { data: appointments = [], isLoading: loadingApts } = useQuery({
     queryKey: ['appointments', dateStr],
@@ -117,6 +131,18 @@ export default function AgendaPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {branches.length > 0 && (
+            <select
+              value={selectedBranchId}
+              onChange={e => setSelectedBranchId(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">Todas as filiais</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
           <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
             <button
               onClick={() => setSelectedDate((d) => subDays(d, 1))}

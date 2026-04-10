@@ -7,12 +7,13 @@ import {
   Scissors, MapPin, Phone, LogIn, UserPlus, Calendar,
   Loader2, Clock, Info,
 } from 'lucide-react';
-import { portalApi, PublicPhoto } from '@/lib/public.api';
+import { portalApi, PublicPhoto, PublicBranch } from '@/lib/public.api';
 
 export default function PortalPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const [portalUser, setPortalUser] = useState<any>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`portal-auth-${slug}`);
@@ -27,10 +28,27 @@ export default function PortalPage() {
     queryFn: () => portalApi.shop(slug).then(r => r.data),
   });
 
-  const { data: professionals = [] } = useQuery({
-    queryKey: ['public-professionals', slug],
-    queryFn: () => portalApi.professionals(slug).then(r => r.data),
+  const { data: branches = [] } = useQuery<PublicBranch[]>({
+    queryKey: ['public-branches', slug],
+    queryFn: () => portalApi.branches(slug).then(r => r.data),
     enabled: !!shop,
+  });
+
+  // Auto-select main branch if only one branch exists
+  useEffect(() => {
+    if (branches.length === 1) setSelectedBranchId(branches[0].id);
+    else if (branches.length > 1 && !selectedBranchId) {
+      const main = branches.find(b => b.isMain);
+      if (main) setSelectedBranchId(main.id);
+    }
+  }, [branches]);
+
+  const effectiveBranchId = branches.length > 0 ? selectedBranchId : null;
+
+  const { data: professionals = [] } = useQuery({
+    queryKey: ['public-professionals', slug, effectiveBranchId],
+    queryFn: () => portalApi.professionals(slug, effectiveBranchId ?? undefined).then(r => r.data),
+    enabled: !!shop && (branches.length === 0 || !!effectiveBranchId),
   });
 
   const { data: photos = [] } = useQuery({
@@ -45,10 +63,11 @@ export default function PortalPage() {
   };
 
   const handleBookClick = () => {
+    const query = effectiveBranchId ? `?branchId=${effectiveBranchId}` : '';
     if (portalUser) {
-      router.push(`/${slug}/agendar`);
+      router.push(`/${slug}/agendar${query}`);
     } else {
-      router.push(`/${slug}/entrar`);
+      router.push(`/${slug}/entrar${query}`);
     }
   };
 
@@ -198,6 +217,38 @@ export default function PortalPage() {
 
       {/* Main content */}
       <main className="max-w-3xl mx-auto px-4 pb-24 space-y-8">
+
+        {/* Branch selector — only shown when multiple branches */}
+        {branches.length > 1 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Escolha a unidade</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {branches.map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => setSelectedBranchId(b.id)}
+                  className={`text-left p-3.5 rounded-xl border transition-colors ${
+                    selectedBranchId === b.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-card hover:border-primary/50'
+                  }`}
+                >
+                  <p className="font-medium text-foreground text-sm">{b.name}</p>
+                  {(b.address || b.city) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {[b.address, b.city, b.state].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                  {b.phone && <p className="text-xs text-muted-foreground mt-0.5">{b.phone}</p>}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* About */}
         {shop.description && (
           <section>

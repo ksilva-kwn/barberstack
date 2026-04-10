@@ -13,6 +13,22 @@ publicRouter.get('/:slug', async (req: Request, res: Response) => {
   return res.json(shop);
 });
 
+// Lista filiais ativas da barbearia (público)
+publicRouter.get('/:slug/branches', async (req: Request, res: Response) => {
+  const shop = await prisma.barbershop.findUnique({
+    where: { slug: req.params.slug },
+    select: { id: true },
+  });
+  if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
+
+  const branches = await (prisma as any).barbershopBranch.findMany({
+    where: { barbershopId: shop.id, isActive: true },
+    orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
+    select: { id: true, name: true, address: true, phone: true, city: true, state: true, isMain: true },
+  });
+  return res.json(branches);
+});
+
 // Lista profissionais ativos da barbearia
 publicRouter.get('/:slug/professionals', async (req: Request, res: Response) => {
   const shop = await prisma.barbershop.findUnique({
@@ -21,8 +37,11 @@ publicRouter.get('/:slug/professionals', async (req: Request, res: Response) => 
   });
   if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
 
+  const where: any = { barbershopId: shop.id, isActive: true };
+  if (req.query.branchId) where.branchId = req.query.branchId as string;
+
   const professionals = await prisma.professional.findMany({
-    where: { barbershopId: shop.id, isActive: true },
+    where,
     include: {
       user: { select: { name: true, avatarUrl: true } },
       professionalServices: {

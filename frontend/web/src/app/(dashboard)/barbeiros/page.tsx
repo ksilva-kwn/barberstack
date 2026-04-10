@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, UserCog, Scissors, X, Check, ChevronDown, ChevronUp, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Plus, UserCog, Scissors, X, Check, ChevronDown, ChevronUp, Loader2, Eye, EyeOff, MapPin } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { barbershopApi, Professional, BarbershopService } from '@/lib/barbershop.api';
+import { barbershopApi, Professional, BarbershopService, Branch } from '@/lib/barbershop.api';
+import { useAuthStore } from '@/store/auth.store';
 
 const inputCls =
   'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
 
 // ─── Add Barber Modal ─────────────────────────────────────────────────────────
-function AddBarberModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', nickname: '', commissionRate: '40' });
+function AddBarberModal({ onClose, onCreated, branches }: { onClose: () => void; onCreated: () => void; branches: Branch[] }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', nickname: '', commissionRate: '40', branchId: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +30,8 @@ function AddBarberModal({ onClose, onCreated }: { onClose: () => void; onCreated
         password: form.password,
         nickname: form.nickname || undefined,
         commissionRate: parseFloat(form.commissionRate) || 40,
-      });
+        branchId: form.branchId || undefined,
+      } as any);
       onCreated();
     } catch (err: any) {
       const raw = err.response?.data?.error;
@@ -68,6 +70,17 @@ function AddBarberModal({ onClose, onCreated }: { onClose: () => void; onCreated
                 <label className="block text-sm font-medium text-foreground mb-1">Comissão (%)</label>
                 <input className={inputCls} type="number" min="0" max="100" value={form.commissionRate} onChange={e => set('commissionRate', e.target.value)} />
               </div>
+              {branches.length > 0 && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-foreground mb-1">Filial</label>
+                  <select className={inputCls} value={form.branchId} onChange={e => set('branchId', e.target.value)}>
+                    <option value="">Sem filial definida</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}{b.isMain ? ' (Principal)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Senha inicial</label>
                 <div className="relative">
@@ -94,9 +107,10 @@ function AddBarberModal({ onClose, onCreated }: { onClose: () => void; onCreated
 }
 
 // ─── Professional Card ────────────────────────────────────────────────────────
-function ProfessionalCard({ professional, allServices, onRefresh }: {
+function ProfessionalCard({ professional, allServices, allBranches, onRefresh }: {
   professional: Professional;
   allServices: BarbershopService[];
+  allBranches: Branch[];
   onRefresh: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -111,6 +125,11 @@ function ProfessionalCard({ professional, allServices, onRefresh }: {
 
   const removeMutation = useMutation({
     mutationFn: (serviceId: string) => barbershopApi.removeService(professional.id, serviceId),
+    onSuccess: onRefresh,
+  });
+
+  const branchMutation = useMutation({
+    mutationFn: (branchId: string | null) => barbershopApi.updateProfessional(professional.id, { branchId }),
     onSuccess: onRefresh,
   });
 
@@ -130,9 +149,15 @@ function ProfessionalCard({ professional, allServices, onRefresh }: {
           </p>
           <p className="text-xs text-muted-foreground">{professional.user.email}</p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+          {professional.branch && (
+            <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              <MapPin className="w-3 h-3" />
+              {professional.branch.name}
+            </span>
+          )}
           <span className="text-xs text-muted-foreground">{Number(professional.commissionRate)}% comissão</span>
-          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
             {assignedCount} {assignedCount === 1 ? 'serviço' : 'serviços'}
           </span>
           <button
@@ -147,6 +172,21 @@ function ProfessionalCard({ professional, allServices, onRefresh }: {
       {/* Services assignment */}
       {expanded && (
         <div className="border-t border-border p-4">
+          {allBranches.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Filial</p>
+              <select
+                className="w-full max-w-xs px-3 py-1.5 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={professional.branchId ?? ''}
+                onChange={e => branchMutation.mutate(e.target.value || null)}
+              >
+                <option value="">Sem filial definida</option>
+                {allBranches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}{b.isMain ? ' (Principal)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Serviços que este barbeiro executa
           </p>
@@ -190,6 +230,8 @@ function ProfessionalCard({ professional, allServices, onRefresh }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BarbeirosPage() {
+  const { user } = useAuthStore();
+  const barbershopId = user?.barbershopId ?? '';
   const [showAddModal, setShowAddModal] = useState(false);
   const qc = useQueryClient();
 
@@ -201,6 +243,12 @@ export default function BarbeirosPage() {
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: () => barbershopApi.services().then(r => r.data),
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches', barbershopId],
+    queryFn: () => barbershopApi.branches(barbershopId).then(r => r.data),
+    enabled: !!barbershopId,
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['professionals'] });
@@ -234,13 +282,14 @@ export default function BarbeirosPage() {
       ) : (
         <div className="space-y-3">
           {professionals.map(p => (
-            <ProfessionalCard key={p.id} professional={p} allServices={services} onRefresh={refresh} />
+            <ProfessionalCard key={p.id} professional={p} allServices={services} allBranches={branches} onRefresh={refresh} />
           ))}
         </div>
       )}
 
       {showAddModal && (
         <AddBarberModal
+          branches={branches}
           onClose={() => setShowAddModal(false)}
           onCreated={() => { setShowAddModal(false); refresh(); }}
         />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Scissors, ArrowLeft, Loader2, Check, LogOut } from 'lucide-react';
@@ -13,6 +13,8 @@ const inputCls =
 export default function PortalAgendarPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const branchId = searchParams.get('branchId') ?? undefined;
   const [portalToken, setPortalToken] = useState<string | null>(null);
   const [portalUser, setPortalUser] = useState<any>(null);
 
@@ -43,8 +45,8 @@ export default function PortalAgendarPage() {
   });
 
   const { data: professionals = [] } = useQuery({
-    queryKey: ['public-professionals', slug],
-    queryFn: () => portalApi.professionals(slug).then(r => r.data),
+    queryKey: ['public-professionals', slug, branchId],
+    queryFn: () => portalApi.professionals(slug, branchId).then(r => r.data),
     enabled: !!shop,
   });
 
