@@ -107,6 +107,29 @@ barbershopRouter.put('/:id/portal', async (req: Request, res: Response) => {
   return res.json(shop);
 });
 
+// Atualizar dados gerais da barbearia (nome, contato, endereço)
+barbershopRouter.put('/:id/settings', async (req: Request, res: Response) => {
+  const schema = z.object({
+    name:    z.string().min(2).optional(),
+    phone:   z.string().min(10).optional(),
+    email:   z.string().email().optional(),
+    address: z.string().nullable().optional(),
+    city:    z.string().nullable().optional(),
+    state:   z.string().max(2).nullable().optional(),
+    zipCode: z.string().nullable().optional(),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const shop = await prisma.barbershop.update({
+    where: { id: req.params.id },
+    data: parsed.data,
+    select: { id: true, name: true, phone: true, email: true, address: true, city: true, state: true, zipCode: true, document: true },
+  });
+  return res.json(shop);
+});
+
 // Adicionar foto à galeria
 barbershopRouter.post('/:id/photos', async (req: Request, res: Response) => {
   const schema = z.object({

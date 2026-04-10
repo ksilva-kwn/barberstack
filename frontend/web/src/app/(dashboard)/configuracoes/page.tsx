@@ -2,84 +2,68 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, ExternalLink, Loader2, Image, Globe, FileText, Link2, Plus, X, GripVertical } from 'lucide-react';
-import { barbershopApi } from '@/lib/barbershop.api';
+import { Save, Loader2, Building2, Phone, Mail, MapPin, Hash } from 'lucide-react';
+import { barbershopApi, BarbershopSettings } from '@/lib/barbershop.api';
 import { useAuthStore } from '@/store/auth.store';
+
+const inputCls =
+  'w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors';
 
 export default function ConfiguracoesPage() {
   const { user } = useAuthStore();
   const barbershopId = user?.barbershopId ?? '';
   const queryClient = useQueryClient();
+  const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState({
-    slug: '',
-    coverUrl: '',
-    logoUrl: '',
-    description: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
   });
-  const [saved, setSaved] = useState(false);
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
-  const [newPhotoCaption, setNewPhotoCaption] = useState('');
 
-  const { data: portal, isLoading } = useQuery({
-    queryKey: ['portal-config', barbershopId],
-    queryFn: () => barbershopApi.getPortal(barbershopId).then(r => r.data),
+  const { data: shop, isLoading } = useQuery({
+    queryKey: ['barbershop-settings', barbershopId],
+    queryFn: () => barbershopApi.getPortal(barbershopId).then(r => r.data as unknown as BarbershopSettings),
     enabled: !!barbershopId,
   });
 
   useEffect(() => {
-    if (portal) {
+    if (shop) {
       setForm({
-        slug: portal.slug ?? '',
-        coverUrl: portal.coverUrl ?? '',
-        logoUrl: portal.logoUrl ?? '',
-        description: portal.description ?? '',
+        name:    (shop as any).name    ?? '',
+        phone:   (shop as any).phone   ?? '',
+        email:   (shop as any).email   ?? '',
+        address: (shop as any).address ?? '',
+        city:    (shop as any).city    ?? '',
+        state:   (shop as any).state   ?? '',
+        zipCode: (shop as any).zipCode ?? '',
       });
     }
-  }, [portal]);
-
-  const { data: photos = [] } = useQuery({
-    queryKey: ['barbershop-photos', barbershopId],
-    queryFn: () => barbershopApi.photos(barbershopId).then(r => r.data),
-    enabled: !!barbershopId,
-  });
-
-  const addPhotoMutation = useMutation({
-    mutationFn: () => barbershopApi.addPhoto(barbershopId, {
-      url: newPhotoUrl,
-      caption: newPhotoCaption || undefined,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['barbershop-photos', barbershopId] });
-      setNewPhotoUrl('');
-      setNewPhotoCaption('');
-    },
-  });
-
-  const deletePhotoMutation = useMutation({
-    mutationFn: (photoId: string) => barbershopApi.deletePhoto(barbershopId, photoId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['barbershop-photos', barbershopId] }),
-  });
+  }, [shop]);
 
   const mutation = useMutation({
     mutationFn: () =>
-      barbershopApi.updatePortal(barbershopId, {
-        slug: form.slug || undefined,
-        coverUrl: form.coverUrl || null,
-        logoUrl: form.logoUrl || null,
-        description: form.description || null,
+      barbershopApi.updateSettings(barbershopId, {
+        name:    form.name    || undefined,
+        phone:   form.phone   || undefined,
+        email:   form.email   || undefined,
+        address: form.address || null,
+        city:    form.city    || null,
+        state:   form.state   || null,
+        zipCode: form.zipCode || null,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['portal-config', barbershopId] });
-      // Update slug in auth store user if changed
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['barbershop-settings', barbershopId] });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     },
   });
 
-  const portalUrl = form.slug
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${form.slug}`
-    : null;
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   if (isLoading) {
     return (
@@ -92,219 +76,118 @@ export default function ConfiguracoesPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações do Portal</h1>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Personalize a página pública da sua barbearia que os clientes acessam para agendar.
+          Dados gerais da barbearia — nome, contato e endereço.
         </p>
       </div>
 
-      {/* Link do portal */}
-      {portalUrl && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">Link do seu portal</p>
-            <p className="text-sm font-mono text-foreground truncate">{portalUrl}</p>
-          </div>
-          <a
-            href={portalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent transition-colors shrink-0"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Abrir
-          </a>
-        </div>
-      )}
-
       <div className="bg-card border border-border rounded-xl divide-y divide-border">
-        {/* Slug */}
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground text-sm">URL do Portal</h3>
+        {/* Dados principais */}
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Building2 className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-medium text-foreground text-sm">Dados da Barbearia</h3>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Endereço único da sua barbearia. Apenas letras minúsculas e números, sem espaços.
-          </p>
-          <div className="flex items-center gap-0">
-            <span className="text-sm text-muted-foreground bg-muted border border-border border-r-0 rounded-l-lg px-3 py-2 select-none">
-              {typeof window !== 'undefined' ? window.location.host : 'barberstack.app'}/
-            </span>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nome da barbearia</label>
             <input
-              type="text"
-              value={form.slug}
-              onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') }))}
-              placeholder="minha-barbearia"
-              className="flex-1 text-sm bg-background border border-border rounded-r-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={inputCls}
+              value={form.name}
+              onChange={e => set('name', e.target.value)}
+              placeholder="Ex: Barbearia do João"
             />
           </div>
-        </div>
 
-        {/* Descrição */}
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground text-sm">Sobre a Barbearia</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Texto de apresentação exibido no portal. Máximo 500 caracteres.
-          </p>
-          <textarea
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value.slice(0, 500) }))}
-            placeholder="Conte um pouco sobre sua barbearia, história, diferenciais..."
-            rows={4}
-            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-          />
-          <p className="text-xs text-muted-foreground text-right">{form.description.length}/500</p>
-        </div>
-
-        {/* Logo URL */}
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Image className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground text-sm">Logo</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            URL da imagem do logo. Exibida no cabeçalho do portal.
-          </p>
-          <input
-            type="url"
-            value={form.logoUrl}
-            onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
-            placeholder="https://..."
-            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          {form.logoUrl && (
-            <div className="flex items-center gap-3 mt-2">
-              <img
-                src={form.logoUrl}
-                alt="Logo preview"
-                className="w-12 h-12 rounded-lg object-cover border border-border"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <span className="text-xs text-muted-foreground">Preview do logo</span>
-            </div>
-          )}
-        </div>
-
-        {/* Cover URL */}
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground text-sm">Foto de Capa</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Imagem exibida no banner principal do portal. Recomendado: 1200×400px.
-          </p>
-          <input
-            type="url"
-            value={form.coverUrl}
-            onChange={e => setForm(f => ({ ...f, coverUrl: e.target.value }))}
-            placeholder="https://..."
-            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          {form.coverUrl && (
-            <div className="rounded-xl overflow-hidden border border-border mt-2 aspect-[3/1]">
-              <img
-                src={form.coverUrl}
-                alt="Cover preview"
-                className="w-full h-full object-cover"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Galeria de fotos */}
-      <div className="bg-card border border-border rounded-xl divide-y divide-border">
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Image className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground text-sm">Galeria de Fotos</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Fotos de cortes e do ambiente exibidas no portal. Cole a URL de cada imagem.
-          </p>
-
-          {/* Adicionar foto */}
-          <div className="space-y-2 pt-1">
-            <input
-              type="url"
-              value={newPhotoUrl}
-              onChange={e => setNewPhotoUrl(e.target.value)}
-              placeholder="https://... (URL da foto)"
-              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />Telefone</span>
+              </label>
               <input
-                type="text"
-                value={newPhotoCaption}
-                onChange={e => setNewPhotoCaption(e.target.value)}
-                placeholder="Legenda (opcional)"
-                className="flex-1 text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
+                value={form.phone}
+                onChange={e => set('phone', e.target.value)}
+                placeholder="(11) 99999-9999"
               />
-              <button
-                onClick={() => newPhotoUrl && addPhotoMutation.mutate()}
-                disabled={!newPhotoUrl || addPhotoMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0"
-              >
-                {addPhotoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Adicionar
-              </button>
             </div>
-            {/* Preview da nova foto */}
-            {newPhotoUrl && (
-              <div className="rounded-lg overflow-hidden border border-border aspect-video mt-1">
-                <img
-                  src={newPhotoUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />E-mail</span>
+              </label>
+              <input
+                className={inputCls}
+                type="email"
+                value={form.email}
+                onChange={e => set('email', e.target.value)}
+                placeholder="contato@barbearia.com"
+              />
+            </div>
           </div>
 
-          {/* Grid de fotos existentes */}
-          {photos.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-              {photos.map(photo => (
-                <div key={photo.id} className="relative group rounded-lg overflow-hidden border border-border aspect-square">
-                  <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-full object-cover" />
-                  {photo.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
-                      <p className="text-white text-xs truncate">{photo.caption}</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => deletePhotoMutation.mutate(photo.id)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+          {shop && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
+              <Hash className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground">CNPJ/CPF: <span className="font-mono text-foreground">{(shop as any).document ?? '—'}</span></span>
             </div>
           )}
+        </div>
 
-          {photos.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
-              Nenhuma foto adicionada ainda.
-            </p>
-          )}
+        {/* Endereço */}
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-medium text-foreground text-sm">Endereço</h3>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Endereço</label>
+            <input
+              className={inputCls}
+              value={form.address}
+              onChange={e => set('address', e.target.value)}
+              placeholder="Rua, número, complemento"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Cidade</label>
+              <input
+                className={inputCls}
+                value={form.city}
+                onChange={e => set('city', e.target.value)}
+                placeholder="São Paulo"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Estado</label>
+              <input
+                className={inputCls}
+                value={form.state}
+                onChange={e => set('state', e.target.value.toUpperCase().slice(0, 2))}
+                placeholder="SP"
+                maxLength={2}
+              />
+            </div>
+          </div>
+
+          <div className="max-w-[160px]">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">CEP</label>
+            <input
+              className={inputCls}
+              value={form.zipCode}
+              onChange={e => set('zipCode', e.target.value)}
+              placeholder="00000-000"
+            />
+          </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        {saved && (
-          <p className="text-sm text-green-600 dark:text-green-400">Configurações salvas!</p>
-        )}
-        {mutation.isError && (
-          <p className="text-sm text-destructive">Erro ao salvar. Tente novamente.</p>
-        )}
+        {saved && <p className="text-sm text-emerald-400">Configurações salvas!</p>}
+        {mutation.isError && <p className="text-sm text-destructive">Erro ao salvar. Tente novamente.</p>}
         {!saved && !mutation.isError && <span />}
         <button
           onClick={() => mutation.mutate()}

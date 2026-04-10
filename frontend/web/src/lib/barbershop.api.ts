@@ -55,6 +55,18 @@ export interface BarbershopPortal {
   description: string | null;
 }
 
+export interface BarbershopSettings {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  document: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+}
+
 export interface BarbershopPhoto {
   id: string;
   url: string;
@@ -68,6 +80,9 @@ export const barbershopApi = {
 
   updatePortal: (barbershopId: string, data: { slug?: string; coverUrl?: string | null; logoUrl?: string | null; description?: string | null }) =>
     api.put<BarbershopPortal>(`/api/barbershops/${barbershopId}/portal`, data),
+
+  updateSettings: (barbershopId: string, data: Partial<Omit<BarbershopSettings, 'id' | 'document'>>) =>
+    api.put<BarbershopSettings>(`/api/barbershops/${barbershopId}/settings`, data),
 
   photos: (barbershopId: string) =>
     api.get<BarbershopPhoto[]>(`/api/barbershops/${barbershopId}/photos`),
