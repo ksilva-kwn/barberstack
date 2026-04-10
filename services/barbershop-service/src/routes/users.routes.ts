@@ -8,9 +8,13 @@ export const usersRouter: Router = Router();
 // Listar clientes da barbearia
 usersRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { search } = req.query;
+  const { search, blocked } = req.query;
 
-  const where: any = { barbershopId, role: 'CLIENT', isActive: true };
+  const where: any = {
+    barbershopId,
+    role: 'CLIENT',
+    isActive: blocked === 'true' ? false : true,
+  };
   if (search) {
     where.OR = [
       { name: { contains: search as string, mode: 'insensitive' } },
@@ -23,10 +27,108 @@ usersRouter.get('/', async (req: Request, res: Response) => {
     where,
     select: { id: true, name: true, email: true, phone: true, createdAt: true },
     orderBy: { name: 'asc' },
-    take: 50,
+    take: 100,
   });
 
   return res.json(clients);
+});
+
+// Stats de clientes (relatórios)
+usersRouter.get('/stats', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo  = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const [
+    totalActive,
+    totalBlocked,
+    newLast30,
+    appointments,
+  ] = await Promise.all([
+    prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: true } }),
+    prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: false } }),
+    prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: true, createdAt: { gte: thirtyDaysAgo } } }),
+    prisma.appointment.findMany({
+      where: { barbershopId, status: 'COMPLETED' },
+      select: {
+        id: true,
+        clientId: true,
+        client: { select: { name: true } },
+        scheduledAt: true,
+        paymentStatus: true,
+        appointmentServices: { select: { price: true } },
+      },
+      orderBy: { scheduledAt: 'desc' },
+    }),
+  ]);
+
+  // Top clientes por número de visitas
+  const visitMap = new Map<string, { name: string; visits: number; revenue: number; lastVisit: Date }>();
+  for (const apt of appointments) {
+    if (!apt.clientId) continue;
+    const revenue = apt.appointmentServices.reduce((s, as) => s + Number(as.price), 0);
+    const existing = visitMap.get(apt.clientId);
+    if (existing) {
+      existing.visits += 1;
+      existing.revenue += revenue;
+      if (apt.scheduledAt > existing.lastVisit) existing.lastVisit = apt.scheduledAt;
+    } else {
+      visitMap.set(apt.clientId, {
+        name: apt.client?.name ?? 'Desconhecido',
+        visits: 1,
+        revenue,
+        lastVisit: apt.scheduledAt,
+      });
+    }
+  }
+
+  const topByVisits = [...visitMap.entries()]
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.visits - a.visits)
+    .slice(0, 10);
+
+  const topByRevenue = [...visitMap.entries()]
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10);
+
+  // Clientes sem retorno (última visita > 60 dias atrás)
+  const inactiveCount = [...visitMap.values()].filter(v => v.lastVisit < sixtyDaysAgo).length;
+
+  // Novos clientes por mês (últimos 6 meses)
+  const newByMonth: { month: string; count: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const count = await prisma.user.count({
+      where: { barbershopId, role: 'CLIENT', isActive: true, createdAt: { gte: d, lt: end } },
+    });
+    newByMonth.push({
+      month: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      count,
+    });
+  }
+
+  // Dia da semana mais popular
+  const dowCount = [0, 0, 0, 0, 0, 0, 0];
+  for (const apt of appointments) {
+    dowCount[new Date(apt.scheduledAt).getDay()] += 1;
+  }
+  const dowLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const preferredDow = dowCount.map((count, i) => ({ day: dowLabels[i], count }));
+
+  return res.json({
+    totalActive,
+    totalBlocked,
+    newLast30,
+    inactiveCount,
+    topByVisits,
+    topByRevenue,
+    newByMonth,
+    preferredDow,
+  });
 });
 
 // Cadastrar novo cliente
@@ -59,6 +161,18 @@ usersRouter.post('/', async (req: Request, res: Response) => {
   });
 
   return res.status(201).json(user);
+});
+
+// Bloquear / desbloquear cliente
+usersRouter.patch('/:id/block', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { blocked } = req.body; // boolean
+  const user = await prisma.user.updateMany({
+    where: { id: req.params.id, barbershopId, role: 'CLIENT' },
+    data: { isActive: !blocked },
+  });
+  if (user.count === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+  return res.json({ success: true });
 });
 
 // Criar barbeiro (User BARBER + Professional)

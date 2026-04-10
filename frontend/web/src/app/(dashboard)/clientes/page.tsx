@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users, Search, X, Loader2, Phone, Mail } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Users, Search, X, Loader2, Phone, Mail, ShieldOff } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { barbershopApi, Client } from '@/lib/barbershop.api';
 import { format } from 'date-fns';
@@ -81,6 +81,14 @@ export default function ClientesPage() {
     queryFn: () => barbershopApi.clients(search || undefined).then(r => r.data),
   });
 
+  const blockMutation = useMutation({
+    mutationFn: (id: string) => barbershopApi.blockClient(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['clients-blocked'] });
+    },
+  });
+
   const initials = (name: string) =>
     name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 
@@ -154,9 +162,19 @@ export default function ClientesPage() {
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  desde {format(new Date(client.createdAt), "MMM 'de' yyyy", { locale: ptBR })}
-                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-muted-foreground hidden sm:block">
+                    desde {format(new Date(client.createdAt), "MMM 'de' yyyy", { locale: ptBR })}
+                  </span>
+                  <button
+                    onClick={() => blockMutation.mutate(client.id)}
+                    disabled={blockMutation.isPending}
+                    title="Bloquear cliente"
+                    className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                  >
+                    <ShieldOff className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

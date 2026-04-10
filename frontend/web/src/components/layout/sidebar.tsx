@@ -246,7 +246,7 @@ export function Sidebar() {
               >
                 <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-3 pb-1">
                   {item.children!.map((child) => {
-                    const childActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                    const childActive = pathname === child.href;
                     return (
                       <Link
                         key={child.href}

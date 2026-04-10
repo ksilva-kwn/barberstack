@@ -42,6 +42,17 @@ export interface BarbershopService {
   isActive: boolean;
 }
 
+export interface ClientStats {
+  totalActive: number;
+  totalBlocked: number;
+  newLast30: number;
+  inactiveCount: number;
+  topByVisits: { id: string; name: string; visits: number; revenue: number; lastVisit: string }[];
+  topByRevenue: { id: string; name: string; visits: number; revenue: number; lastVisit: string }[];
+  newByMonth: { month: string; count: number }[];
+  preferredDow: { day: string; count: number }[];
+}
+
 export interface DashboardKpis {
   professionals: number;
   appointmentsMonth: number;
@@ -160,6 +171,18 @@ export const barbershopApi = {
   clients: (search?: string) =>
     api.get<Client[]>('/api/clients', { params: search ? { search } : {} }),
 
+  clientsBlocked: (search?: string) =>
+    api.get<Client[]>('/api/clients', { params: { blocked: 'true', ...(search ? { search } : {}) } }),
+
   createClient: (data: { name: string; email: string; phone?: string }) =>
     api.post<Client>('/api/clients', data),
+
+  blockClient: (id: string) =>
+    api.patch(`/api/clients/${id}/block`, { blocked: true }),
+
+  unblockClient: (id: string) =>
+    api.patch(`/api/clients/${id}/block`, { blocked: false }),
+
+  clientStats: () =>
+    api.get<ClientStats>('/api/clients/stats'),
 };
