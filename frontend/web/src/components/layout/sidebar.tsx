@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Calendar,
-  Scissors,
-  UserCog,
+  Receipt,
+  DollarSign,
   Users,
   Repeat2,
-  DollarSign,
+  Building2,
   Package,
+  UtensilsCrossed,
   Settings,
   LogOut,
   ChevronDown,
@@ -19,6 +20,18 @@ import {
   FileText,
   CheckSquare,
   BarChart2,
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Wallet,
+  UserPlus,
+  UserX,
+  MapPin,
+  UserCog,
+  Scissors,
+  Globe,
+  PackagePlus,
+  Coffee,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -32,7 +45,7 @@ interface SubItem {
 interface NavItem {
   label: string;
   icon: React.ElementType;
-  href?: string;       // se tem href = link direto sem submenu
+  href?: string;
   adminOnly: boolean;
   children?: SubItem[];
 }
@@ -51,22 +64,38 @@ const navItems: NavItem[] = [
     adminOnly: false,
   },
   {
-    label: 'Serviços',
-    icon: Scissors,
-    href: '/servicos',
-    adminOnly: false,
+    label: 'Caixa',
+    icon: Receipt,
+    adminOnly: true,
+    children: [
+      { label: 'Comandas abertas',  href: '/financeiro/comandas',          icon: <FileText className="w-3.5 h-3.5" /> },
+      { label: 'Comandas fechadas', href: '/financeiro/comandas/fechadas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',        href: '/financeiro/relatorios',        icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
   {
-    label: 'Barbeiros',
-    icon: UserCog,
-    href: '/barbeiros',
+    label: 'Financeiro',
+    icon: DollarSign,
     adminOnly: true,
+    children: [
+      { label: 'Gerar comissões',  href: '/financeiro/comissoes',      icon: <TrendingUp className="w-3.5 h-3.5" /> },
+      { label: 'Balanço',          href: '/financeiro/balanco',         icon: <Scale className="w-3.5 h-3.5" /> },
+      { label: 'Contas a pagar',   href: '/financeiro/contas-pagar',   icon: <TrendingDown className="w-3.5 h-3.5" /> },
+      { label: 'Contas a receber', href: '/financeiro/contas-receber', icon: <Wallet className="w-3.5 h-3.5" /> },
+      { label: 'Criar despesa',    href: '/financeiro/despesas',       icon: <TrendingDown className="w-3.5 h-3.5" /> },
+      { label: 'Criar receita',    href: '/financeiro/receitas',       icon: <TrendingUp className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',       href: '/financeiro/relatorios-geral', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
   {
     label: 'Clientes',
     icon: Users,
-    href: '/clientes',
     adminOnly: true,
+    children: [
+      { label: 'Cadastrar clientes',    href: '/clientes',            icon: <UserPlus className="w-3.5 h-3.5" /> },
+      { label: 'Clientes bloqueados',   href: '/clientes/bloqueados', icon: <UserX className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',            href: '/clientes/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
   {
     label: 'Assinaturas',
@@ -75,26 +104,34 @@ const navItems: NavItem[] = [
     adminOnly: true,
   },
   {
-    label: 'Financeiro',
-    icon: DollarSign,
+    label: 'Barbearia',
+    icon: Building2,
     adminOnly: true,
     children: [
-      { label: 'Comandas abertas',   href: '/financeiro/comandas',          icon: <FileText className="w-3.5 h-3.5" /> },
-      { label: 'Comandas fechadas',  href: '/financeiro/comandas/fechadas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',         href: '/financeiro/relatorios',        icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Filiais',           href: '/barbearia/filiais',  icon: <MapPin className="w-3.5 h-3.5" /> },
+      { label: 'Profissionais',     href: '/barbeiros',          icon: <UserCog className="w-3.5 h-3.5" /> },
+      { label: 'Serviços',          href: '/servicos',           icon: <Scissors className="w-3.5 h-3.5" /> },
+      { label: 'Página do cliente', href: '/barbearia/portal',   icon: <Globe className="w-3.5 h-3.5" /> },
+      { label: 'Configurações',     href: '/configuracoes',      icon: <Settings className="w-3.5 h-3.5" /> },
     ],
   },
   {
     label: 'Estoque',
     icon: Package,
-    href: '/estoque',
     adminOnly: true,
+    children: [
+      { label: 'Produtos',    href: '/estoque',           icon: <PackagePlus className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',  href: '/estoque/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
   {
-    label: 'Configurações',
-    icon: Settings,
-    href: '/configuracoes',
+    label: 'Bar / Cozinha',
+    icon: UtensilsCrossed,
     adminOnly: true,
+    children: [
+      { label: 'Produtos',   href: '/bar/produtos',    icon: <Coffee className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios', href: '/bar/relatorios',  icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
 ];
 
@@ -108,14 +145,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  // Auto-abre o item cujo filho está ativo
   const initialOpen = navItems
     .filter(item => item.children?.some(c => pathname.startsWith(c.href)))
     .map(item => item.label);
 
   const [openItems, setOpenItems] = useState<string[]>(initialOpen);
 
-  // Reabre quando a rota muda (ex: navegação direta via URL)
   useEffect(() => {
     navItems.forEach(item => {
       if (item.children?.some(c => pathname.startsWith(c.href))) {
@@ -158,10 +193,9 @@ export function Sidebar() {
           const hasChildren = !!item.children?.length;
           const isOpen = openItems.includes(item.label);
 
-          // Ativo: link direto bate com pathname, ou algum filho bate
           const isActive = item.href
             ? pathname === item.href || pathname.startsWith(item.href + '/')
-            : item.children?.some(c => pathname.startsWith(c.href)) ?? false;
+            : item.children?.some(c => pathname === c.href || pathname.startsWith(c.href + '/')) ?? false;
 
           if (!hasChildren && item.href) {
             return (
@@ -181,7 +215,6 @@ export function Sidebar() {
             );
           }
 
-          // Item com submenus
           return (
             <div key={item.label}>
               <button
@@ -205,7 +238,6 @@ export function Sidebar() {
                 />
               </button>
 
-              {/* Submenus */}
               <div
                 className={cn(
                   'overflow-hidden transition-all duration-200',
