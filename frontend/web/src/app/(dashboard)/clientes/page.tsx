@@ -167,7 +167,11 @@ export default function ClientesPage() {
                     desde {format(new Date(client.createdAt), "MMM 'de' yyyy", { locale: ptBR })}
                   </span>
                   <button
-                    onClick={() => blockMutation.mutate(client.id)}
+                    onClick={() => {
+                      if (confirm(`Bloquear ${client.name}? Ele não poderá fazer novos agendamentos.`)) {
+                        blockMutation.mutate(client.id);
+                      }
+                    }}
                     disabled={blockMutation.isPending}
                     title="Bloquear cliente"
                     className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"

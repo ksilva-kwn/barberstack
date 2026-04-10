@@ -34,7 +34,7 @@ usersRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Stats de clientes (relatórios)
-usersRouter.get('/stats', async (req: Request, res: Response) => {
+usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
   const now = new Date();
@@ -164,7 +164,7 @@ usersRouter.post('/', async (req: Request, res: Response) => {
 });
 
 // Bloquear / desbloquear cliente
-usersRouter.patch('/:id/block', async (req: Request, res: Response) => {
+usersRouter.patch('/:id/block', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const { blocked } = req.body; // boolean
   const user = await prisma.user.updateMany({
