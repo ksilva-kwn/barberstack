@@ -34,48 +34,53 @@ usersRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Stats de clientes (relatórios)
-usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
+usersRouter.get('/stats', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sixtyDaysAgo  = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-  const [
-    totalActive,
-    totalBlocked,
-    newLast30,
-    appointments,
-  ] = await Promise.all([
+  // Buscar dados brutos via SQL para evitar problemas de tipo com Prisma relations
+  const [totalActive, totalBlocked, newLast30, rawAppointments] = await Promise.all([
     prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: true } }),
     prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: false } }),
     prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: true, createdAt: { gte: thirtyDaysAgo } } }),
-    prisma.appointment.findMany({
-      where: { barbershopId, status: 'COMPLETED' },
-      include: {
-        client: { select: { name: true } },
-        appointmentServices: { select: { price: true } },
-      },
-      orderBy: { scheduledAt: 'desc' },
-    }),
+    prisma.$queryRaw<Array<{
+      clientId: string | null;
+      clientName: string | null;
+      scheduledAt: Date;
+      totalPrice: number;
+    }>>`
+      SELECT
+        a."clientId",
+        u."name" AS "clientName",
+        a."scheduledAt",
+        COALESCE(SUM(aps."price"), 0)::float AS "totalPrice"
+      FROM "appointments" a
+      LEFT JOIN "users" u ON u."id" = a."clientId"
+      LEFT JOIN "appointment_services" aps ON aps."appointmentId" = a."id"
+      WHERE a."barbershopId" = ${barbershopId} AND a."status" = 'COMPLETED'
+      GROUP BY a."id", u."name"
+      ORDER BY a."scheduledAt" DESC
+    `,
   ]);
 
-  // Top clientes por número de visitas
+  // Agregar por cliente
   const visitMap = new Map<string, { name: string; visits: number; revenue: number; lastVisit: Date }>();
-  for (const apt of appointments) {
-    if (!apt.clientId) continue;
-    const revenue = (apt.appointmentServices as { price: any }[]).reduce((s: number, as: { price: any }) => s + Number(as.price), 0);
-    const existing = visitMap.get(apt.clientId);
+  for (const row of rawAppointments) {
+    if (!row.clientId) continue;
+    const existing = visitMap.get(row.clientId);
     if (existing) {
       existing.visits += 1;
-      existing.revenue += revenue;
-      if (apt.scheduledAt > existing.lastVisit) existing.lastVisit = apt.scheduledAt;
+      existing.revenue += Number(row.totalPrice);
+      if (row.scheduledAt > existing.lastVisit) existing.lastVisit = row.scheduledAt;
     } else {
-      visitMap.set(apt.clientId, {
-        name: (apt.client as any)?.name ?? 'Desconhecido',
+      visitMap.set(row.clientId, {
+        name: row.clientName ?? 'Desconhecido',
         visits: 1,
-        revenue,
-        lastVisit: apt.scheduledAt,
+        revenue: Number(row.totalPrice),
+        lastVisit: row.scheduledAt,
       });
     }
   }
@@ -90,7 +95,6 @@ usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
 
-  // Clientes sem retorno (última visita > 60 dias atrás)
   const inactiveCount = [...visitMap.values()].filter(v => v.lastVisit < sixtyDaysAgo).length;
 
   // Novos clientes por mês (últimos 6 meses)
@@ -109,22 +113,13 @@ usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
 
   // Dia da semana mais popular
   const dowCount = [0, 0, 0, 0, 0, 0, 0];
-  for (const apt of appointments) {
-    dowCount[new Date(apt.scheduledAt).getDay()] += 1;
+  for (const row of rawAppointments) {
+    dowCount[new Date(row.scheduledAt).getDay()] += 1;
   }
   const dowLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const preferredDow = dowCount.map((count, i) => ({ day: dowLabels[i], count }));
 
-  return res.json({
-    totalActive,
-    totalBlocked,
-    newLast30,
-    inactiveCount,
-    topByVisits,
-    topByRevenue,
-    newByMonth,
-    preferredDow,
-  });
+  return res.json({ totalActive, totalBlocked, newLast30, inactiveCount, topByVisits, topByRevenue, newByMonth, preferredDow });
 });
 
 // Cadastrar novo cliente
@@ -197,7 +192,7 @@ usersRouter.post('/barber', async (req: Request, res: Response) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const professional = await prisma.$transaction(async (tx) => {
+  const professional = await prisma.$transaction(async (tx: typeof prisma) => {
     const user = await tx.user.create({
       data: { barbershopId, name, email, phone, passwordHash, role: 'BARBER' },
     });
