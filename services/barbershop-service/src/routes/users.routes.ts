@@ -52,12 +52,8 @@ usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
     prisma.user.count({ where: { barbershopId, role: 'CLIENT', isActive: true, createdAt: { gte: thirtyDaysAgo } } }),
     prisma.appointment.findMany({
       where: { barbershopId, status: 'COMPLETED' },
-      select: {
-        id: true,
-        clientId: true,
+      include: {
         client: { select: { name: true } },
-        scheduledAt: true,
-        paymentStatus: true,
         appointmentServices: { select: { price: true } },
       },
       orderBy: { scheduledAt: 'desc' },
@@ -68,7 +64,7 @@ usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
   const visitMap = new Map<string, { name: string; visits: number; revenue: number; lastVisit: Date }>();
   for (const apt of appointments) {
     if (!apt.clientId) continue;
-    const revenue = apt.appointmentServices.reduce((s, as) => s + Number(as.price), 0);
+    const revenue = (apt.appointmentServices as { price: any }[]).reduce((s: number, as: { price: any }) => s + Number(as.price), 0);
     const existing = visitMap.get(apt.clientId);
     if (existing) {
       existing.visits += 1;
@@ -76,7 +72,7 @@ usersRouter.get('/stats', async (req: Request, res: Response): Promise<any> => {
       if (apt.scheduledAt > existing.lastVisit) existing.lastVisit = apt.scheduledAt;
     } else {
       visitMap.set(apt.clientId, {
-        name: apt.client?.name ?? 'Desconhecido',
+        name: (apt.client as any)?.name ?? 'Desconhecido',
         visits: 1,
         revenue,
         lastVisit: apt.scheduledAt,
