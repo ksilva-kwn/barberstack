@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '@barberstack/database';
+import { prisma, Prisma } from '@barberstack/database';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
@@ -192,7 +192,7 @@ usersRouter.post('/barber', async (req: Request, res: Response) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const professional = await prisma.$transaction(async (tx: typeof prisma) => {
+  const professional = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const user = await tx.user.create({
       data: { barbershopId, name, email, phone, passwordHash, role: 'BARBER' },
     });
