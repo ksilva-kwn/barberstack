@@ -8,7 +8,7 @@ const createSchema = z.object({
   professionalId: z.string(),
   clientId: z.string().optional(),
   clientName: z.string().optional(),
-  scheduledAt: z.string().datetime(),
+  scheduledAt: z.string().datetime({ offset: true }),
   serviceIds: z.array(z.string()).min(1),
   notes: z.string().optional(),
   origin: z.enum(['APP', 'RECEPTION']).default('RECEPTION'),
@@ -60,7 +60,10 @@ appointmentRouter.get('/', async (req: Request, res: Response) => {
 appointmentRouter.post('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) {
+    const msgs = Object.values(parsed.error.flatten().fieldErrors).flat();
+    return res.status(400).json({ error: msgs[0] ?? 'Dados inválidos' });
+  }
 
   const { serviceIds, scheduledAt, ...rest } = parsed.data;
 
