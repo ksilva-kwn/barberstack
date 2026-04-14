@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '@barberstack/database';
+import { prisma, Prisma } from '@barberstack/database';
 import { z } from 'zod';
 
 export const productRouter: Router = Router();
@@ -25,6 +25,10 @@ productRouter.get('/stats', async (req: Request, res: Response): Promise<any> =>
   if (type) where.type = type;
 
   const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  // Fragmento condicional de tipo — usa Prisma.sql para não quebrar numeração de parâmetros
+  const typeClause = type ? Prisma.sql`AND p."type" = ${type}` : Prisma.sql``;
 
   const [products, soldRows, revenueByMonth] = await Promise.all([
     prisma.product.findMany({ where }),
@@ -38,7 +42,7 @@ productRouter.get('/stats', async (req: Request, res: Response): Promise<any> =>
       unitPrice: number;
       totalQty: number;
       totalRevenue: number;
-    }>>`
+    }>>(Prisma.sql`
       SELECT
         p."id"           AS "productId",
         p."name"         AS "productName",
@@ -52,13 +56,13 @@ productRouter.get('/stats', async (req: Request, res: Response): Promise<any> =>
       JOIN "appointments" a ON a."id" = ap."appointmentId"
       WHERE a."barbershopId" = ${barbershopId}
         AND a."paymentStatus" = 'PAID'
-        ${type ? prisma.$queryRaw`AND p."type" = ${type}` : prisma.$queryRaw``}
+        ${typeClause}
       GROUP BY p."id", p."name", p."type", p."costPrice", p."price"
       ORDER BY "totalQty" DESC
-    `,
+    `),
 
     // Receita por mês (últimos 6 meses)
-    prisma.$queryRaw<Array<{ month: string; revenue: number; qty: number }>>`
+    prisma.$queryRaw<Array<{ month: string; revenue: number; qty: number }>>(Prisma.sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', a."paidAt"), 'Mon/YY') AS month,
         SUM(ap."quantity" * ap."price")::float AS revenue,
@@ -68,11 +72,11 @@ productRouter.get('/stats', async (req: Request, res: Response): Promise<any> =>
       JOIN "appointments" a ON a."id" = ap."appointmentId"
       WHERE a."barbershopId" = ${barbershopId}
         AND a."paymentStatus" = 'PAID'
-        AND a."paidAt" >= ${new Date(now.getFullYear(), now.getMonth() - 5, 1)}
-        ${type ? prisma.$queryRaw`AND p."type" = ${type}` : prisma.$queryRaw``}
+        AND a."paidAt" >= ${sixMonthsAgo}
+        ${typeClause}
       GROUP BY DATE_TRUNC('month', a."paidAt")
       ORDER BY DATE_TRUNC('month', a."paidAt") ASC
-    `,
+    `),
   ]);
 
   // KPIs de estoque
