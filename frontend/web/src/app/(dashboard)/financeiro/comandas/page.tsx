@@ -31,22 +31,23 @@ const PAYMENT_METHOD_ICON: Record<PaymentMethod, React.ReactNode> = {
 
 const METHODS: PaymentMethod[] = ['PIX', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH'];
 
-function PaymentDropdown({ onPay }: { onPay: (method: PaymentMethod) => void }) {
+function PaymentDropdown({ onPay, isPending }: { onPay: (method: PaymentMethod) => void; isPending?: boolean }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<PaymentMethod | null>(null);
 
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors"
+        onClick={() => !isPending && setOpen(v => !v)}
+        disabled={isPending}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <CheckCircle className="w-3.5 h-3.5" />
+        {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
         Receber
-        <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
+        {!isPending && <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />}
       </button>
 
-      {open && (
+      {open && !isPending && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setSelected(null); }} />
           <div className="absolute right-0 bottom-9 z-20 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[200px]">
@@ -303,7 +304,10 @@ export default function ComandasAbertasPage() {
                           <ShoppingCart className="w-3.5 h-3.5" />
                         </button>
                         {/* Fechar comanda */}
-                        <PaymentDropdown onPay={(method) => payMutation.mutate({ id: apt.id, method })} />
+                        <PaymentDropdown
+                          onPay={(method) => payMutation.mutate({ id: apt.id, method })}
+                          isPending={payMutation.isPending}
+                        />
                         {/* Excluir */}
                         <button
                           onClick={() => {

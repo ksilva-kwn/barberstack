@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, Trash2, Package } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, Trash2, Package, ShoppingCart, Plus, X } from 'lucide-react';
 import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
+import { productApi, Product } from '@/lib/product.api';
 import { cn } from '@/lib/utils';
+import * as Dialog from '@radix-ui/react-dialog';
 
 const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   PIX:         'Pix',
@@ -90,9 +92,78 @@ function EditMethodDropdown({ current, onSave }: { current: PaymentMethod | null
   );
 }
 
+function AddProductModal({ appointmentId, onClose }: { appointmentId: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [qty, setQty] = useState<Record<string, number>>({});
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products-picker', search],
+    queryFn: () => productApi.list(undefined, search || undefined).then(r => r.data.filter(p => p.isActive)),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
+      appointmentApi.addProduct(appointmentId, productId, quantity),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['comandas-fechadas'] }),
+  });
+
+  return (
+    <Dialog.Root open onOpenChange={o => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60" />
+        <Dialog.Content className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-5 max-h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <Dialog.Title className="text-base font-semibold text-foreground">Editar produtos da comanda</Dialog.Title>
+            <Dialog.Close className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></Dialog.Close>
+          </div>
+          <input
+            className="w-full pl-3 pr-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
+            placeholder="Buscar produto..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum produto encontrado.</p>
+            ) : products.map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-background border border-border">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    R$ {Number(p.price).toFixed(2).replace('.', ',')} · Estoque: {p.stock} {p.unit}
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  value={qty[p.id] ?? 1}
+                  onChange={e => setQty(prev => ({ ...prev, [p.id]: parseInt(e.target.value) || 1 }))}
+                  className="w-14 px-2 py-1 text-xs rounded-md bg-muted border border-border text-foreground text-center"
+                />
+                <button
+                  onClick={() => addMutation.mutate({ productId: p.id, quantity: qty[p.id] ?? 1 })}
+                  disabled={addMutation.isPending}
+                  className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={onClose} className="mt-4 w-full py-2 rounded-lg border border-border text-muted-foreground text-sm hover:bg-accent transition-colors">
+            Fechar
+          </button>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export default function ComandasFechadasPage() {
   const queryClient = useQueryClient();
   const [rangeIdx, setRangeIdx] = useState(1);
+  const [productModal, setProductModal] = useState<string | null>(null);
   const range = RANGE_OPTIONS[rangeIdx];
 
   // Busca TODOS os COMPLETED pagos (sem filtro de data no servidor — filtramos por paidAt no cliente)
@@ -130,6 +201,12 @@ export default function ComandasFechadasPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => appointmentApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-fechadas'] }),
+  });
+
+  const removeProductMutation = useMutation({
+    mutationFn: ({ aptId, itemId }: { aptId: string; itemId: string }) =>
+      appointmentApi.removeProduct(aptId, itemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-fechadas'] }),
   });
 
@@ -238,6 +315,13 @@ export default function ComandasFechadasPage() {
                           {(apt.appointmentProducts ?? []).map(p => (
                             <span key={p.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">
                               <Package className="w-2.5 h-2.5" />{p.quantity}× {p.product.name}
+                              <button
+                                onClick={() => removeProductMutation.mutate({ aptId: apt.id, itemId: p.id })}
+                                className="ml-0.5 hover:text-destructive transition-colors"
+                                title="Remover produto"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
                             </span>
                           ))}
                         </div>
@@ -272,6 +356,13 @@ export default function ComandasFechadasPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setProductModal(apt.id)}
+                          title="Editar produtos"
+                          className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        </button>
                         <EditMethodDropdown
                           current={method}
                           onSave={(m) => editMutation.mutate({ id: apt.id, method: m })}
@@ -303,6 +394,13 @@ export default function ComandasFechadasPage() {
           </table>
         )}
       </div>
+
+      {productModal && (
+        <AddProductModal
+          appointmentId={productModal}
+          onClose={() => setProductModal(null)}
+        />
+      )}
     </div>
   );
 }

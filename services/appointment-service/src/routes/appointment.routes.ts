@@ -152,6 +152,13 @@ appointmentRouter.patch('/:id/payment', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'paymentStatus deve ser PENDING ou PAID' });
   }
 
+  // Busca estado ATUAL antes de alterar (idempotência)
+  const current = await prisma.appointment.findUnique({
+    where: { id: req.params.id },
+    select: { paymentStatus: true, appointmentProducts: { select: { productId: true, quantity: true } } },
+  });
+  if (!current) return res.status(404).json({ error: 'Agendamento não encontrado' });
+
   const updates: any = { paymentStatus };
   if (paymentStatus === 'PAID') {
     updates.paidAt = new Date();
@@ -172,16 +179,31 @@ appointmentRouter.patch('/:id/payment', async (req: Request, res: Response) => {
     },
   });
 
-  // Ao fechar comanda (PAID), decrementa estoque de cada produto
-  if (paymentStatus === 'PAID' && appointment.appointmentProducts.length > 0) {
-    await Promise.all(
-      appointment.appointmentProducts.map((ap: any) =>
-        prisma.product.update({
-          where: { id: ap.productId },
-          data: { stock: { decrement: ap.quantity } },
-        })
-      )
-    );
+  const products = current.appointmentProducts;
+
+  if (products.length > 0) {
+    // Agrupa por productId somando quantidades (evita múltiplos decrements do mesmo produto)
+    const deltas = products.reduce<Record<string, number>>((acc, ap) => {
+      acc[ap.productId] = (acc[ap.productId] ?? 0) + ap.quantity;
+      return acc;
+    }, {});
+
+    if (paymentStatus === 'PAID' && current.paymentStatus !== 'PAID') {
+      // PENDING → PAID: desconta estoque
+      await Promise.all(
+        Object.entries(deltas).map(([productId, qty]) =>
+          prisma.product.update({ where: { id: productId }, data: { stock: { decrement: qty } } })
+        )
+      );
+    } else if (paymentStatus === 'PENDING' && current.paymentStatus === 'PAID') {
+      // PAID → PENDING (reabrir): devolve estoque
+      await Promise.all(
+        Object.entries(deltas).map(([productId, qty]) =>
+          prisma.product.update({ where: { id: productId }, data: { stock: { increment: qty } } })
+        )
+      );
+    }
+    // Se o status não mudou (chamada duplicada), não faz nada
   }
 
   return res.json(appointment);
@@ -195,6 +217,11 @@ appointmentRouter.post('/:id/products', async (req: Request, res: Response) => {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: req.params.id },
+    select: { paymentStatus: true },
+  });
+
   const item = await prisma.appointmentProduct.create({
     data: {
       appointmentId: req.params.id,
@@ -205,14 +232,43 @@ appointmentRouter.post('/:id/products', async (req: Request, res: Response) => {
     include: { product: true },
   });
 
+  // Se comanda já está paga, decrementa estoque imediatamente
+  if (appointment?.paymentStatus === 'PAID') {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { stock: { decrement: Number(quantity) } },
+    });
+  }
+
   return res.status(201).json(item);
 });
 
 // Remover produto da comanda
 appointmentRouter.delete('/:id/products/:itemId', async (req: Request, res: Response) => {
-  await prisma.appointmentProduct.deleteMany({
-    where: { id: req.params.itemId, appointmentId: req.params.id },
+  const item = await prisma.appointmentProduct.findUnique({
+    where: { id: req.params.itemId },
+    select: { productId: true, quantity: true, appointmentId: true },
   });
+
+  if (!item || item.appointmentId !== req.params.id) {
+    return res.status(404).json({ error: 'Item não encontrado' });
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: req.params.id },
+    select: { paymentStatus: true },
+  });
+
+  await prisma.appointmentProduct.delete({ where: { id: req.params.itemId } });
+
+  // Se comanda já está paga, devolve estoque ao remover o item
+  if (appointment?.paymentStatus === 'PAID') {
+    await prisma.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity } },
+    });
+  }
+
   return res.status(204).send();
 });
 
