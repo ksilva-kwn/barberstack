@@ -293,10 +293,10 @@ export function TransactionPage({ type, status, title, description }: Transactio
         )}
       </div>
 
-      {(modal === 'new' || (modal && modal !== 'new')) && (
+      {modal !== null && (
         <TxModal
           type={type}
-          initial={modal === 'new' ? null : modal}
+          initial={modal === 'new' ? null : (modal as FinancialTransaction)}
           onClose={() => setModal(null)}
         />
       )}
