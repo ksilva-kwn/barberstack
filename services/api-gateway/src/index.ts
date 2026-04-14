@@ -86,6 +86,12 @@ app.use('/api/services', createProxyMiddleware({
   pathRewrite: (path) => `/services${path}`,
 }));
 
+app.use('/api/products', createProxyMiddleware({
+  target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
+  changeOrigin: true,
+  pathRewrite: (path) => `/products${path}`,
+}));
+
 app.use('/api/subscriptions', createProxyMiddleware({
   target: process.env.SUBSCRIPTION_SERVICE_URL || 'http://subscription-service:3004',
   changeOrigin: true,
