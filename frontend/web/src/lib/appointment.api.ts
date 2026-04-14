@@ -21,6 +21,14 @@ export interface AppointmentService {
   service: { id: string; name: string };
 }
 
+export interface AppointmentProduct {
+  id: string;
+  productId: string;
+  quantity: number;
+  price: number;
+  product: { id: string; name: string; unit: string; type: string };
+}
+
 export interface Appointment {
   id: string;
   barbershopId: string;
@@ -38,6 +46,7 @@ export interface Appointment {
   paidAt: string | null;
   professional: { id: string; user: { name: string }; nickname: string | null };
   services: AppointmentService[];
+  appointmentProducts: AppointmentProduct[];
   client: { name: string; phone: string | null } | null;
 }
 
@@ -82,4 +91,10 @@ export const appointmentApi = {
 
   updatePayment: (id: string, paymentStatus: PaymentStatus, paymentMethod?: PaymentMethod) =>
     api.patch<Appointment>(`/api/appointments/${id}/payment`, { paymentStatus, paymentMethod }),
+
+  addProduct: (id: string, productId: string, quantity: number) =>
+    api.post<AppointmentProduct>(`/api/appointments/${id}/products`, { productId, quantity }),
+
+  removeProduct: (id: string, itemId: string) =>
+    api.delete(`/api/appointments/${id}/products/${itemId}`),
 };

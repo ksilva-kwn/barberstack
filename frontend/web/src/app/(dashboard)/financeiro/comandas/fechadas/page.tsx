@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, ChevronDown } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, Trash2, Package } from 'lucide-react';
 import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
@@ -128,7 +128,15 @@ export default function ComandasFechadasPage() {
     },
   });
 
-  const totalPaid = appointments.reduce((sum, a) => sum + Number(a.totalAmount), 0);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => appointmentApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-fechadas'] }),
+  });
+
+  const totalPaid = appointments.reduce((sum, a) => {
+    const productsTotal = (a.appointmentProducts ?? []).reduce((s, p) => s + Number(p.price) * p.quantity, 0);
+    return sum + Number(a.totalAmount) + productsTotal;
+  }, 0);
 
   const byMethod = appointments.reduce<Record<string, { count: number; total: number }>>((acc, a) => {
     const m = a.paymentMethod ?? 'Outros';
@@ -223,7 +231,18 @@ export default function ComandasFechadasPage() {
                   >
                     <td className="px-4 py-3 font-medium text-foreground">{clientLabel}</td>
                     <td className="px-4 py-3 text-muted-foreground">{barber}</td>
-                    <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">{services}</td>
+                    <td className="px-4 py-3">
+                      <div className="text-muted-foreground text-xs max-w-[200px] truncate">{services}</div>
+                      {(apt.appointmentProducts ?? []).length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {(apt.appointmentProducts ?? []).map(p => (
+                            <span key={p.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">
+                              <Package className="w-2.5 h-2.5" />{p.quantity}× {p.product.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {method ? (
                         <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-xs font-medium', METHOD_STYLE[method])}>
@@ -238,7 +257,18 @@ export default function ComandasFechadasPage() {
                       {paidAt ? format(paidAt, "dd/MM/yy HH:mm", { locale: ptBR }) : '—'}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-foreground whitespace-nowrap">
-                      R$ {Number(apt.totalAmount).toFixed(2).replace('.', ',')}
+                      {(() => {
+                        const productsTotal = (apt.appointmentProducts ?? []).reduce((s, p) => s + Number(p.price) * p.quantity, 0);
+                        const grand = Number(apt.totalAmount) + productsTotal;
+                        return (
+                          <>
+                            <div>R$ {grand.toFixed(2).replace('.', ',')}</div>
+                            {productsTotal > 0 && (
+                              <div className="text-[10px] text-muted-foreground">serv+prod</div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -252,6 +282,17 @@ export default function ComandasFechadasPage() {
                           className="p-1.5 rounded text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Excluir esta comanda? Esta ação não pode ser desfeita.')) {
+                              deleteMutation.mutate(apt.id);
+                            }
+                          }}
+                          title="Excluir comanda"
+                          className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

@@ -48,6 +48,7 @@ appointmentRouter.get('/', async (req: Request, res: Response) => {
       professional: { include: { user: { select: { name: true } } } },
       services: { include: { service: true } },
       client: { select: { name: true, phone: true } },
+      appointmentProducts: { include: { product: true } },
     },
     orderBy: { scheduledAt: 'asc' },
   });
@@ -167,9 +168,52 @@ appointmentRouter.patch('/:id/payment', async (req: Request, res: Response) => {
       professional: { include: { user: { select: { name: true } } } },
       services: { include: { service: true } },
       client: { select: { name: true, phone: true } },
+      appointmentProducts: { include: { product: true } },
     },
   });
+
+  // Ao fechar comanda (PAID), decrementa estoque de cada produto
+  if (paymentStatus === 'PAID' && appointment.appointmentProducts.length > 0) {
+    await Promise.all(
+      appointment.appointmentProducts.map((ap: any) =>
+        prisma.product.update({
+          where: { id: ap.productId },
+          data: { stock: { decrement: ap.quantity } },
+        })
+      )
+    );
+  }
+
   return res.json(appointment);
+});
+
+// Adicionar produto à comanda
+appointmentRouter.post('/:id/products', async (req: Request, res: Response) => {
+  const { productId, quantity = 1 } = req.body;
+  if (!productId) return res.status(400).json({ error: 'productId obrigatório' });
+
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
+
+  const item = await prisma.appointmentProduct.create({
+    data: {
+      appointmentId: req.params.id,
+      productId,
+      quantity: Number(quantity),
+      price: product.price,
+    },
+    include: { product: true },
+  });
+
+  return res.status(201).json(item);
+});
+
+// Remover produto da comanda
+appointmentRouter.delete('/:id/products/:itemId', async (req: Request, res: Response) => {
+  await prisma.appointmentProduct.deleteMany({
+    where: { id: req.params.itemId, appointmentId: req.params.id },
+  });
+  return res.status(204).send();
 });
 
 // Horários disponíveis de um profissional em uma data

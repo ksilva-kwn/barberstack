@@ -1,5 +1,11 @@
-import { ComingSoon } from '@/components/ui/coming-soon';
+import { ProductPage } from '@/components/products/product-page';
 
 export default function BarProdutosPage() {
-  return <ComingSoon title="Produtos — Bar / Cozinha" description="Cadastre alimentos e bebidas vendidos na barbearia. Consumo é vinculado à comanda e desconta do estoque automaticamente" />;
+  return (
+    <ProductPage
+      type="BAR"
+      title="Bar / Cozinha"
+      description="Bebidas e alimentos vendidos na barbearia — vinculados à comanda do cliente."
+    />
+  );
 }

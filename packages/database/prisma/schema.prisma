@@ -337,9 +337,10 @@ model Appointment {
   updatedAt DateTime @updatedAt
 
   // Relações
-  services     AppointmentService[]
-  transaction  FinancialTransaction?
-  commission   Commission?
+  services            AppointmentService[]
+  appointmentProducts AppointmentProduct[]
+  transaction         FinancialTransaction?
+  commission          Commission?
 
   @@index([barbershopId])
   @@index([professionalId])
@@ -556,7 +557,7 @@ model BarbershopPhoto {
 }
 
 // =============================================================================
-// ESTOQUE
+// ESTOQUE & BAR
 // =============================================================================
 
 model Product {
@@ -565,6 +566,7 @@ model Product {
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 
   name           String
+  type           String          @default("ESTOQUE") // ESTOQUE | BAR
   category       ProductCategory @default(OTHER)
   description    String?
   price          Decimal         @db.Decimal(10, 2)
@@ -576,6 +578,24 @@ model Product {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
+  appointmentProducts AppointmentProduct[]
+
   @@index([barbershopId])
   @@map("products")
+}
+
+model AppointmentProduct {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+
+  quantity  Int     @default(1)
+  price     Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([appointmentId])
+  @@map("appointment_products")
 }
