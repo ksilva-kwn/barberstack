@@ -458,14 +458,19 @@ model FinancialTransaction {
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
 
   type          TransactionType
+  title         String          @default("")
+  category      String          @default("Geral")
   amount        Decimal         @db.Decimal(10, 2)
-  grossAmount   Decimal         @db.Decimal(10, 2) // Bruto
-  netAmount     Decimal         @db.Decimal(10, 2) // Líquido (após taxas Asaas)
-  feeAmount     Decimal         @db.Decimal(10, 2) @default(0) // Taxas Asaas
+  grossAmount   Decimal         @db.Decimal(10, 2) @default(0)
+  netAmount     Decimal         @db.Decimal(10, 2) @default(0)
+  feeAmount     Decimal         @db.Decimal(10, 2) @default(0)
   paymentMethod PaymentMethod?
   description   String?
 
-  asaasPaymentId String? // ID do pagamento no Asaas
+  status  String    @default("PAID")  // PAID | PENDING
+  dueDate DateTime?
+
+  asaasPaymentId String?
 
   paidAt    DateTime?
   createdAt DateTime @default(now())
@@ -473,6 +478,7 @@ model FinancialTransaction {
 
   @@index([barbershopId])
   @@index([paidAt])
+  @@index([status])
   @@map("financial_transactions")
 }
 

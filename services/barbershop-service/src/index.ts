@@ -8,6 +8,7 @@ import { professionalRouter } from './routes/professional.routes';
 import { serviceRouter } from './routes/service.routes';
 import { usersRouter } from './routes/users.routes';
 import { productRouter } from './routes/product.routes';
+import { financialRouter } from './routes/financial.routes';
 import { publicRouter } from './routes/public.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
 
@@ -29,5 +30,6 @@ app.use('/professionals', professionalRouter);
 app.use('/services', serviceRouter);
 app.use('/users', usersRouter);
 app.use('/products', productRouter);
+app.use('/financial', financialRouter);
 
 app.listen(PORT, () => console.log(`✂️  Barbershop Service running on port ${PORT}`));

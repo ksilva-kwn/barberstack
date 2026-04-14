@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/components/ui/coming-soon';
-
+'use client';
+import { TransactionPage } from '@/components/financeiro/transaction-page';
 export default function DespesasPage() {
-  return <ComingSoon title="Criar despesa" description="Registre despesas e saídas financeiras da barbearia" />;
+  return <TransactionPage type="EXPENSE" title="Despesas" description="Registre e acompanhe todas as saídas financeiras da barbearia" />;
 }

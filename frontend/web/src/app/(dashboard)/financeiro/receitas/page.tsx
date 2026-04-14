@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/components/ui/coming-soon';
-
+'use client';
+import { TransactionPage } from '@/components/financeiro/transaction-page';
 export default function ReceitasPage() {
-  return <ComingSoon title="Criar receita" description="Registre entradas financeiras avulsas da barbearia" />;
+  return <TransactionPage type="INCOME" title="Receitas" description="Registre entradas financeiras avulsas além das comandas" />;
 }

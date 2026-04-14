@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/components/ui/coming-soon';
-
+'use client';
+import { TransactionPage } from '@/components/financeiro/transaction-page';
 export default function ContasPagarPage() {
-  return <ComingSoon title="Contas a pagar" description="Gerencie as despesas e obrigações financeiras da barbearia" />;
+  return <TransactionPage type="EXPENSE" status="PENDING" title="Contas a pagar" description="Despesas pendentes e vencimentos futuros" />;
 }

@@ -2,193 +2,189 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { TrendingUp, DollarSign, Users, Scissors, Loader2 } from 'lucide-react';
-import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { TrendingUp, DollarSign, Users, Scissors, Loader2, BarChart2 } from 'lucide-react';
+import { financialApi } from '@/lib/financial.api';
 import { cn } from '@/lib/utils';
 
-const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
-  PIX:         'Pix',
-  CREDIT_CARD: 'Cartão de Crédito',
-  DEBIT_CARD:  'Cartão de Débito',
-  CASH:        'Dinheiro',
-  BOLETO:      'Boleto',
-};
-
-const RANGE_OPTIONS = [
-  { label: 'Este mês', dateFrom: format(startOfMonth(new Date()), 'yyyy-MM-dd'), dateTo: format(endOfMonth(new Date()), 'yyyy-MM-dd') },
-  { label: 'Últimos 7 dias', dateFrom: format(subDays(new Date(), 7), 'yyyy-MM-dd'), dateTo: format(new Date(), 'yyyy-MM-dd') },
-  { label: 'Últimos 30 dias', dateFrom: format(subDays(new Date(), 30), 'yyyy-MM-dd'), dateTo: format(new Date(), 'yyyy-MM-dd') },
+const RANGES = [
+  { label: 'Este mês',        months: 0 },
+  { label: 'Últimos 3 meses', months: 3 },
+  { label: 'Últimos 6 meses', months: 6 },
 ];
 
-export default function RelatoriosPage() {
-  const [rangeIdx, setRangeIdx] = useState(0);
-  const range = RANGE_OPTIONS[rangeIdx];
+const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
 
-  const { data: all = [], isLoading } = useQuery<Appointment[]>({
-    queryKey: ['relatorios', rangeIdx],
-    queryFn: () =>
-      appointmentApi.list({ dateFrom: range.dateFrom, dateTo: range.dateTo }).then(r => r.data),
+function HBar({ label, value, max, suffix, sub }: { label: string; value: number; max: number; suffix: string; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-32 shrink-0">
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        {sub && <p className="text-[10px] text-muted-foreground/60">{sub}</p>}
+      </div>
+      <div className="flex-1 h-5 bg-muted/30 rounded-full overflow-hidden">
+        <div className="h-full bg-primary/70 rounded-full transition-all duration-500"
+          style={{ width: max > 0 ? `${Math.min((value / max) * 100, 100)}%` : '0%' }} />
+      </div>
+      <span className="text-xs font-medium text-foreground w-24 text-right shrink-0">{suffix}</span>
+    </div>
+  );
+}
+
+export default function RelatoriosFinanceiroPage() {
+  const [rangeIdx, setRangeIdx] = useState(0);
+  const range = RANGES[rangeIdx];
+  const now = new Date();
+
+  const from = range.months === 0
+    ? format(startOfMonth(now), 'yyyy-MM-dd')
+    : format(startOfMonth(subMonths(now, range.months)), 'yyyy-MM-dd');
+  const to = format(endOfMonth(now), 'yyyy-MM-dd');
+
+  const { data: d, isLoading } = useQuery({
+    queryKey: ['financial-report', from, to],
+    queryFn: () => financialApi.report(from, to).then(r => r.data),
   });
 
-  const completed   = all.filter(a => a.status === 'COMPLETED');
-  const paid        = completed.filter(a => a.paymentStatus === 'PAID');
-  const pending     = completed.filter(a => a.paymentStatus === 'PENDING');
-  const canceled    = all.filter(a => a.status === 'CANCELED' || a.status === 'NO_SHOW');
+  if (isLoading || !d) return (
+    <div className="flex items-center justify-center py-32">
+      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+    </div>
+  );
 
-  const totalRevenue = paid.reduce((s, a) => s + Number(a.totalAmount), 0);
-  const totalPending = pending.reduce((s, a) => s + Number(a.totalAmount), 0);
-
-  // Revenue por forma de pagamento
-  const byMethod = paid.reduce<Record<string, number>>((acc, a) => {
-    const m = a.paymentMethod ?? 'Outros';
-    acc[m] = (acc[m] ?? 0) + Number(a.totalAmount);
-    return acc;
-  }, {});
-
-  // Revenue por barbeiro
-  const byBarber = paid.reduce<Record<string, { name: string; count: number; total: number }>>((acc, a) => {
-    const id = a.professionalId;
-    const name = a.professional?.nickname ?? a.professional?.user?.name ?? id;
-    if (!acc[id]) acc[id] = { name, count: 0, total: 0 };
-    acc[id].count++;
-    acc[id].total += Number(a.totalAmount);
-    return acc;
-  }, {});
-
-  const barbers = Object.values(byBarber).sort((a, b) => b.total - a.total);
-
-  const fmt = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+  const maxMethod  = Math.max(...d.byMethod.map(m => m.total), 1);
+  const maxPro     = Math.max(...d.byProfessional.map(p => p.total), 1);
+  const maxService = Math.max(...d.byService.map(s => s.total), 1);
+  const maxClient  = Math.max(...d.topClients.map(c => c.total), 1);
+  const maxMonth   = Math.max(...d.monthlyRevenue.map(m => m.revenue), 1);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
-          <p className="text-muted-foreground text-sm">Visão geral financeira do período</p>
+          <h1 className="text-2xl font-bold text-foreground">Relatórios Financeiros</h1>
+          <p className="text-muted-foreground text-sm">Análise completa de receitas, serviços e clientes</p>
         </div>
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
-          {RANGE_OPTIONS.map((opt, i) => (
-            <button
-              key={opt.label}
-              onClick={() => setRangeIdx(i)}
-              className={cn(
-                'px-3 py-1 text-xs font-medium rounded transition-colors',
-                rangeIdx === i ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
-              )}
-            >
-              {opt.label}
+          {RANGES.map((r, i) => (
+            <button key={r.label} onClick={() => setRangeIdx(i)}
+              className={cn('px-3 py-1 text-xs font-medium rounded transition-colors',
+                rangeIdx === i ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}>
+              {r.label}
             </button>
           ))}
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { label: 'Faturamento', value: fmt(d.totalRevenue), icon: <DollarSign className="w-4 h-4" />, color: 'green' },
+          { label: 'Atendimentos', value: String(d.totalQty), icon: <Scissors className="w-4 h-4" />, color: 'blue' },
+          { label: 'Ticket médio', value: fmt(d.ticketMedio), icon: <TrendingUp className="w-4 h-4" />, color: 'default' },
+        ].map(k => (
+          <div key={k.label} className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
+                <p className="text-2xl font-bold text-foreground">{k.value}</p>
+              </div>
+              <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', {
+                green: 'bg-emerald-500/10 text-emerald-400', blue: 'bg-sky-500/10 text-sky-400', default: 'bg-primary/10 text-primary',
+              }[k.color])}>{k.icon}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Por forma de pagamento */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground text-sm">Por forma de pagamento</h2>
+          </div>
+          {d.byMethod.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sem dados no período.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {d.byMethod.map(m => (
+                <HBar key={m.method} label={m.method} value={m.total} max={maxMethod}
+                  suffix={fmt(m.total)} sub={`${m.qty} atend.`} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Receita recebida</p>
-              </div>
-              <p className="text-2xl font-bold text-emerald-400">{fmt(totalRevenue)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-amber-400" />
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">A receber</p>
-              </div>
-              <p className="text-2xl font-bold text-amber-400">{fmt(totalPending)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Scissors className="w-4 h-4 text-sky-400" />
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Atendimentos</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{completed.length}</p>
-              {canceled.length > 0 && (
-                <p className="text-xs text-muted-foreground">{canceled.length} cancelados</p>
-              )}
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-purple-400" />
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ticket médio</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">
-                {paid.length > 0 ? fmt(totalRevenue / paid.length) : 'R$ 0,00'}
-              </p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Por forma de pagamento */}
-            <div className="bg-card border border-border rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-4">Receita por forma de pagamento</h2>
-              {Object.keys(byMethod).length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhum pagamento no período</p>
-              ) : (
-                <div className="space-y-3">
-                  {Object.entries(byMethod)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([method, total]) => {
-                      const pct = totalRevenue > 0 ? (total / totalRevenue) * 100 : 0;
-                      return (
-                        <div key={method}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-muted-foreground">
-                              {PAYMENT_METHOD_LABEL[method as PaymentMethod] ?? method}
-                            </span>
-                            <span className="text-xs font-medium text-foreground">{fmt(total)}</span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-            {/* Por barbeiro */}
-            <div className="bg-card border border-border rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-4">Receita por barbeiro</h2>
-              {barbers.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhum atendimento pago no período</p>
-              ) : (
-                <div className="space-y-3">
-                  {barbers.map((b) => {
-                    const pct = totalRevenue > 0 ? (b.total / totalRevenue) * 100 : 0;
-                    return (
-                      <div key={b.name}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-muted-foreground">{b.name} <span className="opacity-60">({b.count}x)</span></span>
-                          <span className="text-xs font-medium text-foreground">{fmt(b.total)}</span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+        {/* Por barbeiro */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground text-sm">Por barbeiro</h2>
           </div>
-        </>
+          {d.byProfessional.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sem dados no período.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {d.byProfessional.map(p => (
+                <HBar key={p.professionalId} label={p.name} value={p.total} max={maxPro}
+                  suffix={fmt(p.total)} sub={`${p.qty} atend.`} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Serviços mais rentáveis */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Scissors className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground text-sm">Serviços mais rentáveis</h2>
+          </div>
+          {d.byService.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sem dados no período.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {d.byService.map(s => (
+                <HBar key={s.serviceName} label={s.serviceName} value={s.total} max={maxService}
+                  suffix={fmt(s.total)} sub={`${s.qty}×`} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top clientes */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground text-sm">Top clientes por receita</h2>
+          </div>
+          {d.topClients.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sem dados no período.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {d.topClients.map(c => (
+                <HBar key={c.clientName} label={c.clientName} value={c.total} max={maxClient}
+                  suffix={fmt(c.total)} sub={`${c.qty} visita(s)`} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Receita mensal */}
+      {d.monthlyRevenue.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground text-sm">Faturamento por mês</h2>
+          </div>
+          <div className="space-y-2.5">
+            {d.monthlyRevenue.map(m => (
+              <HBar key={m.month} label={m.month} value={m.revenue} max={maxMonth}
+                suffix={`${m.qty} atend. · ${fmt(m.revenue)}`} />
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
