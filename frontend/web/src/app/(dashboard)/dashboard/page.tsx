@@ -60,7 +60,7 @@ export default function DashboardPage() {
             />
             <KpiCard
               title="Faturamento Mensal"
-              value={kpis ? `R$ ${(kpis.revenueMonth ?? 0).toFixed(2)}` : '—'}
+              value={kpis ? `R$ ${(kpis.revenueMonth ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
               icon={<TrendingUp className="h-5 w-5" />}
             />
             <KpiCard

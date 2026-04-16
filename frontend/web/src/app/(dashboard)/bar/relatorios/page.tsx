@@ -101,21 +101,21 @@ export default function BarRelatoriosPage() {
         <KpiCard
           icon={<DollarSign className="w-4 h-4" />}
           label="Faturamento total"
-          value={`R$ ${stats.totalRevenue.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub={`${stats.totalQtySold} itens vendidos`}
           color="green"
         />
         <KpiCard
           icon={<ShoppingCart className="w-4 h-4" />}
           label="Ticket médio / item"
-          value={`R$ ${ticketMedio.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub="por unidade vendida"
           color="blue"
         />
         <KpiCard
           icon={<TrendingUp className="w-4 h-4" />}
           label="Lucro potencial"
-          value={`R$ ${stats.potentialProfit.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${stats.potentialProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub="no estoque atual"
           color="amber"
         />
@@ -127,7 +127,7 @@ export default function BarRelatoriosPage() {
           <Star className="w-4 h-4 shrink-0" />
           <p>
             Melhor mês: <span className="font-semibold">{bestMonth.month}</span> com{' '}
-            <span className="font-semibold">R$ {Number(bestMonth.revenue).toFixed(2).replace('.', ',')}</span>{' '}
+            <span className="font-semibold">R$ {Number(bestMonth.revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{' '}
             em {bestMonth.qty} itens vendidos.
           </p>
         </div>
@@ -250,7 +250,7 @@ export default function BarRelatoriosPage() {
                 label={m.month}
                 value={m.revenue}
                 max={maxMonthRev}
-                suffix={`${m.qty} un · R$ ${Number(m.revenue).toFixed(2).replace('.', ',')}`}
+                suffix={`${m.qty} un · R$ ${Number(m.revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               />
             ))}
           </div>

@@ -201,7 +201,7 @@ function ProfessionalCard({ professional, allServices, allBranches, onRefresh }:
                   <div key={service.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground">{service.name}</p>
-                      <p className="text-xs text-muted-foreground">{service.durationMins}min · R$ {Number(service.price).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">{service.durationMins}min · R$ {Number(service.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <button
                       onClick={() => isAssigned

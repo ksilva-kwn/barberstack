@@ -170,7 +170,7 @@ export default function ClientesRelatoriosPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-foreground">{c.visits} visita{c.visits !== 1 ? 's' : ''}</p>
-                  <p className="text-xs text-muted-foreground">R$ {c.revenue.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-xs text-muted-foreground">R$ {c.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
             ))}
@@ -198,7 +198,7 @@ export default function ClientesRelatoriosPage() {
                       <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
                     </div>
                     <p className="text-sm font-bold text-foreground shrink-0 ml-4">
-                      R$ {c.revenue.toFixed(2).replace('.', ',')}
+                      R$ {c.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden ml-6">

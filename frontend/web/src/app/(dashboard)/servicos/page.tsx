@@ -65,7 +65,7 @@ function AddServiceModal({ onClose, onCreated, isBarber, commissionRate }: { onC
             {isBarber && (
               <div className="bg-primary/10 p-3 rounded-lg border border-primary/20 flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Sua comissão ({commissionRate}%)</span>
-                <span className="font-semibold text-primary">R$ {commissionEarned.toFixed(2)}</span>
+                <span className="font-semibold text-primary">R$ {commissionEarned.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             )}
 
@@ -165,7 +165,7 @@ export default function ServicosPage() {
                 <div className="flex flex-col gap-1 mt-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Valor total:</span>
-                    <span className="font-semibold text-foreground">R$ {Number(s.price).toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Duração:</span>
@@ -174,7 +174,7 @@ export default function ServicosPage() {
                   {isBarber && (
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
                       <span className="text-sm text-primary">Sua comissão:</span>
-                      <span className="text-sm font-bold text-primary">R$ {commissionAmount.toFixed(2)}</span>
+                      <span className="text-sm font-bold text-primary">R$ {commissionAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
                 </div>

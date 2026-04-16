@@ -13,7 +13,7 @@ const RANGES = [
   { label: 'Últimos 6 meses', months: 6 },
 ];
 
-const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const fmt = (v: number) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const PAYMENT_LABELS: Record<string, string> = {
   PIX:         'Pix',

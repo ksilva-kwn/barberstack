@@ -139,8 +139,8 @@ export default function BarberDashboardPage() {
         />
         <StatCard
           label="Comissão do mês"
-          value={`R$ ${myCommission.toFixed(2).replace('.', ',')}`}
-          sub={commissionRate > 0 ? `${commissionRate}% de R$ ${monthRevenue.toFixed(2).replace('.', ',')}` : 'Taxa não configurada'}
+          value={`R$ ${myCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          sub={commissionRate > 0 ? `${commissionRate}% de R$ ${monthRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Taxa não configurada'}
           icon={<DollarSign className="w-5 h-5 text-purple-400" />}
           color="bg-purple-500/10"
         />

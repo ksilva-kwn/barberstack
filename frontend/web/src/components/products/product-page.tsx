@@ -320,10 +320,10 @@ export function ProductPage({ type, title, description }: { type: ProductType; t
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground hidden sm:table-cell">
-                      {p.costPrice != null ? `R$ ${Number(p.costPrice).toFixed(2).replace('.', ',')}` : '—'}
+                      {p.costPrice != null ? `R$ ${Number(p.costPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-foreground">
-                      R$ {Number(p.price).toFixed(2).replace('.', ',')}
+                      R$ {Number(p.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">

@@ -134,7 +134,7 @@ function AddProductModal({ appointmentId, onClose }: { appointmentId: string; on
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    R$ {Number(p.price).toFixed(2).replace('.', ',')} · Estoque: {p.stock} {p.unit}
+                    R$ {Number(p.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · Estoque: {p.stock} {p.unit}
                   </p>
                 </div>
                 <input
@@ -216,7 +216,7 @@ export default function ComandasAbertasPage() {
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total</p>
           <p className="text-2xl font-bold text-amber-400">
-            R$ {totalPending.toFixed(2).replace('.', ',')}
+            R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
       </div>
@@ -286,10 +286,10 @@ export default function ComandasAbertasPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-foreground whitespace-nowrap">
-                      <div>R$ {grandTotal.toFixed(2).replace('.', ',')}</div>
+                      <div>R$ {grandTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       {productsTotal > 0 && (
                         <div className="text-[10px] text-muted-foreground">
-                          serv. R$ {Number(apt.totalAmount).toFixed(2).replace('.', ',')} + prod. R$ {productsTotal.toFixed(2).replace('.', ',')}
+                          serv. R$ {Number(apt.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} + prod. R$ {productsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       )}
                     </td>

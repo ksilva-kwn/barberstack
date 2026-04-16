@@ -297,7 +297,7 @@ export default function PortalAgendarPage() {
                     >
                       <span className="font-medium">{s.name}</span>
                       <span className="text-muted-foreground text-xs shrink-0 ml-4">
-                        {s.durationMins}min · R$ {Number(s.price).toFixed(2).replace('.', ',')}
+                        {s.durationMins}min · R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </button>
                   );
@@ -308,7 +308,7 @@ export default function PortalAgendarPage() {
               <div className="flex justify-between text-sm text-muted-foreground bg-muted/30 px-4 py-2.5 rounded-xl mt-3">
                 <span>{totalDuration} minutos no total</span>
                 <span className="font-semibold text-foreground">
-                  R$ {totalAmount.toFixed(2).replace('.', ',')}
+                  R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             )}

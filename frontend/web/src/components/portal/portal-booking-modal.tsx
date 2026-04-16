@@ -127,7 +127,7 @@ export function PortalBookingModal({ shop, professionals, token, onClose, onBook
                           selected ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background text-foreground hover:bg-accent'
                         }`}>
                         <span>{s.name}</span>
-                        <span className="text-muted-foreground text-xs">{s.durationMins}min · R$ {Number(s.price).toFixed(2)}</span>
+                        <span className="text-muted-foreground text-xs">{s.durationMins}min · R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </button>
                     );
                   })}
@@ -136,7 +136,7 @@ export function PortalBookingModal({ shop, professionals, token, onClose, onBook
               {selectedServices.length > 0 && (
                 <div className="flex justify-between text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg mt-2">
                   <span>{totalDuration} min</span>
-                  <span className="font-medium text-foreground">R$ {totalAmount.toFixed(2)}</span>
+                  <span className="font-medium text-foreground">R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               )}
             </div>

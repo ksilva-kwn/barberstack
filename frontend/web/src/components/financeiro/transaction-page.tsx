@@ -16,7 +16,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   PIX: 'Pix', CREDIT_CARD: 'Cartão Crédito', DEBIT_CARD: 'Cartão Débito', CASH: 'Dinheiro', BOLETO: 'Boleto',
 };
 
-const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const fmt = (v: number) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function TxModal({
   type, initial, onClose,

@@ -79,21 +79,21 @@ export default function EstoqueRelatoriosPage() {
         <KpiCard
           icon={<DollarSign className="w-4 h-4" />}
           label="Valor em estoque"
-          value={`R$ ${stats.totalStockValue.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${stats.totalStockValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub="preço de venda"
           color="blue"
         />
         <KpiCard
           icon={<TrendingUp className="w-4 h-4" />}
           label="Lucro potencial"
-          value={`R$ ${stats.potentialProfit.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${stats.potentialProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub="se vender tudo"
           color="green"
         />
         <KpiCard
           icon={<ShoppingCart className="w-4 h-4" />}
           label="Total vendido"
-          value={`R$ ${stats.totalRevenue.toFixed(2).replace('.', ',')}`}
+          value={`R$ ${stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub={`${stats.totalQtySold} unidades`}
           color="green"
         />
@@ -186,7 +186,7 @@ export default function EstoqueRelatoriosPage() {
                 label={m.month}
                 value={m.revenue}
                 max={maxMonthRev}
-                suffix={`${m.qty} un · R$ ${Number(m.revenue).toFixed(2).replace('.', ',')}`}
+                suffix={`${m.qty} un · R$ ${Number(m.revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               />
             ))}
           </div>

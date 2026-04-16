@@ -336,7 +336,7 @@ export default function PortalPage() {
                   </div>
                   <div className="text-right shrink-0 ml-4">
                     <p className="text-sm font-bold text-foreground">
-                      R$ {Number(s.price).toFixed(2).replace('.', ',')}
+                      R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center justify-end gap-0.5 mt-0.5">
                       <Clock className="w-3 h-3" />

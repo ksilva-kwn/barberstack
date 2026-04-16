@@ -131,7 +131,7 @@ function AddProductModal({ appointmentId, onClose }: { appointmentId: string; on
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    R$ {Number(p.price).toFixed(2).replace('.', ',')} · Estoque: {p.stock} {p.unit}
+                    R$ {Number(p.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · Estoque: {p.stock} {p.unit}
                   </p>
                 </div>
                 <input
@@ -255,7 +255,7 @@ export default function ComandasFechadasPage() {
         <div className="bg-card border border-border rounded-lg p-4 col-span-2 md:col-span-1">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total recebido</p>
           <p className="text-2xl font-bold text-emerald-400">
-            R$ {totalPaid.toFixed(2).replace('.', ',')}
+            R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
         {Object.entries(byMethod).slice(0, 2).map(([method, data]) => (
@@ -264,7 +264,7 @@ export default function ComandasFechadasPage() {
               {PAYMENT_METHOD_LABEL[method as PaymentMethod] ?? method}
             </p>
             <p className="text-lg font-bold text-foreground">{data.count}</p>
-            <p className="text-xs text-muted-foreground">R$ {data.total.toFixed(2).replace('.', ',')}</p>
+            <p className="text-xs text-muted-foreground">R$ {data.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
         ))}
       </div>
@@ -346,7 +346,7 @@ export default function ComandasFechadasPage() {
                         const grand = Number(apt.totalAmount) + productsTotal;
                         return (
                           <>
-                            <div>R$ {grand.toFixed(2).replace('.', ',')}</div>
+                            <div>R$ {grand.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             {productsTotal > 0 && (
                               <div className="text-[10px] text-muted-foreground">serv+prod</div>
                             )}

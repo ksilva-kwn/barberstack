@@ -8,7 +8,7 @@ import { Loader2, CheckCircle, Zap, Users } from 'lucide-react';
 import { financialApi } from '@/lib/financial.api';
 import { cn } from '@/lib/utils';
 
-const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const fmt = (v: number) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function ComissoesPage() {
   const qc = useQueryClient();
