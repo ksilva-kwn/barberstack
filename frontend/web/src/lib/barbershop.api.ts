@@ -120,14 +120,14 @@ export const barbershopApi = {
     api.delete(`/api/barbershops/${barbershopId}/photos/${photoId}`),
 
 
-  kpis: (barbershopId: string) =>
-    api.get<DashboardKpis>(`/api/barbershops/${barbershopId}/kpis`),
+  kpis: (barbershopId: string, params?: { professionalId?: string; branchId?: string }) =>
+    api.get<DashboardKpis>(`/api/barbershops/${barbershopId}/kpis`, { params }),
 
-  revenueChart: (barbershopId: string) =>
-    api.get<RevenueDataPoint[]>(`/api/barbershops/${barbershopId}/revenue-chart`),
+  revenueChart: (barbershopId: string, params?: { professionalId?: string; branchId?: string; months?: number }) =>
+    api.get<RevenueDataPoint[]>(`/api/barbershops/${barbershopId}/revenue-chart`, { params }),
 
-  originChart: (barbershopId: string) =>
-    api.get<OriginDataPoint[]>(`/api/barbershops/${barbershopId}/origin-chart`),
+  originChart: (barbershopId: string, params?: { professionalId?: string; branchId?: string }) =>
+    api.get<OriginDataPoint[]>(`/api/barbershops/${barbershopId}/origin-chart`, { params }),
 
   professionals: () =>
     api.get<Professional[]>('/api/professionals'),

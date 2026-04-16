@@ -1,23 +1,45 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
 import { AppointmentOriginChart } from '@/components/dashboard/origin-chart';
 import { useAuthStore } from '@/store/auth.store';
 import { barbershopApi } from '@/lib/barbershop.api';
-import { Users, Scissors, TrendingUp, CreditCard, AlertTriangle, CalendarClock, Loader2 } from 'lucide-react';
+import { Users, Scissors, TrendingUp, CreditCard, AlertTriangle, CalendarClock, Loader2, SlidersHorizontal } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const barbershopId = user?.barbershopId ?? '';
 
+  const [filterProfessionalId, setFilterProfessionalId] = useState('');
+  const [filterBranchId, setFilterBranchId]             = useState('');
+  const [filterMonths, setFilterMonths]                  = useState(6);
+
   const { data: kpis, isLoading } = useQuery({
-    queryKey: ['kpis', barbershopId],
-    queryFn: () => barbershopApi.kpis(barbershopId).then((r) => r.data),
+    queryKey: ['kpis', barbershopId, filterProfessionalId, filterBranchId],
+    queryFn: () => barbershopApi.kpis(barbershopId, {
+      professionalId: filterProfessionalId || undefined,
+      branchId: filterBranchId || undefined,
+    }).then((r) => r.data),
     enabled: !!barbershopId && !isSuperAdmin,
   });
+
+  const { data: professionals } = useQuery({
+    queryKey: ['professionals-list'],
+    queryFn: () => barbershopApi.professionals().then((r) => r.data),
+    enabled: !!barbershopId && !isSuperAdmin && user?.role === 'ADMIN',
+  });
+
+  const { data: branches } = useQuery({
+    queryKey: ['branches-list', barbershopId],
+    queryFn: () => barbershopApi.branches(barbershopId).then((r) => r.data),
+    enabled: !!barbershopId && !isSuperAdmin && user?.role === 'ADMIN',
+  });
+
+  const isAdmin = user?.role === 'ADMIN';
 
   if (isSuperAdmin) {
     return (
@@ -26,7 +48,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-foreground">SaaS Dashboard</h1>
           <p className="text-muted-foreground text-sm">Visão geral da plataforma Barberstack</p>
         </div>
-
         <div className="flex items-center justify-center py-20 bg-card border border-border rounded-xl">
           <p className="text-muted-foreground font-medium">Bem-vindo, {user?.name}. As métricas gerais da plataforma estarão disponíveis em breve.</p>
         </div>
@@ -36,9 +57,59 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">Visão geral da sua barbearia</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Visão geral da sua barbearia</p>
+        </div>
+
+        {/* Filters — admin only */}
+        {isAdmin && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <SlidersHorizontal className="w-4 h-4 text-muted-foreground shrink-0" />
+
+            {/* Barber filter */}
+            {professionals && professionals.length > 0 && (
+              <select
+                value={filterProfessionalId}
+                onChange={(e) => setFilterProfessionalId(e.target.value)}
+                className="h-8 px-2 text-xs bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Todos os barbeiros</option>
+                {professionals.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nickname ?? p.user.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Branch filter */}
+            {branches && branches.length > 1 && (
+              <select
+                value={filterBranchId}
+                onChange={(e) => setFilterBranchId(e.target.value)}
+                className="h-8 px-2 text-xs bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Todas as filiais</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Period (months) filter for revenue chart */}
+            <select
+              value={filterMonths}
+              onChange={(e) => setFilterMonths(Number(e.target.value))}
+              className="h-8 px-2 text-xs bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value={3}>Últimos 3 meses</option>
+              <option value={6}>Últimos 6 meses</option>
+              <option value={12}>Últimos 12 meses</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -86,10 +157,19 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <RevenueChart barbershopId={barbershopId} />
+              <RevenueChart
+                barbershopId={barbershopId}
+                professionalId={filterProfessionalId || undefined}
+                branchId={filterBranchId || undefined}
+                months={filterMonths}
+              />
             </div>
             <div>
-              <AppointmentOriginChart barbershopId={barbershopId} />
+              <AppointmentOriginChart
+                barbershopId={barbershopId}
+                professionalId={filterProfessionalId || undefined}
+                branchId={filterBranchId || undefined}
+              />
             </div>
           </div>
         </>

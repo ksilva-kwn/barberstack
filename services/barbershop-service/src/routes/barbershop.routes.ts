@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { prisma } from '@barberstack/database';
+import { prisma, Prisma } from '@barberstack/database';
 // import axios from 'axios';
 
 export const barbershopRouter: Router = Router();
@@ -237,8 +237,9 @@ barbershopRouter.delete('/:id/branches/:branchId', async (req: Request, res: Res
 // Dashboard KPIs
 barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const role = req.headers['x-user-role'] as string;
-  const userId = req.headers['x-user-id'] as string;
+  const role     = req.headers['x-user-role'] as string;
+  const userId   = req.headers['x-user-id'] as string;
+  const { professionalId: filterProId, branchId: filterBranchId } = req.query as Record<string, string>;
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -248,92 +249,127 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
     if (prof) professionalId = prof.id;
   }
 
+  // Filtros opcionais do admin (não sobrescrevem o filtro do barber)
+  const proFilter   = professionalId ?? filterProId    ?? undefined;
+  const branchFilter = filterBranchId ?? undefined;
+
   const appointmentsWhere: any = {
     barbershopId: id,
     scheduledAt: { gte: startOfMonth },
     status: { in: ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED'] },
   };
-  if (professionalId) appointmentsWhere.professionalId = professionalId;
+  if (proFilter)    appointmentsWhere.professionalId = proFilter;
+  if (branchFilter) appointmentsWhere.branchId       = branchFilter;
 
-  const [professionals, appointmentsMonth, activeSubscriptions, revenueTotal, barberCommission] = await Promise.all([
+  const [professionals, appointmentsMonth, activeSubscriptions, comandaRevenue, openCommands] = await Promise.all([
     prisma.professional.count({ where: { barbershopId: id, isActive: true } }),
 
-    // Barber: conta via comissões (mesma fonte da página de Comissões)
-    // Admin: conta agendamentos do mês
-    professionalId
-      ? prisma.commission.count({ where: { barbershopId: id, professionalId, createdAt: { gte: startOfMonth } } })
-      : prisma.appointment.count({ where: appointmentsWhere }),
+    prisma.appointment.count({ where: appointmentsWhere }),
 
     prisma.clientSubscription.count({ where: { barbershopId: id, status: 'ACTIVE' } }),
 
-    !professionalId ? prisma.financialTransaction.aggregate({
-      where: { barbershopId: id, paidAt: { gte: startOfMonth }, type: 'INCOME' },
-      _sum: { netAmount: true },
-    }) : Promise.resolve(null),
-
-    professionalId ? prisma.commission.aggregate({
-      where: { barbershopId: id, professionalId, createdAt: { gte: startOfMonth } },
-      _sum: { commissionAmount: true },
-    }) : Promise.resolve(null),
-  ]);
-
-  // Receita do mês: comandas pagas + transações manuais de receita
-  const [comandaRevenue, openCommands] = await Promise.all([
-    !professionalId ? prisma.appointment.aggregate({
-      where: { barbershopId: id, paymentStatus: 'PAID', paidAt: { gte: startOfMonth } },
+    // Receita do mês: comandas pagas (serviços)
+    prisma.appointment.aggregate({
+      where: {
+        barbershopId: id,
+        paymentStatus: 'PAID',
+        paidAt: { gte: startOfMonth },
+        ...(proFilter    ? { professionalId: proFilter }    : {}),
+        ...(branchFilter ? { branchId: branchFilter }       : {}),
+      },
       _sum: { totalAmount: true },
-    }) : Promise.resolve(null),
+    }),
+
+    // Comandas abertas = COMPLETED aguardando pagamento
     prisma.appointment.count({
-      where: { barbershopId: id, paymentStatus: 'PENDING', status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] } },
+      where: {
+        barbershopId: id,
+        paymentStatus: 'PENDING',
+        status: 'COMPLETED',
+        ...(proFilter    ? { professionalId: proFilter }    : {}),
+        ...(branchFilter ? { branchId: branchFilter }       : {}),
+      },
     }),
   ]);
-
-  const revenueAmount = professionalId
-    ? (barberCommission?._sum.commissionAmount ? Number(barberCommission._sum.commissionAmount) : 0)
-    : (Number(revenueTotal?._sum.netAmount ?? 0) + Number(comandaRevenue?._sum.totalAmount ?? 0));
 
   return res.json({
     professionals,
     appointmentsMonth,
     activeSubscriptions,
-    revenueMonth: revenueAmount,
+    revenueMonth: Number(comandaRevenue._sum.totalAmount ?? 0),
     openCommands,
     defaulting: 0,
   });
 });
 
-// Dashboard — gráfico de faturamento mensal (últimos 6 meses)
+// Dashboard — gráfico de faturamento (últimos N meses, preenche meses sem dados com 0)
 barbershopRouter.get('/:id/revenue-chart', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const { professionalId, branchId, months: monthsParam } = req.query as Record<string, string>;
+  const now    = new Date();
+  const nMonths = Math.min(Math.max(parseInt(monthsParam ?? '6') || 6, 1), 12);
+  const since  = new Date(now.getFullYear(), now.getMonth() - (nMonths - 1), 1);
 
-  const rows = await prisma.$queryRaw<Array<{ month: string; revenue: number }>>`
+  const MONTH_ABR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const label = (d: Date) => `${MONTH_ABR[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+
+  // Gera todos os meses com revenue=0
+  const allMonths: { month: string; revenue: number }[] = [];
+  for (let i = nMonths - 1; i >= 0; i--) {
+    allMonths.push({ month: label(new Date(now.getFullYear(), now.getMonth() - i, 1)), revenue: 0 });
+  }
+
+  // Condições extras de filtro
+  const extraConds = [
+    professionalId ? Prisma.sql`AND "professionalId" = ${professionalId}` : Prisma.empty,
+    branchId       ? Prisma.sql`AND "branchId" = ${branchId}`             : Prisma.empty,
+  ];
+
+  const rows = await prisma.$queryRaw<Array<{ month: string; revenue: number }>>(Prisma.sql`
     SELECT
       TO_CHAR(DATE_TRUNC('month', "paidAt"), 'Mon/YY') AS month,
       SUM("totalAmount")::float                        AS revenue
     FROM appointments
     WHERE "barbershopId" = ${id}
       AND "paymentStatus" = 'PAID'
-      AND "paidAt" >= ${sixMonthsAgo}
+      AND "paidAt" >= ${since}
+      ${Prisma.join(extraConds, ' ')}
     GROUP BY DATE_TRUNC('month', "paidAt")
     ORDER BY DATE_TRUNC('month', "paidAt") ASC
-  `;
+  `);
 
-  return res.json((rows as Array<{ month: string; revenue: number }>).map(r => ({ month: r.month, revenue: Number(r.revenue) })));
+  // Mescla dados reais nos slots
+  for (const row of rows) {
+    const slot = allMonths.find(m => m.month === row.month);
+    if (slot) slot.revenue = Number(row.revenue);
+  }
+
+  return res.json(allMonths);
 });
 
 // Dashboard — gráfico de origem dos agendamentos
 barbershopRouter.get('/:id/origin-chart', async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { professionalId, branchId } = req.query as Record<string, string>;
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  const where: any = { barbershopId: id, scheduledAt: { gte: startOfMonth } };
+  if (professionalId) where.professionalId = professionalId;
+  if (branchId)       where.branchId       = branchId;
+
   const rows = await prisma.appointment.groupBy({
     by: ['origin'],
-    where: { barbershopId: id, scheduledAt: { gte: startOfMonth } },
+    where,
     _count: { origin: true },
   });
 
-  return res.json(rows.map((r: { origin: string; _count: { origin: number } }) => ({ origin: r.origin, count: r._count.origin })));
+  const ORIGIN_LABEL: Record<string, string> = { APP: 'Online', RECEPTION: 'Recepção' };
+
+  return res.json(
+    rows.map((r: { origin: string; _count: { origin: number } }) => ({
+      name:  ORIGIN_LABEL[r.origin] ?? r.origin,
+      value: r._count.origin,
+    }))
+  );
 });

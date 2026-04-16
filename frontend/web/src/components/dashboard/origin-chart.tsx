@@ -7,10 +7,19 @@ import { Loader2 } from 'lucide-react';
 
 const COLORS = ['hsl(35, 100%, 50%)', 'hsl(217.2, 32.6%, 40%)'];
 
-export function AppointmentOriginChart({ barbershopId }: { barbershopId: string }) {
+interface Props {
+  barbershopId: string;
+  professionalId?: string;
+  branchId?: string;
+}
+
+export function AppointmentOriginChart({ barbershopId, professionalId, branchId }: Props) {
   const { data, isLoading } = useQuery({
-    queryKey: ['origin-chart', barbershopId],
-    queryFn: () => barbershopApi.originChart(barbershopId).then((r) => r.data),
+    queryKey: ['origin-chart', barbershopId, professionalId, branchId],
+    queryFn: () => barbershopApi.originChart(barbershopId, {
+      professionalId: professionalId || undefined,
+      branchId: branchId || undefined,
+    }).then((r) => r.data),
     enabled: !!barbershopId,
   });
 
