@@ -99,6 +99,7 @@ resource "aws_instance" "backend" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [ami, user_data]
   }
 }
 
