@@ -155,6 +155,59 @@ barbershopRouter.delete('/:id/photos/:photoId', async (req: Request, res: Respon
   return res.status(204).send();
 });
 
+// ── Horário de Funcionamento ──────────────────────────────────────────────────
+
+const DAYS = 7; // 0=Dom … 6=Sáb
+const DEFAULT_OPEN  = '09:00';
+const DEFAULT_CLOSE = '18:00';
+
+// Retorna 7 entradas (uma por dia), preenchendo com defaults se não existirem
+barbershopRouter.get('/:id/business-hours', async (req: Request, res: Response) => {
+  const rows = await prisma.barbershopBusinessHours.findMany({
+    where: { barbershopId: req.params.id },
+    orderBy: { dayOfWeek: 'asc' },
+  });
+
+  const map = Object.fromEntries(rows.map((r: { dayOfWeek: number; id: string; barbershopId: string; isOpen: boolean; openTime: string; closeTime: string }) => [r.dayOfWeek, r]));
+  const result = Array.from({ length: DAYS }, (_, dow) => map[dow] ?? {
+    id: null, barbershopId: req.params.id, dayOfWeek: dow,
+    isOpen: false, openTime: DEFAULT_OPEN, closeTime: DEFAULT_CLOSE,
+  });
+
+  return res.json(result);
+});
+
+// Salva (upsert) os horários de todos os dias
+barbershopRouter.put('/:id/business-hours', async (req: Request, res: Response) => {
+  const schema = z.array(z.object({
+    dayOfWeek: z.number().int().min(0).max(6),
+    isOpen:    z.boolean(),
+    openTime:  z.string().regex(/^\d{2}:\d{2}$/).optional().default(DEFAULT_OPEN),
+    closeTime: z.string().regex(/^\d{2}:\d{2}$/).optional().default(DEFAULT_CLOSE),
+  }));
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const { id } = req.params;
+
+  await Promise.all(
+    parsed.data.map((day: { dayOfWeek: number; isOpen: boolean; openTime: string; closeTime: string }) =>
+      prisma.barbershopBusinessHours.upsert({
+        where:  { barbershopId_dayOfWeek: { barbershopId: id, dayOfWeek: day.dayOfWeek } },
+        create: { barbershopId: id, ...day },
+        update: { isOpen: day.isOpen, openTime: day.openTime, closeTime: day.closeTime },
+      })
+    )
+  );
+
+  const updated = await prisma.barbershopBusinessHours.findMany({
+    where: { barbershopId: id },
+    orderBy: { dayOfWeek: 'asc' },
+  });
+  return res.json(updated);
+});
+
 // ── Filiais ───────────────────────────────────────────────────────────────────
 
 // Listar filiais

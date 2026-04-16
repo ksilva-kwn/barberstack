@@ -81,6 +81,15 @@ export interface BarbershopPortal {
   description: string | null;
 }
 
+export interface BusinessHoursEntry {
+  id: string | null;
+  barbershopId: string;
+  dayOfWeek: number; // 0=Dom … 6=Sáb
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
 export interface BarbershopSettings {
   id: string;
   name: string;
@@ -164,6 +173,12 @@ export const barbershopApi = {
 
   deleteBranch: (barbershopId: string, branchId: string) =>
     api.delete(`/api/barbershops/${barbershopId}/branches/${branchId}`),
+
+  businessHours: (barbershopId: string) =>
+    api.get<BusinessHoursEntry[]>(`/api/barbershops/${barbershopId}/business-hours`),
+
+  updateBusinessHours: (barbershopId: string, hours: Pick<BusinessHoursEntry, 'dayOfWeek' | 'isOpen' | 'openTime' | 'closeTime'>[]) =>
+    api.put<BusinessHoursEntry[]>(`/api/barbershops/${barbershopId}/business-hours`, hours),
 
   createBarber: (data: { name: string; email: string; phone?: string; password: string; nickname?: string; commissionRate?: number }) =>
     api.post<Professional>('/api/clients/barber', data),

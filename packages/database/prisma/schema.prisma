@@ -129,6 +129,7 @@ model Barbershop {
   commissionPayments CommissionPayment[]
   photos             BarbershopPhoto[]
   branches           BarbershopBranch[]
+  businessHours      BarbershopBusinessHours[]
 
   @@map("barbershops")
 }
@@ -544,6 +545,25 @@ model ProfessionalRecurringBlock {
 
   @@index([professionalId])
   @@map("professional_recurring_blocks")
+}
+
+// =============================================================================
+// HORÁRIO DE FUNCIONAMENTO
+// =============================================================================
+
+model BarbershopBusinessHours {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int     // 0=Dom, 1=Seg, ..., 6=Sáb
+  isOpen    Boolean @default(false)
+  openTime  String  @default("09:00") // "HH:mm"
+  closeTime String  @default("18:00") // "HH:mm"
+
+  @@unique([barbershopId, dayOfWeek])
+  @@index([barbershopId])
+  @@map("barbershop_business_hours")
 }
 
 // =============================================================================
