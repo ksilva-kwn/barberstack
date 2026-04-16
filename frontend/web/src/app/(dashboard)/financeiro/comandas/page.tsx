@@ -12,6 +12,7 @@ import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.ap
 import { productApi, Product } from '@/lib/product.api';
 import { cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
+import { Pagination, usePagination } from '@/components/ui/pagination';
 
 const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   PIX:         'Pix',
@@ -167,6 +168,7 @@ function AddProductModal({ appointmentId, onClose }: { appointmentId: string; on
 export default function ComandasAbertasPage() {
   const queryClient = useQueryClient();
   const [productModal, setProductModal] = useState<string | null>(null);
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(25);
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ['comandas-abertas'],
@@ -232,6 +234,7 @@ export default function ComandasAbertasPage() {
             <p className="text-sm">Nenhuma comanda aberta</p>
           </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
@@ -244,7 +247,7 @@ export default function ComandasAbertasPage() {
               </tr>
             </thead>
             <tbody>
-              {appointments.map((apt, i) => {
+              {paginate<Appointment>(appointments).map((apt, i) => {
                 const clientLabel = apt.client?.name ?? apt.clientName ?? 'Cliente';
                 const barber = apt.professional?.nickname ?? apt.professional?.user?.name ?? '—';
                 const dt = new Date(apt.scheduledAt);
@@ -327,6 +330,14 @@ export default function ComandasAbertasPage() {
               })}
             </tbody>
           </table>
+          <Pagination
+            total={appointments.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+          </>
         )}
       </div>
 

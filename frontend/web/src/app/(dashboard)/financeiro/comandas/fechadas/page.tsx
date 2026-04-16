@@ -9,6 +9,7 @@ import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.ap
 import { productApi, Product } from '@/lib/product.api';
 import { cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
+import { Pagination, usePagination } from '@/components/ui/pagination';
 
 const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   PIX:         'Pix',
@@ -164,6 +165,7 @@ export default function ComandasFechadasPage() {
   const queryClient = useQueryClient();
   const [rangeIdx, setRangeIdx] = useState(1);
   const [productModal, setProductModal] = useState<string | null>(null);
+  const { page, pageSize, setPage, setPageSize, paginate, resetPage } = usePagination(25);
   const range = RANGE_OPTIONS[rangeIdx];
 
   // Busca TODOS os COMPLETED pagos (sem filtro de data no servidor — filtramos por paidAt no cliente)
@@ -234,7 +236,7 @@ export default function ComandasFechadasPage() {
           {RANGE_OPTIONS.map((opt, i) => (
             <button
               key={opt.label}
-              onClick={() => setRangeIdx(i)}
+              onClick={() => { setRangeIdx(i); resetPage(); }}
               className={cn(
                 'px-3 py-1 text-xs font-medium rounded transition-colors',
                 rangeIdx === i ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
@@ -281,6 +283,7 @@ export default function ComandasFechadasPage() {
             <p className="text-sm">Nenhuma comanda fechada no período</p>
           </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
@@ -294,7 +297,7 @@ export default function ComandasFechadasPage() {
               </tr>
             </thead>
             <tbody>
-              {appointments.map((apt, i) => {
+              {paginate<Appointment>(appointments).map((apt, i) => {
                 const clientLabel = apt.client?.name ?? apt.clientName ?? 'Cliente';
                 const barber = apt.professional?.nickname ?? apt.professional?.user?.name ?? '—';
                 const services = apt.services.map(s => s.service.name).join(', ');
@@ -392,6 +395,14 @@ export default function ComandasFechadasPage() {
               })}
             </tbody>
           </table>
+          <Pagination
+            total={appointments.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+          </>
         )}
       </div>
 

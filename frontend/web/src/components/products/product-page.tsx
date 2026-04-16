@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { productApi, Product, ProductType } from '@/lib/product.api';
+import { Pagination, usePagination } from '@/components/ui/pagination';
 
 const inputCls = 'w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors';
 
@@ -210,6 +211,7 @@ export function ProductPage({ type, title, description }: { type: ProductType; t
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
   const qc = useQueryClient();
+  const { page, pageSize, setPage, setPageSize, paginate, resetPage } = usePagination(25);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', type, search],
@@ -268,7 +270,7 @@ export function ProductPage({ type, title, description }: { type: ProductType; t
           className="w-full pl-9 pr-4 py-2 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
           placeholder="Buscar produto..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); resetPage(); }}
         />
         {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>}
       </div>
@@ -294,7 +296,7 @@ export function ProductPage({ type, title, description }: { type: ProductType; t
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {products.map(p => {
+              {paginate<Product>(products).map(p => {
                 const lowStock = p.isActive && p.stock <= p.minStockAlert;
                 return (
                   <tr key={p.id} className="hover:bg-accent/20 transition-colors">
@@ -345,6 +347,13 @@ export function ProductPage({ type, title, description }: { type: ProductType; t
               })}
             </tbody>
           </table>
+          <Pagination
+            total={products.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
 
