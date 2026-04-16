@@ -25,6 +25,11 @@ const limiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Requisições internas (localhost / EC2 → seeds, healthchecks) não sofrem rate limit
+    const ip = req.ip || req.socket.remoteAddress || '';
+    return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+  },
 });
 app.use(limiter);
 
