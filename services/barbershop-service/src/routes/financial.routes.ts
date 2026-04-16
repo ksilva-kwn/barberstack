@@ -213,9 +213,11 @@ financialRouter.get('/commissions', async (req: Request, res: Response): Promise
   if (professionalId) where.professionalId = professionalId;
   if (isPaid !== undefined) where.isPaid = isPaid === 'true';
   if (from || to) {
-    where.createdAt = {
-      ...(from ? { gte: new Date(from) } : {}),
-      ...(to   ? { lte: new Date(to)   } : {}),
+    where.appointment = {
+      scheduledAt: {
+        ...(from ? { gte: new Date(from) }              : {}),
+        ...(to   ? { lte: new Date(to + 'T23:59:59') } : {}),
+      },
     };
   }
 
@@ -237,14 +239,14 @@ financialRouter.post('/commissions/generate', async (req: Request, res: Response
   const { from, to } = req.body as { from?: string; to?: string };
 
   const dateFrom = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const dateTo   = to   ? new Date(to)   : new Date();
+  const dateTo   = to   ? new Date(to + 'T23:59:59') : new Date();
 
-  // Comandas pagas sem comissão ainda
+  // Comandas pagas sem comissão ainda — filtra por scheduledAt (data do serviço)
   const appointments = await prisma.appointment.findMany({
     where: {
       barbershopId,
       paymentStatus: 'PAID',
-      paidAt: { gte: dateFrom, lte: dateTo },
+      scheduledAt: { gte: dateFrom, lte: dateTo },
       commission: null, // sem comissão gerada
     },
     include: {
