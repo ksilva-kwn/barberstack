@@ -257,9 +257,15 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
 
   const [professionals, appointmentsMonth, activeSubscriptions, revenueTotal, barberCommission] = await Promise.all([
     prisma.professional.count({ where: { barbershopId: id, isActive: true } }),
-    prisma.appointment.count({ where: appointmentsWhere }),
+
+    // Barber: conta via comissões (mesma fonte da página de Comissões)
+    // Admin: conta agendamentos do mês
+    professionalId
+      ? prisma.commission.count({ where: { barbershopId: id, professionalId, createdAt: { gte: startOfMonth } } })
+      : prisma.appointment.count({ where: appointmentsWhere }),
+
     prisma.clientSubscription.count({ where: { barbershopId: id, status: 'ACTIVE' } }),
-    
+
     !professionalId ? prisma.financialTransaction.aggregate({
       where: { barbershopId: id, paidAt: { gte: startOfMonth }, type: 'INCOME' },
       _sum: { netAmount: true },
@@ -268,7 +274,7 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
     professionalId ? prisma.commission.aggregate({
       where: { barbershopId: id, professionalId, createdAt: { gte: startOfMonth } },
       _sum: { commissionAmount: true },
-    }) : Promise.resolve(null)
+    }) : Promise.resolve(null),
   ]);
 
   // Receita do mês: comandas pagas + transações manuais de receita
