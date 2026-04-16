@@ -271,16 +271,63 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
     }) : Promise.resolve(null)
   ]);
 
-  const revenueAmount = professionalId 
+  // Receita do mês: comandas pagas + transações manuais de receita
+  const [comandaRevenue, openCommands] = await Promise.all([
+    !professionalId ? prisma.appointment.aggregate({
+      where: { barbershopId: id, paymentStatus: 'PAID', paidAt: { gte: startOfMonth } },
+      _sum: { totalAmount: true },
+    }) : Promise.resolve(null),
+    prisma.appointment.count({
+      where: { barbershopId: id, paymentStatus: 'PENDING', status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] } },
+    }),
+  ]);
+
+  const revenueAmount = professionalId
     ? (barberCommission?._sum.commissionAmount ? Number(barberCommission._sum.commissionAmount) : 0)
-    : (revenueTotal?._sum.netAmount ? Number(revenueTotal._sum.netAmount) : 0);
+    : (Number(revenueTotal?._sum.netAmount ?? 0) + Number(comandaRevenue?._sum.totalAmount ?? 0));
 
   return res.json({
     professionals,
     appointmentsMonth,
     activeSubscriptions,
     revenueMonth: revenueAmount,
-    openCommands: 0,
+    openCommands,
     defaulting: 0,
   });
+});
+
+// Dashboard — gráfico de faturamento mensal (últimos 6 meses)
+barbershopRouter.get('/:id/revenue-chart', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const rows = await prisma.$queryRaw<Array<{ month: string; revenue: number }>>`
+    SELECT
+      TO_CHAR(DATE_TRUNC('month', "paidAt"), 'Mon/YY') AS month,
+      SUM("totalAmount")::float                        AS revenue
+    FROM appointments
+    WHERE "barbershopId" = ${id}
+      AND "paymentStatus" = 'PAID'
+      AND "paidAt" >= ${sixMonthsAgo}
+    GROUP BY DATE_TRUNC('month', "paidAt")
+    ORDER BY DATE_TRUNC('month', "paidAt") ASC
+  `;
+
+  return res.json((rows as Array<{ month: string; revenue: number }>).map(r => ({ month: r.month, revenue: Number(r.revenue) })));
+});
+
+// Dashboard — gráfico de origem dos agendamentos
+barbershopRouter.get('/:id/origin-chart', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const rows = await prisma.appointment.groupBy({
+    by: ['origin'],
+    where: { barbershopId: id, scheduledAt: { gte: startOfMonth } },
+    _count: { origin: true },
+  });
+
+  return res.json(rows.map((r: { origin: string; _count: { origin: number } }) => ({ origin: r.origin, count: r._count.origin })));
 });
