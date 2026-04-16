@@ -6,7 +6,7 @@ echo "=== Barberstack EC2 Setup — $(date) ==="
 
 # ─── Dependências do sistema ─────────────────────────────────────────────────
 dnf update -y
-dnf install -y curl git unzip jq
+dnf install -y git unzip jq  # curl-minimal já vem no AMI; não reinstalar para evitar conflito
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
 dnf install -y docker
