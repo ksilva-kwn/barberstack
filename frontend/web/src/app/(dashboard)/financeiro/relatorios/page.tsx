@@ -15,6 +15,13 @@ const RANGES = [
 
 const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
 
+const PAYMENT_LABELS: Record<string, string> = {
+  PIX:         'Pix',
+  CASH:        'Dinheiro',
+  CREDIT_CARD: 'Cartão de Crédito',
+  DEBIT_CARD:  'Cartão de Débito',
+};
+
 function HBar({ label, value, max, suffix, sub }: { label: string; value: number; max: number; suffix: string; sub?: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -109,7 +116,7 @@ export default function RelatoriosFinanceiroPage() {
           ) : (
             <div className="space-y-2.5">
               {d.byMethod.map(m => (
-                <HBar key={m.method} label={m.method} value={m.total} max={maxMethod}
+                <HBar key={m.method} label={PAYMENT_LABELS[m.method] ?? m.method} value={m.total} max={maxMethod}
                   suffix={fmt(m.total)} sub={`${m.qty} atend.`} />
               ))}
             </div>
