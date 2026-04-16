@@ -53,18 +53,6 @@ module "security" {
   vpc_id      = module.vpc.vpc_id
 }
 
-module "rds" {
-  source                = "./modules/rds"
-  project               = var.project
-  environment           = var.environment
-  vpc_id                = module.vpc.vpc_id
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  rds_security_group_id = module.security.rds_sg_id
-  db_username           = var.db_username
-  db_password           = module.ssm.db_password   # gerado e guardado no SSM
-  db_instance_class     = var.db_instance_class
-}
-
 module "ec2" {
   source                = "./modules/ec2"
   project               = var.project
@@ -93,14 +81,12 @@ module "amplify" {
 # SSM — Parâmetros adicionais (construídos após RDS e SSM estarem prontos)
 # =============================================================================
 
-# DATABASE_URL — construído com endpoint RDS + senha gerada pelo SSM
+# DATABASE_URL — gerenciado manualmente no SSM Console (aponta para srv-rds-001)
 resource "aws_ssm_parameter" "database_url" {
   name        = "/barberstack/${var.environment}/DATABASE_URL"
   type        = "SecureString"
-  value       = "postgresql://${var.db_username}:${module.ssm.db_password}@${module.rds.endpoint}/barberstack"
+  value       = "MANAGED_MANUALLY_IN_SSM_CONSOLE"
   description = "Barberstack — URL de conexão com o banco PostgreSQL"
-
-  depends_on = [module.rds, module.ssm]
 
   lifecycle {
     ignore_changes = [value]
