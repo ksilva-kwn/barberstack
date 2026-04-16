@@ -258,8 +258,7 @@ financialRouter.post('/commissions/generate', async (req: Request, res: Response
     const rate = Number(apt.professional.commissionRate);
     if (rate <= 0) continue;
 
-    const productsTotal = apt.appointmentProducts.reduce((s, p) => s + Number(p.price) * p.quantity, 0);
-    const gross = Number(apt.totalAmount) + productsTotal;
+    const gross = Number(apt.totalAmount); // apenas serviços — produtos são da barbearia
     const commissionAmount = (gross * rate) / 100;
 
     await prisma.commission.create({
