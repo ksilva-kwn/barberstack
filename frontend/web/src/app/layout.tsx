@@ -4,7 +4,7 @@ import { QueryProvider } from '@/components/providers/query-provider';
 
 export const metadata: Metadata = {
   title: 'Barberstack — Gestão de Barbearias',
-  description: 'SaaS Multi-tenant para gestão de barbearias com assinaturas e controle operacional.',
+  description: 'SaaS completo para gestão de barbearias: agenda, financeiro, estoque, bar e muito mais.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,9 +13,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,300&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body style={{ fontFamily: "'Inter', sans-serif" }}>
+      <body style={{ fontFamily: "'Helvetica Now Display', 'Helvetica Neue', 'Barlow', Helvetica, Arial, sans-serif" }}>
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
