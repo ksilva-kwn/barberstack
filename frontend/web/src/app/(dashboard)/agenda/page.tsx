@@ -72,6 +72,15 @@ export default function AgendaPage() {
     enabled: professionals.length > 0,
   });
 
+  const { data: businessHours = [] } = useQuery({
+    queryKey: ['business-hours', barbershopId],
+    queryFn: () => barbershopApi.businessHours(barbershopId).then(r => r.data),
+    enabled: !!barbershopId,
+  });
+
+  // Entry for the currently selected day of week (0=Dom … 6=Sáb)
+  const businessHoursDay = businessHours.find((h: { dayOfWeek: number }) => h.dayOfWeek === selectedDate.getDay()) ?? null;
+
   const { data: recurringBlocks = [] } = useQuery<RecurringBlockDisplay[]>({
     queryKey: ['agenda-recurring-blocks', professionalIds, selectedDow],
     queryFn: async () => {
@@ -187,6 +196,7 @@ export default function AgendaPage() {
           appointments={appointments}
           dayOffs={dayOffs}
           recurringBlocks={recurringBlocks}
+          businessHoursDay={businessHoursDay}
           snapMins={snapMins}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}

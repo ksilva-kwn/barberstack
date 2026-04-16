@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
-import { Professional } from '@/lib/barbershop.api';
+import { Professional, BusinessHoursEntry } from '@/lib/barbershop.api';
 import { AppointmentCard } from './appointment-card';
 
 export interface DayOffBlock {
@@ -60,6 +60,7 @@ interface Props {
   appointments: Appointment[];
   dayOffs?: DayOffBlock[];
   recurringBlocks?: RecurringBlockDisplay[];
+  businessHoursDay?: BusinessHoursEntry | null;
   snapMins?: number;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onReschedule: (id: string, scheduledAt: string) => void;
@@ -67,8 +68,32 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], snapMins = 15, onStatusChange, onReschedule, onResize, onDelete }: Props) {
+export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], businessHoursDay, snapMins = 15, onStatusChange, onReschedule, onResize, onDelete }: Props) {
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Pre-compute business hours overlays
+  const isClosed = businessHoursDay !== undefined && businessHoursDay !== null && !businessHoursDay.isOpen;
+
+  // Heights for the "outside hours" overlays (top = before opening, bottom = after closing)
+  const beforeOpenHeight = businessHoursDay?.isOpen
+    ? (() => {
+        const [h, m] = businessHoursDay.openTime.split(':').map(Number);
+        const mins = (h - START_HOUR) * 60 + m;
+        return Math.max(0, mins * PX_PER_MIN);
+      })()
+    : 0;
+
+  const afterCloseTop = businessHoursDay?.isOpen
+    ? (() => {
+        const [h, m] = businessHoursDay.closeTime.split(':').map(Number);
+        const mins = (h - START_HOUR) * 60 + m;
+        return Math.max(0, mins * PX_PER_MIN);
+      })()
+    : 0;
+
+  const afterCloseHeight = businessHoursDay?.isOpen
+    ? Math.max(0, TOTAL_HEIGHT - afterCloseTop)
+    : 0;
 
   if (professionals.length === 0) {
     return (
@@ -124,6 +149,14 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
 
   return (
     <div className="flex-1 overflow-auto rounded-lg border border-border bg-card">
+      {/* Business hours closed banner */}
+      {isClosed && (
+        <div className="sticky top-0 z-20 flex items-center justify-center gap-2 py-2 text-xs font-medium" style={{ backgroundColor: 'hsl(var(--destructive)/0.15)', color: 'hsl(var(--destructive)/0.9)', borderBottom: '1px solid hsl(var(--destructive)/0.3)' }}>
+          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: 'hsl(var(--destructive))' }} />
+          Barbearia fechada neste dia
+        </div>
+      )}
+
       {/* Sticky header row */}
       <div className="flex sticky top-0 z-10 bg-card border-b border-border">
         <div className="w-16 shrink-0 border-r border-border" />
@@ -182,6 +215,33 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
                 }}
               />
             ))}
+
+            {/* Business hours — fora do horário (antes da abertura) */}
+            {!isClosed && businessHoursDay?.isOpen && beforeOpenHeight > 0 && (
+              <div
+                className="absolute left-0 right-0 top-0 z-[4] pointer-events-none"
+                style={{ height: beforeOpenHeight, background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.35)', borderBottom: '1px dashed hsl(var(--border))' }}
+              >
+                <p className="text-[9px] text-muted-foreground/60 px-1.5 pt-1 font-medium">Fora do horário</p>
+              </div>
+            )}
+
+            {/* Business hours — fora do horário (depois do fechamento) */}
+            {!isClosed && businessHoursDay?.isOpen && afterCloseHeight > 0 && (
+              <div
+                className="absolute left-0 right-0 z-[4] pointer-events-none"
+                style={{ top: afterCloseTop, height: afterCloseHeight, background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.35)', borderTop: '1px dashed hsl(var(--border))' }}
+              >
+                <p className="text-[9px] text-muted-foreground/60 px-1.5 pt-1 font-medium">Fora do horário</p>
+              </div>
+            )}
+
+            {/* Business hours — dia fechado */}
+            {isClosed && (
+              <div className="absolute inset-0 z-[4] pointer-events-none flex items-center justify-center"
+                style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.45)' }}
+              />
+            )}
 
             {/* Day-off overlay (full day or partial) */}
             {(() => {
