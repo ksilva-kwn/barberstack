@@ -125,7 +125,7 @@ export default function LandingPage() {
     <div
       className="min-h-screen"
       style={{
-        backgroundColor: '#0A0908',
+        backgroundColor: '#0E1114',
         color: '#E6E3DE',
         fontFamily: "'Helvetica Now Display', 'Helvetica Neue', 'Barlow', Helvetica, Arial, sans-serif",
       }}
@@ -134,16 +134,16 @@ export default function LandingPage() {
       {/* ── NAV ───────────────────────────────────────────────────────────── */}
       <header
         className="fixed top-0 inset-x-0 z-50 border-b"
-        style={{ backgroundColor: 'rgba(10,9,8,0.92)', borderColor: '#252220', backdropFilter: 'blur(12px)' }}
+        style={{ backgroundColor: 'rgba(14,17,20,0.92)', borderColor: '#1E252D', backdropFilter: 'blur(12px)' }}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#B8A98A' }}
+              style={{ backgroundColor: '#BB1A23' }}
             >
-              <Scissors className="w-4 h-4" style={{ color: '#0A0908' }} />
+              <Scissors className="w-4 h-4" style={{ color: '#0E1114' }} />
             </div>
             <span className="font-semibold text-lg tracking-tight" style={{ color: '#E6E3DE' }}>
               Barberstack
@@ -180,7 +180,7 @@ export default function LandingPage() {
             <Link
               href="/register"
               className="text-sm font-semibold px-5 py-2 rounded-lg transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#B8A98A', color: '#0A0908' }}
+              style={{ backgroundColor: '#BB1A23', color: '#0E1114' }}
             >
               Teste grátis
             </Link>
@@ -198,7 +198,7 @@ export default function LandingPage() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden border-t px-6 py-4 space-y-3" style={{ backgroundColor: '#0A0908', borderColor: '#252220' }}>
+          <div className="md:hidden border-t px-6 py-4 space-y-3" style={{ backgroundColor: '#0E1114', borderColor: '#1E252D' }}>
             {navLinks.map((l) => (
               <a
                 key={l.href}
@@ -211,8 +211,8 @@ export default function LandingPage() {
               </a>
             ))}
             <div className="pt-2 flex flex-col gap-2">
-              <Link href="/login" className="text-sm font-medium py-2 text-center rounded-lg border" style={{ color: '#E6E3DE', borderColor: '#252220' }}>Entrar</Link>
-              <Link href="/register" className="text-sm font-semibold py-2 text-center rounded-lg" style={{ backgroundColor: '#B8A98A', color: '#0A0908' }}>Teste grátis</Link>
+              <Link href="/login" className="text-sm font-medium py-2 text-center rounded-lg border" style={{ color: '#E6E3DE', borderColor: '#1E252D' }}>Entrar</Link>
+              <Link href="/register" className="text-sm font-semibold py-2 text-center rounded-lg" style={{ backgroundColor: '#BB1A23', color: '#0E1114' }}>Teste grátis</Link>
             </div>
           </div>
         )}
@@ -224,7 +224,7 @@ export default function LandingPage() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse 60% 50% at 70% 50%, rgba(184,169,138,0.07) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 60% 50% at 70% 50%, rgba(187,26,35,0.07) 0%, transparent 70%)',
           }}
         />
 
@@ -234,7 +234,7 @@ export default function LandingPage() {
             {/* Eyebrow */}
             <div
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium tracking-widest uppercase mb-8 border"
-              style={{ color: '#B8A98A', borderColor: 'rgba(184,169,138,0.3)', backgroundColor: 'rgba(184,169,138,0.06)' }}
+              style={{ color: '#BB1A23', borderColor: 'rgba(187,26,35,0.3)', backgroundColor: 'rgba(187,26,35,0.06)' }}
             >
               Sistema completo para barbearias
             </div>
@@ -244,7 +244,7 @@ export default function LandingPage() {
               style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}
             >
               Gerencie sua barbearia{' '}
-              <span style={{ color: '#B8A98A' }}>como nunca antes</span>
+              <span style={{ color: '#BB1A23' }}>como nunca antes</span>
             </h1>
 
             <p
@@ -259,15 +259,15 @@ export default function LandingPage() {
               <Link
                 href="/register"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#B8A98A', color: '#0A0908' }}
+                style={{ backgroundColor: '#BB1A23', color: '#0E1114' }}
               >
                 Criar conta grátis
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#como-funciona"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-medium border transition-colors hover:border-[#B8A98A]"
-                style={{ borderColor: '#252220', color: '#E6E3DE' }}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-medium border transition-colors hover:border-[#BB1A23]"
+                style={{ borderColor: '#1E252D', color: '#E6E3DE' }}
               >
                 Ver demonstração
               </a>
@@ -292,33 +292,33 @@ export default function LandingPage() {
           <div className="hidden lg:flex items-center justify-center">
             <div
               className="relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden border"
-              style={{ borderColor: '#252220', backgroundColor: '#141210' }}
+              style={{ borderColor: '#1E252D', backgroundColor: '#141A1F' }}
             >
               {/* Fake dashboard preview */}
               <div className="absolute inset-0 p-6 flex flex-col gap-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#B8A98A' }} />
-                  <div className="h-2 rounded-full w-24" style={{ backgroundColor: '#252220' }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#BB1A23' }} />
+                  <div className="h-2 rounded-full w-24" style={{ backgroundColor: '#1E252D' }} />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {['Faturamento', 'Cortes', 'Comandas'].map((label, i) => (
-                    <div key={label} className="rounded-xl p-4 border" style={{ backgroundColor: '#1A1815', borderColor: '#2A2520' }}>
+                    <div key={label} className="rounded-xl p-4 border" style={{ backgroundColor: '#171D23', borderColor: '#263040' }}>
                       <p className="text-[10px] mb-2" style={{ color: 'rgba(230,227,222,0.45)' }}>{label}</p>
-                      <p className="text-base font-bold" style={{ color: i === 0 ? '#B8A98A' : '#E6E3DE' }}>
+                      <p className="text-base font-bold" style={{ color: i === 0 ? '#BB1A23' : '#E6E3DE' }}>
                         {i === 0 ? 'R$8.4k' : i === 1 ? '312' : '7'}
                       </p>
                     </div>
                   ))}
                 </div>
                 {/* Fake chart bars */}
-                <div className="flex-1 rounded-xl border p-4" style={{ backgroundColor: '#1A1815', borderColor: '#2A2520' }}>
+                <div className="flex-1 rounded-xl border p-4" style={{ backgroundColor: '#171D23', borderColor: '#263040' }}>
                   <p className="text-[10px] mb-4" style={{ color: 'rgba(230,227,222,0.45)' }}>Faturamento Mensal</p>
                   <div className="flex items-end gap-2 h-16">
                     {[40, 65, 50, 80, 60, 95, 72].map((h, i) => (
                       <div
                         key={i}
                         className="flex-1 rounded-t"
-                        style={{ height: `${h}%`, backgroundColor: i === 5 ? '#B8A98A' : 'rgba(184,169,138,0.25)' }}
+                        style={{ height: `${h}%`, backgroundColor: i === 5 ? '#BB1A23' : 'rgba(187,26,35,0.25)' }}
                       />
                     ))}
                   </div>
@@ -334,7 +334,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#B8A98A' }}>
+            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#BB1A23' }}>
               Funcionalidades
             </p>
             <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}>
@@ -351,15 +351,15 @@ export default function LandingPage() {
               <div
                 key={title}
                 className="flex gap-5 p-6 rounded-2xl border transition-colors"
-                style={{ backgroundColor: '#141210', borderColor: '#252220' }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(184,169,138,0.3)')}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = '#252220')}
+                style={{ backgroundColor: '#141A1F', borderColor: '#1E252D' }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(187,26,35,0.3)')}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = '#1E252D')}
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: 'rgba(184,169,138,0.12)' }}
+                  style={{ backgroundColor: 'rgba(187,26,35,0.12)' }}
                 >
-                  <Icon className="w-5 h-5" style={{ color: '#B8A98A' }} />
+                  <Icon className="w-5 h-5" style={{ color: '#BB1A23' }} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-base mb-1.5" style={{ color: '#E6E3DE' }}>{title}</h3>
@@ -375,11 +375,11 @@ export default function LandingPage() {
       <section
         id="como-funciona"
         className="py-24 px-6"
-        style={{ backgroundColor: '#0E0C0B' }}
+        style={{ backgroundColor: '#0B0E11' }}
       >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#B8A98A' }}>
+            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#BB1A23' }}>
               Como funciona
             </p>
             <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}>
@@ -395,7 +395,7 @@ export default function LandingPage() {
               <div key={s.num} className="flex gap-6">
                 <p
                   className="text-6xl font-bold shrink-0 leading-none"
-                  style={{ color: 'rgba(184,169,138,0.18)', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ color: 'rgba(187,26,35,0.18)', fontVariantNumeric: 'tabular-nums' }}
                 >
                   {s.num}
                 </p>
@@ -413,7 +413,7 @@ export default function LandingPage() {
       <section id="planos" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#B8A98A' }}>
+            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#BB1A23' }}>
               Planos
             </p>
             <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}>
@@ -430,14 +430,14 @@ export default function LandingPage() {
                 key={plan.name}
                 className="relative rounded-2xl border p-8 flex flex-col"
                 style={{
-                  backgroundColor: plan.highlight ? '#141210' : '#0E0C0B',
-                  borderColor: plan.highlight ? '#B8A98A' : '#252220',
+                  backgroundColor: plan.highlight ? '#141A1F' : '#0B0E11',
+                  borderColor: plan.highlight ? '#BB1A23' : '#1E252D',
                 }}
               >
                 {plan.highlight && (
                   <div
                     className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: '#B8A98A', color: '#0A0908' }}
+                    style={{ backgroundColor: '#BB1A23', color: '#0E1114' }}
                   >
                     ✦ Mais popular
                   </div>
@@ -459,8 +459,8 @@ export default function LandingPage() {
                   className="w-full py-3 rounded-xl text-sm font-semibold text-center mb-8 transition-opacity hover:opacity-90"
                   style={
                     plan.highlight
-                      ? { backgroundColor: '#B8A98A', color: '#0A0908' }
-                      : { backgroundColor: '#1E1C1A', color: '#E6E3DE' }
+                      ? { backgroundColor: '#BB1A23', color: '#0E1114' }
+                      : { backgroundColor: '#171D23', color: '#E6E3DE' }
                   }
                 >
                   Começar teste grátis
@@ -469,7 +469,7 @@ export default function LandingPage() {
                 <ul className="space-y-3">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-3 text-sm" style={{ color: 'rgba(230,227,222,0.70)' }}>
-                      <Check className="w-4 h-4 shrink-0" style={{ color: '#B8A98A' }} />
+                      <Check className="w-4 h-4 shrink-0" style={{ color: '#BB1A23' }} />
                       {f}
                     </li>
                   ))}
@@ -484,11 +484,11 @@ export default function LandingPage() {
       <section
         id="depoimentos"
         className="py-24 px-6"
-        style={{ backgroundColor: '#0E0C0B' }}
+        style={{ backgroundColor: '#0B0E11' }}
       >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#B8A98A' }}>
+            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: '#BB1A23' }}>
               Depoimentos
             </p>
             <h2 className="text-4xl lg:text-5xl font-bold" style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}>
@@ -501,11 +501,11 @@ export default function LandingPage() {
               <div
                 key={t.name}
                 className="p-7 rounded-2xl border flex flex-col gap-6"
-                style={{ backgroundColor: '#141210', borderColor: '#252220' }}
+                style={{ backgroundColor: '#141A1F', borderColor: '#1E252D' }}
               >
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" style={{ color: '#B8A98A' }} />
+                    <Star key={i} className="w-4 h-4 fill-current" style={{ color: '#BB1A23' }} />
                   ))}
                 </div>
                 <p className="text-sm leading-relaxed flex-1" style={{ color: 'rgba(230,227,222,0.70)' }}>
@@ -525,13 +525,13 @@ export default function LandingPage() {
       <section className="py-24 px-6">
         <div
           className="max-w-4xl mx-auto text-center rounded-3xl border px-8 py-20 relative overflow-hidden"
-          style={{ backgroundColor: '#141210', borderColor: '#252220' }}
+          style={{ backgroundColor: '#141A1F', borderColor: '#1E252D' }}
         >
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(184,169,138,0.08) 0%, transparent 70%)' }}
+            style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(187,26,35,0.08) 0%, transparent 70%)' }}
           />
-          <p className="text-xs font-medium tracking-widest uppercase mb-6" style={{ color: '#B8A98A' }}>
+          <p className="text-xs font-medium tracking-widest uppercase mb-6" style={{ color: '#BB1A23' }}>
             Comece hoje
           </p>
           <h2 className="text-4xl lg:text-5xl font-bold mb-6" style={{ color: '#E6E3DE', letterSpacing: '-0.02em' }}>
@@ -544,7 +544,7 @@ export default function LandingPage() {
             <Link
               href="/register"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#B8A98A', color: '#0A0908' }}
+              style={{ backgroundColor: '#BB1A23', color: '#0E1114' }}
             >
               Criar conta grátis
               <ArrowRight className="w-4 h-4" />
@@ -552,9 +552,9 @@ export default function LandingPage() {
             <a
               href="#"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-medium border transition-colors"
-              style={{ borderColor: '#252220', color: '#E6E3DE' }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(184,169,138,0.4)')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = '#252220')}
+              style={{ borderColor: '#1E252D', color: '#E6E3DE' }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(187,26,35,0.4)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = '#1E252D')}
             >
               Falar com vendas
             </a>
@@ -563,14 +563,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer className="border-t px-6 pt-16 pb-10" style={{ borderColor: '#252220', backgroundColor: '#0A0908' }}>
+      <footer className="border-t px-6 pt-16 pb-10" style={{ borderColor: '#1E252D', backgroundColor: '#0E1114' }}>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
             {/* Brand */}
             <div className="md:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#B8A98A' }}>
-                  <Scissors className="w-4 h-4" style={{ color: '#0A0908' }} />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#BB1A23' }}>
+                  <Scissors className="w-4 h-4" style={{ color: '#0E1114' }} />
                 </div>
                 <span className="font-semibold text-base" style={{ color: '#E6E3DE' }}>Barberstack</span>
               </Link>
@@ -605,7 +605,7 @@ export default function LandingPage() {
           </div>
 
           {/* Bottom bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t" style={{ borderColor: '#252220' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t" style={{ borderColor: '#1E252D' }}>
             <p className="text-xs" style={{ color: 'rgba(230,227,222,0.35)' }}>
               © 2026 Barberstack. Todos os direitos reservados.
             </p>
@@ -616,7 +616,7 @@ export default function LandingPage() {
                   href="#"
                   className="transition-colors"
                   style={{ color: 'rgba(230,227,222,0.35)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#B8A98A')}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#BB1A23')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(230,227,222,0.35)')}
                 >
                   <Icon className="w-4 h-4" />
