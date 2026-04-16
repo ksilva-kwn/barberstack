@@ -3,11 +3,6 @@ output "ec2_public_ip" {
   value       = module.ec2.public_ip
 }
 
-output "rds_endpoint" {
-  description = "Endpoint do banco de dados RDS"
-  value       = module.rds.endpoint
-  sensitive   = true
-}
 
 output "amplify_url" {
   description = "URL do frontend no Amplify"
