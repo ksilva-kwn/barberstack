@@ -18,18 +18,37 @@ export interface FinancialTransaction {
   createdAt: string;
 }
 
-export interface Commission {
+export interface CommissionEntry {
+  id: string;
+  scheduledAt: string;
+  totalAmount: number;
+  commissionAmount: number;
+}
+
+export interface CommissionReport {
+  professionalId: string;
+  name: string;
+  commissionRate: number;
+  totalServices: number;
+  grossAmount: number;
+  commissionAmount: number;
+  appointments: CommissionEntry[];
+}
+
+export interface CommissionPayment {
   id: string;
   professionalId: string;
-  appointmentId: string;
+  year: number;
+  month: number;
+  totalServices: number;
   grossAmount: number;
   commissionRate: number;
   commissionAmount: number;
   isPaid: boolean;
   paidAt: string | null;
+  notes: string | null;
   createdAt: string;
-  professional: { id: string; nickname: string | null; user: { name: string } };
-  appointment: { scheduledAt: string; totalAmount: number; paidAt: string | null };
+  professional: { nickname: string | null; user: { name: string } };
 }
 
 export interface BalanceData {
@@ -73,14 +92,20 @@ export const financialApi = {
   deleteTransaction: (id: string) =>
     api.delete(`/api/financial/transactions/${id}`),
 
-  commissions: (params?: { from?: string; to?: string; professionalId?: string; isPaid?: boolean }) =>
-    api.get<Commission[]>('/api/financial/commissions', { params }),
+  commissions: (params?: { from?: string; to?: string; professionalId?: string }) =>
+    api.get<CommissionReport[]>('/api/financial/commissions', { params }),
 
-  generateCommissions: (from?: string, to?: string) =>
-    api.post<{ generated: number }>('/api/financial/commissions/generate', { from, to }),
+  commissionPayments: (params?: { year?: number; professionalId?: string }) =>
+    api.get<CommissionPayment[]>('/api/financial/commission-payments', { params }),
 
-  payCommission: (id: string) =>
-    api.patch<Commission>(`/api/financial/commissions/${id}/pay`, {}),
+  markCommissionPaid: (data: {
+    professionalId: string; year: number; month: number;
+    totalServices: number; grossAmount: number; commissionRate: number;
+    commissionAmount: number; notes?: string;
+  }) => api.post<CommissionPayment>('/api/financial/commission-payments', data),
+
+  unmarkCommissionPaid: (id: string) =>
+    api.delete(`/api/financial/commission-payments/${id}`),
 
   report: (from?: string, to?: string) =>
     api.get<ReportData>('/api/financial/report', { params: { from, to } }),

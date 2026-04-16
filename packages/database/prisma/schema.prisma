@@ -125,9 +125,10 @@ model Barbershop {
   clientSubs    ClientSubscription[]
   products      Product[]
   transactions  FinancialTransaction[]
-  commissions   Commission[]
-  photos        BarbershopPhoto[]
-  branches      BarbershopBranch[]
+  commissions        Commission[]
+  commissionPayments CommissionPayment[]
+  photos             BarbershopPhoto[]
+  branches           BarbershopBranch[]
 
   @@map("barbershops")
 }
@@ -247,6 +248,7 @@ model Professional {
   appointments        Appointment[]
   schedules           Schedule[]
   commissions         Commission[]
+  commissionPayments  CommissionPayment[]
   professionalServices ProfessionalService[]
   dayOffs             ProfessionalDayOff[]
   recurringBlocks     ProfessionalRecurringBlock[]
@@ -604,4 +606,38 @@ model AppointmentProduct {
 
   @@index([appointmentId])
   @@map("appointment_products")
+}
+
+// =============================================================================
+// PAGAMENTO MENSAL DE COMISSÕES
+// =============================================================================
+
+// Controle de pagamento de comissão por barbeiro por mês.
+// O cálculo (valor, qtd serviços) é gravado no momento em que o admin marca
+// como pago — fonte de verdade fica aqui, não na tabela commissions.
+model CommissionPayment {
+  id             String       @id @default(cuid())
+  barbershopId   String
+  barbershop     Barbershop   @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  year             Int
+  month            Int     // 1–12
+  totalServices    Int     @default(0)  // qtd de atendimentos no período
+  grossAmount      Decimal @db.Decimal(10, 2) @default(0) // total bruto dos serviços
+  commissionRate   Decimal @db.Decimal(5, 2)              // taxa no momento do pagamento
+  commissionAmount Decimal @db.Decimal(10, 2)             // valor a pagar
+
+  isPaid Boolean   @default(false)
+  paidAt DateTime?
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([barbershopId, professionalId, year, month])
+  @@index([barbershopId])
+  @@index([professionalId])
+  @@map("commission_payments")
 }

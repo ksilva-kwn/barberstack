@@ -204,93 +204,141 @@ financialRouter.delete('/transactions/:id', async (req: Request, res: Response):
   return res.status(204).send();
 });
 
-// ─── Comissões ────────────────────────────────────────────────────────────────
+// ─── Relatório dinâmico de comissões (sem gravar no banco) ───────────────────
+// Calcula em tempo real os atendimentos pagos no período agrupados por barbeiro.
 financialRouter.get('/commissions', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { from, to, professionalId, isPaid } = req.query as Record<string, string>;
+  const { from, to, professionalId } = req.query as Record<string, string>;
 
-  const where: any = { barbershopId };
+  const dateFrom = from ? new Date(from)               : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const dateTo   = to   ? new Date(to + 'T23:59:59')  : new Date();
+
+  const where: any = {
+    barbershopId,
+    paymentStatus: 'PAID',
+    scheduledAt: { gte: dateFrom, lte: dateTo },
+  };
   if (professionalId) where.professionalId = professionalId;
-  if (isPaid !== undefined) where.isPaid = isPaid === 'true';
-  if (from || to) {
-    where.appointment = {
-      scheduledAt: {
-        ...(from ? { gte: new Date(from) }              : {}),
-        ...(to   ? { lte: new Date(to + 'T23:59:59') } : {}),
-      },
-    };
-  }
 
-  const commissions = await prisma.commission.findMany({
+  const appointments = await prisma.appointment.findMany({
     where,
     include: {
       professional: { include: { user: { select: { name: true } } } },
-      appointment:  { select: { scheduledAt: true, totalAmount: true, paidAt: true } },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { scheduledAt: 'asc' },
   });
 
-  return res.json(commissions);
-});
+  // Agrupa por barbeiro
+  const byPro: Record<string, {
+    professionalId: string;
+    name: string;
+    commissionRate: number;
+    appointments: { id: string; scheduledAt: Date; totalAmount: number; commissionAmount: number }[];
+    totalServices: number;
+    grossAmount: number;
+    commissionAmount: number;
+  }> = {};
 
-// Gerar comissões para comandas pagas sem comissão ainda
-financialRouter.post('/commissions/generate', async (req: Request, res: Response): Promise<any> => {
-  const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { from, to } = req.body as { from?: string; to?: string };
-
-  const dateFrom = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const dateTo   = to   ? new Date(to + 'T23:59:59') : new Date();
-
-  // Comandas pagas sem comissão ainda — filtra por scheduledAt (data do serviço)
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      barbershopId,
-      paymentStatus: 'PAID',
-      scheduledAt: { gte: dateFrom, lte: dateTo },
-      commission: null, // sem comissão gerada
-    },
-    include: {
-      professional: true,
-      appointmentProducts: true,
-    },
-  });
-
-  let generated = 0;
   for (const apt of appointments) {
+    const pid  = apt.professionalId;
     const rate = Number(apt.professional.commissionRate);
-    if (rate <= 0) continue;
+    const gross = Number(apt.totalAmount);
+    const comm  = (gross * rate) / 100;
 
-    const gross = Number(apt.totalAmount); // apenas serviços — produtos são da barbearia
-    const commissionAmount = (gross * rate) / 100;
-
-    await prisma.commission.create({
-      data: {
-        barbershopId,
-        professionalId: apt.professionalId,
-        appointmentId:  apt.id,
-        grossAmount:     gross,
-        commissionRate:  rate,
-        commissionAmount,
-      },
-    });
-    generated++;
+    if (!byPro[pid]) {
+      byPro[pid] = {
+        professionalId: pid,
+        name: apt.professional.nickname ?? apt.professional.user.name,
+        commissionRate: rate,
+        appointments: [],
+        totalServices: 0,
+        grossAmount: 0,
+        commissionAmount: 0,
+      };
+    }
+    byPro[pid].appointments.push({ id: apt.id, scheduledAt: apt.scheduledAt, totalAmount: gross, commissionAmount: comm });
+    byPro[pid].totalServices++;
+    byPro[pid].grossAmount    += gross;
+    byPro[pid].commissionAmount += comm;
   }
 
-  return res.json({ generated });
+  return res.json(Object.values(byPro));
 });
 
-// Marcar comissão como paga
-financialRouter.patch('/commissions/:id/pay', async (req: Request, res: Response): Promise<any> => {
+// ─── Pagamentos mensais de comissão ──────────────────────────────────────────
+
+// Listar pagamentos por ano (todos os meses, todos os barbeiros)
+financialRouter.get('/commission-payments', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { year, professionalId } = req.query as Record<string, string>;
+
+  const where: any = { barbershopId };
+  if (year)           where.year           = parseInt(year);
+  if (professionalId) where.professionalId = professionalId;
+
+  const payments = await prisma.commissionPayment.findMany({
+    where,
+    include: {
+      professional: { include: { user: { select: { name: true } } } },
+    },
+    orderBy: [{ year: 'desc' }, { month: 'desc' }, { professionalId: 'asc' }],
+  });
+
+  return res.json(payments);
+});
+
+// Marcar mês como pago (upsert)
+financialRouter.post('/commission-payments', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { professionalId, year, month, totalServices, grossAmount, commissionRate, commissionAmount, notes } = req.body;
+
+  if (!professionalId || !year || !month || commissionAmount === undefined) {
+    return res.status(400).json({ error: 'professionalId, year, month e commissionAmount são obrigatórios' });
+  }
+
+  const payment = await prisma.commissionPayment.upsert({
+    where: { barbershopId_professionalId_year_month: { barbershopId, professionalId, year: parseInt(year), month: parseInt(month) } },
+    create: {
+      barbershopId,
+      professionalId,
+      year:             parseInt(year),
+      month:            parseInt(month),
+      totalServices:    parseInt(totalServices) || 0,
+      grossAmount:      parseFloat(grossAmount)      || 0,
+      commissionRate:   parseFloat(commissionRate)   || 0,
+      commissionAmount: parseFloat(commissionAmount) || 0,
+      isPaid:  true,
+      paidAt:  new Date(),
+      notes:   notes ?? null,
+    },
+    update: {
+      totalServices:    parseInt(totalServices) || 0,
+      grossAmount:      parseFloat(grossAmount)      || 0,
+      commissionRate:   parseFloat(commissionRate)   || 0,
+      commissionAmount: parseFloat(commissionAmount) || 0,
+      isPaid:  true,
+      paidAt:  new Date(),
+      notes:   notes ?? null,
+    },
+    include: {
+      professional: { include: { user: { select: { name: true } } } },
+    },
+  });
+
+  return res.status(201).json(payment);
+});
+
+// Desmarcar mês como pago
+financialRouter.delete('/commission-payments/:id', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
-  const updated = await prisma.commission.updateMany({
+  const updated = await prisma.commissionPayment.updateMany({
     where: { id: req.params.id, barbershopId },
-    data: { isPaid: true, paidAt: new Date() },
+    data: { isPaid: false, paidAt: null },
   });
-  if (updated.count === 0) return res.status(404).json({ error: 'Comissão não encontrada' });
+  if (updated.count === 0) return res.status(404).json({ error: 'Registro não encontrado' });
 
-  const commission = await prisma.commission.findUnique({ where: { id: req.params.id } });
-  return res.json(commission);
+  return res.status(204).send();
 });
 
 // ─── Relatório financeiro ─────────────────────────────────────────────────────
