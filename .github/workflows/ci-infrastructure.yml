@@ -179,9 +179,6 @@ jobs:
             -backend-config="dynamodb_table=${{ needs.setup.outputs.dynamodb_table }}" \
             -backend-config="encrypt=true"
 
-      - name: Remove orphaned RDS subnet group from state
-        run: terraform state rm module.rds.aws_db_subnet_group.main || true
-
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
