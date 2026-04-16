@@ -1,3 +1,3 @@
 -- AlterTable
-ALTER TABLE "Barbershop" ADD COLUMN "coverUrl" TEXT,
-ADD COLUMN "description" TEXT;
+ALTER TABLE "barbershops" ADD COLUMN IF NOT EXISTS "coverUrl" TEXT,
+ADD COLUMN IF NOT EXISTS "description" TEXT;
