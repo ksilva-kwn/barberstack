@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface SubItem {
   label: string;
@@ -301,6 +302,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 : (user?.role ?? '—')}
             </p>
           </div>
+          <ThemeToggle />
           <button
             onClick={logout}
             className="text-muted-foreground hover:text-destructive transition-colors"

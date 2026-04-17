@@ -2,54 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  motion, useScroll, AnimatePresence,
-} from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Scissors, Menu, X, Calendar, Receipt, TrendingUp, Users,
-  Repeat2, Building2, Package, UtensilsCrossed, Check,
-  ArrowRight, Star, Instagram, Youtube, Twitter,
+  Repeat2, Package, UtensilsCrossed, Check, ArrowRight,
+  BarChart3, Shield, Zap, Star,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
-// ─── Colors ──────────────────────────────────────────────────────────────────
-const C = {
-  bg:     '#0E1114',
-  bgAlt:  '#0B0E11',
-  card:   '#141A1F',
-  card2:  '#171D23',
-  border: '#1E252D',
-  accent: '#BB1A23',
-  text:   '#E6E3DE',
-  muted:  'rgba(230,227,222,0.55)',
-  faint:  'rgba(230,227,222,0.35)',
-};
-
-// ─── Variants ─────────────────────────────────────────────────────────────────
-const fadeUp = {
-  hidden:  { opacity: 0, y: 32 },
-  visible: (delay = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const },
-  }),
-};
-const stagger = (delay = 0.08) => ({
-  hidden:  {},
-  visible: { transition: { staggerChildren: delay } },
-});
-const cardHover = {
-  rest:  { y: 0,  boxShadow: '0 0 0 0 rgba(187,26,35,0)' },
-  hover: { y: -5, boxShadow: '0 16px 40px -8px rgba(187,26,35,0.22)', transition: { duration: 0.25 } },
-};
-
+// ─── Animation helpers ────────────────────────────────────────────────────────
 function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
       className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-80px' }}
-      custom={delay}
-      variants={fadeUp}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
@@ -58,559 +27,463 @@ function FadeUp({ children, delay = 0, className = '' }: { children: React.React
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const features = [
-  { Icon: Calendar,        title: 'Agenda Inteligente', desc: 'Agendamento online para seus clientes, com notificações automáticas e controle de horários dos profissionais.' },
-  { Icon: Receipt,         title: 'Caixa',              desc: 'Controle completo do caixa com abertura, fechamento, sangrias e suprimentos. Tudo registrado e organizado.' },
-  { Icon: TrendingUp,      title: 'Financeiro',         desc: 'Relatórios financeiros detalhados, fluxo de caixa, contas a pagar e receber. Visão total do seu negócio.' },
-  { Icon: Users,           title: 'Clientes',           desc: 'Cadastro completo de clientes com histórico de atendimentos, preferências e dados de contato.' },
-  { Icon: Repeat2,         title: 'Assinaturas',        desc: 'Ofereça planos de assinatura para seus clientes com cobrança recorrente e gestão automatizada.' },
-  { Icon: Building2,       title: 'Barbearia',          desc: 'Configure sua página de agendamento, cadastre profissionais, serviços, filiais e personalize tudo.' },
-  { Icon: Package,         title: 'Estoque',            desc: 'Controle de produtos, alertas de estoque baixo, histórico de movimentações e relatórios completos.' },
-  { Icon: UtensilsCrossed, title: 'Bar & Cozinha',      desc: 'Gerencie o bar e cozinha da sua barbearia com cardápio digital, pedidos e controle de consumo.' },
-];
-
-const steps = [
-  { num: '01', title: 'Crie sua conta',               desc: 'Cadastre-se em menos de 2 minutos. Sem cartão de crédito, sem compromisso.' },
-  { num: '02', title: 'Configure sua barbearia',      desc: 'Cadastre profissionais, serviços, horários e personalize sua página de agendamento.' },
-  { num: '03', title: 'Compartilhe com clientes',     desc: 'Envie o link de agendamento para seus clientes e comece a receber reservas.' },
-  { num: '04', title: 'Gerencie tudo em um só lugar', desc: 'Acompanhe agenda, financeiro, estoque e muito mais pelo painel completo.' },
+  { icon: Calendar,       title: 'Agenda inteligente',    desc: 'Grade visual por barbeiro, drag & drop, bloqueios e horário de funcionamento.' },
+  { icon: Receipt,        title: 'Caixa & Comandas',      desc: 'Abertura e fechamento de comandas com controle de pagamento e histórico.' },
+  { icon: TrendingUp,     title: 'Financeiro completo',   desc: 'Comissões, balanço, contas a pagar/receber e relatórios detalhados.' },
+  { icon: Users,          title: 'Gestão de clientes',    desc: 'Cadastro, histórico de visitas, bloqueio e relatórios de recorrência.' },
+  { icon: Repeat2,        title: 'Assinaturas',           desc: 'Planos mensais para fidelizar clientes com benefícios exclusivos.' },
+  { icon: Package,        title: 'Estoque',               desc: 'Controle de produtos com baixa automática ao fechar comandas.' },
+  { icon: UtensilsCrossed,title: 'Bar / Cozinha',         desc: 'Cardápio integrado na comanda, perfeito para barbearias com bar.' },
+  { icon: BarChart3,      title: 'Relatórios',            desc: 'Dashboards de faturamento, origem dos agendamentos e desempenho.' },
+  { icon: Shield,         title: 'Multi-filial',          desc: 'Gerencie todas as unidades a partir de um único painel administrativo.' },
 ];
 
 const plans = [
   {
-    name: 'Básico', price: '89', desc: 'Ideal para barbearias que estão começando', highlight: false,
-    features: ['1 profissional', 'Agenda online', 'Caixa e financeiro básico', 'Cadastro de clientes', 'Suporte por email'],
+    name: 'Bronze',
+    price: 'R$ 89',
+    period: '/mês',
+    desc: 'Ideal para barbearias com 1 profissional.',
+    features: ['1 barbeiro', 'Agenda & Caixa', 'Gestão de clientes', 'Relatórios básicos'],
+    cta: 'Começar grátis',
+    highlight: false,
   },
   {
-    name: 'Profissional', price: '149', desc: 'Para barbearias em crescimento', highlight: true,
-    features: ['Até 5 profissionais', 'Agenda online ilimitada', 'Financeiro completo', 'Cadastro de clientes', 'Assinaturas e cobranças', 'Controle de estoque', 'Suporte prioritário'],
+    name: 'Prata',
+    price: 'R$ 149',
+    period: '/mês',
+    desc: 'Para equipes em crescimento.',
+    features: ['Até 5 barbeiros', 'Tudo do Bronze', 'Financeiro completo', 'Assinaturas', 'Suporte prioritário'],
+    cta: 'Começar grátis',
+    highlight: true,
   },
   {
-    name: 'Premium', price: '249', desc: 'Para redes e barbearias completas', highlight: false,
-    features: ['Profissionais ilimitados', 'Múltiplas filiais', 'Todos os módulos inclusos', 'Bar e cozinha', 'Relatórios avançados', 'API e integrações', 'Gerente de conta dedicado'],
+    name: 'Ouro',
+    price: 'R$ 249',
+    period: '/mês',
+    desc: 'Para redes e franquias.',
+    features: ['Barbeiros ilimitados', 'Tudo do Prata', 'Multi-filial', 'Bar / Cozinha', 'API & integrações'],
+    cta: 'Falar com vendas',
+    highlight: false,
   },
+];
+
+const stats = [
+  { value: '2.500+', label: 'Barbearias ativas' },
+  { value: '156%',   label: 'Aumento médio de receita' },
+  { value: '99,9%',  label: 'Uptime garantido' },
+  { value: '4,9★',   label: 'Avaliação média' },
 ];
 
 const testimonials = [
-  { text: 'O Barberstack transformou a forma como gerencio minha barbearia. A agenda online reduziu em 80% os no-shows e o financeiro me dá total controle.', name: 'Ricardo Almeida', role: 'Dono — Barbearia Vintage' },
-  { text: 'Com 3 filiais, precisávamos de algo robusto. O Barberstack entrega tudo: estoque, bar, assinaturas. É completo demais.', name: 'Felipe Costa', role: 'Gerente — Kings Barbershop' },
-  { text: 'Super fácil de usar. Meus clientes adoram agendar online e eu consigo focar no que importa: cortar cabelo e atender bem.', name: 'André Santos', role: 'Barbeiro — Studio AS' },
+  { name: 'Rodrigo Lima',   role: 'Dono — Barbearia do Ro',  text: 'O Barberstack mudou nossa operação. Agenda cheia, financeiro no controle e clientes mais satisfeitos.' },
+  { name: 'Carlos Mendes',  role: 'Gerente — Studio Black',  text: 'Controlo 3 unidades por um único painel. Nunca foi tão fácil gerenciar minha rede.' },
+  { name: 'André Souza',    role: 'Barbeiro — BarberHub',    text: 'A agenda visual é incrível. Meus clientes adoram agendar pelo portal. Profissional demais.' },
 ];
 
-const footerLinks = {
-  Produto:  ['Funcionalidades', 'Planos', 'Integrações', 'Novidades'],
-  Empresa:  ['Sobre nós', 'Blog', 'Carreiras', 'Contato'],
-  Suporte:  ['Central de ajuda', 'Documentação', 'Status', 'API'],
-  Legal:    ['Termos de uso', 'Privacidade', 'Cookies'],
-};
+// ─── Dashboard Preview Mockup ─────────────────────────────────────────────────
+function DashboardMockup() {
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden shadow-2xl"
+      style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+    >
+      {/* Titlebar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+        <span className="w-3 h-3 rounded-full bg-red-400" />
+        <span className="w-3 h-3 rounded-full bg-yellow-400" />
+        <span className="w-3 h-3 rounded-full bg-green-400" />
+        <span className="ml-3 text-xs text-muted-foreground font-mono">barberstack.app/dashboard</span>
+      </div>
+
+      <div className="flex" style={{ height: '320px' }}>
+        {/* Sidebar mini */}
+        <div className="w-12 shrink-0 border-r flex flex-col items-center py-3 gap-3" style={{ backgroundColor: 'hsl(var(--sidebar))', borderColor: 'hsl(var(--border))' }}>
+          {[BarChart3, Calendar, Receipt, Users, Package].map((Icon, i) => (
+            <div key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-primary/20' : ''}`}>
+              <Icon className="w-3.5 h-3.5" style={{ color: i === 0 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-4 space-y-4 overflow-hidden">
+          {/* KPI row */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Faturamento', value: 'R$ 8.4k', color: 'text-primary' },
+              { label: 'Clientes',    value: '312',      color: 'text-emerald-500' },
+              { label: 'Concluídos', value: '47',        color: 'text-violet-500' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="rounded-xl p-2.5 border" style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}>
+                <p className="text-xs text-muted-foreground mb-1">{label}</p>
+                <p className={`text-base font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart bars */}
+          <div className="rounded-xl p-3 border" style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}>
+            <p className="text-xs text-muted-foreground mb-3">Faturamento mensal</p>
+            <div className="flex items-end gap-1.5 h-16">
+              {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-t"
+                  style={{
+                    height: `${h}%`,
+                    backgroundColor: i === 11 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.25)',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Recent row */}
+          <div className="space-y-1.5">
+            {['Samuel — Corte + Barba', 'Pedro — Corte'].map((name, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg px-2.5 py-1.5 border" style={{ borderColor: 'hsl(var(--border))' }}>
+                <span className="text-xs text-foreground">{name}</span>
+                <span className="text-xs font-medium" style={{ color: 'hsl(var(--primary))' }}>
+                  {i === 0 ? 'R$ 80' : 'R$ 45'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled,   setScrolled]   = useState(false);
-  const { scrollY } = useScroll();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const unsub = scrollY.on('change', v => setScrolled(v > 20));
-    return unsub;
-  }, [scrollY]);
-
-  const navLinks = [
-    { label: 'Funcionalidades', href: '#funcionalidades' },
-    { label: 'Como funciona',   href: '#como-funciona'   },
-    { label: 'Planos',          href: '#planos'           },
-    { label: 'Depoimentos',     href: '#depoimentos'      },
-  ];
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
 
   return (
-    <div style={{ backgroundColor: C.bg, color: C.text, fontFamily: "'Helvetica Now Display','Helvetica Neue','Barlow',Helvetica,Arial,sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <motion.header
-        className="fixed top-0 inset-x-0 z-50 border-b"
-        initial={{ y: -64, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      {/* ── NAV ───────────────────────────────────────────────────────────── */}
+      <header
+        className="fixed top-0 inset-x-0 z-30 transition-all duration-200"
         style={{
-          backgroundColor: scrolled ? 'rgba(14,17,20,0.97)' : 'rgba(14,17,20,0.82)',
-          borderColor: C.border,
-          backdropFilter: 'blur(14px)',
-          boxShadow: scrolled ? '0 4px 32px rgba(0,0,0,0.45)' : 'none',
-          transition: 'box-shadow 0.3s, background-color 0.3s',
+          backgroundColor: scrolled ? 'hsl(var(--card) / 0.95)' : 'transparent',
+          borderBottom: scrolled ? '1px solid hsl(var(--border))' : '1px solid transparent',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: -8 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 12 }}
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: C.accent, boxShadow: '0 0 18px rgba(187,26,35,0.50)' }}
-            >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary))' }}>
               <Scissors className="w-4 h-4 text-white" />
-            </motion.div>
-            <span className="font-semibold text-lg tracking-tight" style={{ color: C.text }}>Barberstack</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((l, i) => (
-              <motion.a
-                key={l.href}
-                href={l.href}
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.07 }}
-                className="text-sm font-medium relative group"
-                style={{ color: C.muted }}
-                whileHover={{ color: C.text }}
-              >
-                {l.label}
-                <span className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 rounded-full" style={{ backgroundColor: C.accent }} />
-              </motion.a>
-            ))}
-          </nav>
-
-          <div className="hidden md:flex items-center gap-3">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-              <Link href="/login" className="text-sm font-medium px-4 py-2 rounded-lg" style={{ color: C.muted }}>Entrar</Link>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-              <Link
-                href="/register"
-                className="text-sm font-semibold px-5 py-2 rounded-lg inline-block"
-                style={{ backgroundColor: C.accent, color: '#fff', boxShadow: '0 4px 20px rgba(187,26,35,0.40)' }}
-              >
-                Teste grátis
-              </Link>
-            </motion.div>
+            </div>
+            <span className="font-bold text-base">Barberstack</span>
           </div>
 
-          <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)} style={{ color: C.text }}>
-            <AnimatePresence mode="wait">
-              {mobileOpen
-                ? <motion.div key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-5 h-5" /></motion.div>
-                : <motion.div key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><Menu className="w-5 h-5" /></motion.div>
-              }
-            </AnimatePresence>
-          </button>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
+            <a href="#como-funciona" className="hover:text-foreground transition-colors">Como funciona</a>
+            <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
+            <a href="#depoimentos" className="hover:text-foreground transition-colors">Depoimentos</a>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/entrar" className="hidden sm:inline-flex text-sm px-4 py-2 rounded-xl border transition-colors hover:bg-accent" style={{ borderColor: 'hsl(var(--border))' }}>
+              Entrar
+            </Link>
+            <Link
+              href="/registrar"
+              className="text-sm px-4 py-2 rounded-xl font-semibold transition-colors"
+              style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}
+            >
+              Teste grátis
+            </Link>
+            <button className="md:hidden p-2 rounded-lg hover:bg-accent" onClick={() => setMenuOpen(o => !o)}>
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="md:hidden overflow-hidden border-t px-6"
-              style={{ backgroundColor: C.bg, borderColor: C.border }}
-            >
-              <div className="pt-4 pb-4 space-y-2">
-                {navLinks.map(l => (
-                  <a key={l.href} href={l.href} className="block text-sm font-medium py-1.5" style={{ color: C.muted }} onClick={() => setMobileOpen(false)}>{l.label}</a>
-                ))}
-                <div className="pt-2 flex flex-col gap-2">
-                  <Link href="/login" className="text-sm font-medium py-2 text-center rounded-lg border" style={{ color: C.text, borderColor: C.border }}>Entrar</Link>
-                  <Link href="/register" className="text-sm font-semibold py-2 text-center rounded-lg" style={{ backgroundColor: C.accent, color: '#fff' }}>Teste grátis</Link>
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="md:hidden border-t px-4 py-4 space-y-3 text-sm" style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+            {['Funcionalidades', 'Como funciona', 'Planos', 'Depoimentos'].map(item => (
+              <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} className="block py-1 text-muted-foreground hover:text-foreground" onClick={() => setMenuOpen(false)}>{item}</a>
+            ))}
+            <Link href="/entrar" className="block py-1 text-muted-foreground hover:text-foreground" onClick={() => setMenuOpen(false)}>Entrar</Link>
+          </div>
+        )}
+      </header>
+
+      {/* ── HERO ──────────────────────────────────────────────────────────── */}
+      <section className="pt-32 pb-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left */}
+            <div>
+              <FadeUp delay={0}>
+                <span
+                  className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-6"
+                  style={{ backgroundColor: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}
+                >
+                  <Zap className="w-3.5 h-3.5" /> Sistema completo para barbearias
+                </span>
+              </FadeUp>
+
+              <FadeUp delay={0.05}>
+                <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-5">
+                  Gerencie sua barbearia<br />
+                  <span style={{ color: 'hsl(var(--primary))' }}>como nunca antes</span>
+                </h1>
+              </FadeUp>
+
+              <FadeUp delay={0.1}>
+                <p className="text-lg text-muted-foreground mb-8 max-w-md">
+                  Agenda, financeiro, estoque e muito mais — tudo em um só lugar. Simplifique sua operação e foque no que importa: seus clientes.
+                </p>
+              </FadeUp>
+
+              <FadeUp delay={0.15}>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/registrar"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm shadow-lg transition-all hover:opacity-90"
+                    style={{ backgroundColor: 'hsl(var(--primary))', color: 'white', boxShadow: '0 8px 24px hsl(var(--primary) / 0.35)' }}
+                  >
+                    Criar conta grátis <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <a
+                    href="#como-funciona"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm border transition-colors hover:bg-accent"
+                    style={{ borderColor: 'hsl(var(--border))' }}
+                  >
+                    Ver demonstração
+                  </a>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.header>
+              </FadeUp>
 
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden min-h-screen flex items-center">
-        {/* Ambient glows */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 50% at 65% 50%, rgba(187,26,35,0.10) 0%, transparent 70%)' }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 40% 50% at 15% 60%, rgba(187,26,35,0.05) 0%, transparent 65%)' }} />
+              <FadeUp delay={0.2}>
+                <div className="flex flex-wrap gap-6 mt-10">
+                  {stats.map(({ value, label }) => (
+                    <div key={label}>
+                      <p className="text-2xl font-extrabold" style={{ color: 'hsl(var(--primary))' }}>{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </FadeUp>
+            </div>
 
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Left */}
-          <motion.div initial="hidden" animate="visible" variants={stagger(0.10)}>
-            <motion.div variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}>
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium tracking-widest uppercase mb-8 border"
-                style={{ color: C.accent, borderColor: 'rgba(187,26,35,0.35)', backgroundColor: 'rgba(187,26,35,0.07)' }}
-              >
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-1.5 h-1.5 rounded-full inline-block"
-                  style={{ backgroundColor: C.accent }}
-                />
-                Sistema completo para barbearias
-              </div>
-            </motion.div>
+            {/* Right — mockup */}
+            <FadeUp delay={0.1} className="hidden lg:block">
+              <DashboardMockup />
+            </FadeUp>
+          </div>
+        </div>
+      </section>
 
-            <motion.h1
-              variants={{ hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.65, delay: 0.05 } } }}
-              className="text-5xl lg:text-6xl font-bold leading-[1.08] mb-6"
-              style={{ color: C.text, letterSpacing: '-0.02em' }}
-            >
-              Gerencie sua barbearia{' '}
-              <span style={{ color: C.accent, textShadow: '0 0 36px rgba(187,26,35,0.45)' }}>
-                como nunca antes
-              </span>
-            </motion.h1>
+      {/* ── FEATURES ──────────────────────────────────────────────────────── */}
+      <section id="features" className="py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <FadeUp className="text-center mb-14">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--primary))' }}>FUNCIONALIDADES</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Tudo que sua barbearia precisa</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Uma plataforma unificada que cobre desde o agendamento até o fechamento do caixa.</p>
+          </FadeUp>
 
-            <motion.p
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.12 } } }}
-              className="text-lg mb-10 leading-relaxed max-w-lg"
-              style={{ color: C.muted }}
-            >
-              Agenda, financeiro, estoque e muito mais — tudo em um só lugar.
-              Simplifique sua operação e foque no que importa: seus clientes.
-            </motion.p>
-
-            <motion.div
-              variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.20 } } }}
-              className="flex flex-wrap items-center gap-3 mb-14"
-            >
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link href="/register" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: C.accent, color: '#fff', boxShadow: '0 8px 32px rgba(187,26,35,0.42)' }}>
-                  Criar conta grátis <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <a href="#como-funciona" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-medium border"
-                  style={{ borderColor: C.border, color: C.text }}>
-                  Ver demonstração
-                </a>
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5, delay: 0.35 } } }}
-              className="flex flex-wrap gap-10"
-            >
-              {[{ value: '2.500+', label: 'Barbearias' }, { value: '156%', label: 'Aumento médio de receita' }, { value: '99,9%', label: 'Uptime garantido' }].map((s, i) => (
-                <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }}>
-                  <p className="text-2xl font-bold" style={{ color: C.text }}>{s.value}</p>
-                  <p className="text-xs mt-0.5" style={{ color: C.faint }}>{s.label}</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map(({ icon: Icon, title, desc }, i) => (
+              <FadeUp key={title} delay={i * 0.04}>
+                <motion.div
+                  className="p-5 rounded-2xl border h-full transition-shadow"
+                  style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                  whileHover={{ y: -4, boxShadow: '0 12px 32px hsl(var(--primary) / 0.12)' }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                    style={{ backgroundColor: 'hsl(var(--primary) / 0.1)' }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1.5">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                 </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          {/* Right — dashboard mockup */}
-          <motion.div
-            className="hidden lg:flex items-center justify-center"
-            initial={{ opacity: 0, x: 52 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.85, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative w-full max-w-md"
-              style={{ filter: 'drop-shadow(0 32px 64px rgba(0,0,0,0.65)) drop-shadow(0 0 48px rgba(187,26,35,0.14))' }}
-            >
-              <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: C.card, borderColor: C.border }}>
-                {/* Window chrome */}
-                <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: C.border, backgroundColor: C.card2 }}>
-                  <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/50" />
-                  <div className="flex-1 h-5 rounded mx-4" style={{ backgroundColor: C.border }} />
+      {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
+      <section id="como-funciona" className="py-20 px-4 sm:px-6" style={{ backgroundColor: 'hsl(var(--card))' }}>
+        <div className="max-w-6xl mx-auto">
+          <FadeUp className="text-center mb-14">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--primary))' }}>COMO FUNCIONA</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Pronto em minutos</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Configure sua barbearia e comece a usar sem necessidade de treinamento.</p>
+          </FadeUp>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { step: '01', title: 'Crie sua conta',        desc: 'Cadastre sua barbearia, adicione os profissionais e configure os serviços oferecidos.' },
+              { step: '02', title: 'Configure a agenda',    desc: 'Defina horários de funcionamento, bloqueios e o portal do cliente para agendamentos online.' },
+              { step: '03', title: 'Gerencie e cresça',     desc: 'Acompanhe o financeiro, estoque e desempenho em tempo real pelo dashboard.' },
+            ].map(({ step, title, desc }, i) => (
+              <FadeUp key={step} delay={i * 0.1}>
+                <div className="flex gap-5">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-sm"
+                    style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}
+                  >
+                    {step}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">{title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                  </div>
                 </div>
-                <div className="p-5 space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[{ label: 'Faturamento', val: 'R$8.4k', hi: true }, { label: 'Cortes', val: '312', hi: false }, { label: 'Comandas', val: '7', hi: false }].map((k, i) => (
-                      <motion.div key={k.label}
-                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + i * 0.10 }}
-                        className="rounded-xl p-3.5 border"
-                        style={{ backgroundColor: C.bgAlt, borderColor: k.hi ? 'rgba(187,26,35,0.40)' : C.border, boxShadow: k.hi ? '0 0 20px rgba(187,26,35,0.14)' : 'none' }}
-                      >
-                        <p className="text-[10px] mb-1.5" style={{ color: 'rgba(230,227,222,0.40)' }}>{k.label}</p>
-                        <p className="text-sm font-bold" style={{ color: k.hi ? C.accent : C.text }}>{k.val}</p>
-                      </motion.div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PLANS ─────────────────────────────────────────────────────────── */}
+      <section id="planos" className="py-20 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <FadeUp className="text-center mb-14">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--primary))' }}>PLANOS</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Simples e transparente</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">14 dias grátis em qualquer plano. Sem cartão de crédito.</p>
+          </FadeUp>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {plans.map(({ name, price, period, desc, features: fs, cta, highlight }, i) => (
+              <FadeUp key={name} delay={i * 0.08}>
+                <div
+                  className="rounded-2xl border p-6 h-full flex flex-col relative"
+                  style={{
+                    backgroundColor: highlight ? 'hsl(var(--primary))' : 'hsl(var(--card))',
+                    borderColor: highlight ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                    color: highlight ? 'white' : 'inherit',
+                    boxShadow: highlight ? '0 20px 48px hsl(var(--primary) / 0.35)' : undefined,
+                  }}
+                >
+                  {highlight && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full bg-white" style={{ color: 'hsl(var(--primary))' }}>
+                      Mais popular
+                    </span>
+                  )}
+                  <div className="mb-5">
+                    <p className="font-bold text-base mb-1">{name}</p>
+                    <div className="flex items-end gap-1 mb-2">
+                      <span className="text-3xl font-extrabold">{price}</span>
+                      <span className="text-sm pb-0.5 opacity-70">{period}</span>
+                    </div>
+                    <p className="text-sm opacity-70">{desc}</p>
+                  </div>
+                  <ul className="space-y-2.5 flex-1 mb-6">
+                    {fs.map(f => (
+                      <li key={f} className="flex items-center gap-2.5 text-sm">
+                        <Check className="w-4 h-4 shrink-0" style={{ color: highlight ? 'white' : 'hsl(var(--primary))' }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/registrar"
+                    className="block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    style={highlight
+                      ? { backgroundColor: 'white', color: 'hsl(var(--primary))' }
+                      : { backgroundColor: 'hsl(var(--primary))', color: 'white' }
+                    }
+                  >
+                    {cta}
+                  </Link>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ──────────────────────────────────────────────────── */}
+      <section id="depoimentos" className="py-20 px-4 sm:px-6" style={{ backgroundColor: 'hsl(var(--card))' }}>
+        <div className="max-w-5xl mx-auto">
+          <FadeUp className="text-center mb-14">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--primary))' }}>DEPOIMENTOS</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold">Quem usa, aprova</h2>
+          </FadeUp>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map(({ name, role, text }, i) => (
+              <FadeUp key={name} delay={i * 0.08}>
+                <div
+                  className="p-6 rounded-2xl border h-full"
+                  style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
+                >
+                  <div className="flex gap-0.5 mb-4">
+                    {Array.from({ length: 5 }).map((_, k) => (
+                      <Star key={k} className="w-4 h-4 fill-current" style={{ color: 'hsl(var(--primary))' }} />
                     ))}
                   </div>
-
-                  <div className="rounded-xl border p-4" style={{ backgroundColor: C.bgAlt, borderColor: C.border }}>
-                    <p className="text-[10px] mb-4" style={{ color: 'rgba(230,227,222,0.40)' }}>Faturamento Mensal</p>
-                    <div className="flex items-end gap-2 h-16">
-                      {[40, 65, 50, 80, 60, 95, 72].map((h, i) => (
-                        <motion.div key={i} className="flex-1 rounded-t"
-                          initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: 0.95 + i * 0.07, duration: 0.5, ease: 'easeOut' }}
-                          style={{ backgroundColor: i === 5 ? C.accent : 'rgba(187,26,35,0.20)', boxShadow: i === 5 ? '0 0 14px rgba(187,26,35,0.50)' : 'none' }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {['Samuel — Corte + Barba', 'Pedro — Corte'].map((item, i) => (
-                    <motion.div key={item}
-                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.3 + i * 0.1 }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ backgroundColor: C.border }}
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: C.accent }} />
-                      <span className="text-[11px]" style={{ color: C.muted }}>{item}</span>
-                      <span className="ml-auto text-[10px]" style={{ color: C.faint }}>Hoje</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Floating badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.75, x: 16 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                transition={{ delay: 1.6, type: 'spring', stiffness: 220, damping: 16 }}
-                className="absolute -bottom-6 -right-6 rounded-xl border px-4 py-3 flex items-center gap-3"
-                style={{ backgroundColor: C.card, borderColor: 'rgba(187,26,35,0.32)', boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 0 20px rgba(187,26,35,0.14)' }}
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(187,26,35,0.14)' }}>
-                  <TrendingUp className="w-4 h-4" style={{ color: C.accent }} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold" style={{ color: C.text }}>+23% este mês</p>
-                  <p className="text-[10px]" style={{ color: C.faint }}>vs. mês anterior</p>
-                </div>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── FUNCIONALIDADES ─────────────────────────────────────────────── */}
-      <section id="funcionalidades" className="py-24 px-6" style={{ backgroundColor: C.bgAlt }}>
-        <div className="max-w-7xl mx-auto">
-          <FadeUp className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: C.accent }}>Funcionalidades</p>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: C.text, letterSpacing: '-0.02em' }}>Tudo que sua barbearia precisa</h2>
-            <p className="text-base max-w-2xl mx-auto" style={{ color: C.muted }}>Uma plataforma completa para gerenciar cada aspecto do seu negócio, do agendamento ao bar.</p>
-          </FadeUp>
-
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger(0.07)}>
-            {features.map(({ Icon, title, desc }) => (
-              <motion.div key={title} variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55 } } }}
-                initial="rest" whileHover="hover" animate="rest">
-                <motion.div variants={cardHover} className="flex gap-5 p-6 rounded-2xl border h-full cursor-default"
-                  style={{ backgroundColor: C.card, borderColor: C.border }}>
-                  <motion.div
-                    whileHover={{ scale: 1.12, rotate: -6 }}
-                    transition={{ type: 'spring', stiffness: 320 }}
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: 'rgba(187,26,35,0.12)' }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color: C.accent }} />
-                  </motion.div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-5">"{text}"</p>
                   <div>
-                    <h3 className="font-semibold text-base mb-1.5" style={{ color: C.text }}>{title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{desc}</p>
+                    <p className="font-semibold text-sm">{name}</p>
+                    <p className="text-xs text-muted-foreground">{role}</p>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </FadeUp>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── COMO FUNCIONA ───────────────────────────────────────────────── */}
-      <section id="como-funciona" className="py-24 px-6" style={{ backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto">
-          <FadeUp className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: C.accent }}>Como funciona</p>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: C.text, letterSpacing: '-0.02em' }}>Simples de começar</h2>
-            <p className="text-base max-w-xl mx-auto" style={{ color: C.muted }}>Em poucos passos sua barbearia estará funcionando no Barberstack.</p>
-          </FadeUp>
-
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 max-w-4xl mx-auto"
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger(0.13)}>
-            {steps.map((s) => (
-              <motion.div key={s.num} variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55 } } }} className="flex gap-6">
-                <p className="text-6xl font-bold shrink-0 leading-none select-none" style={{ color: 'rgba(187,26,35,0.22)', fontVariantNumeric: 'tabular-nums' }}>
-                  {s.num}
-                </p>
-                <div className="pt-1">
-                  <h3 className="font-semibold text-lg mb-2" style={{ color: C.text }}>{s.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{s.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── PLANOS ──────────────────────────────────────────────────────── */}
-      <section id="planos" className="py-24 px-6" style={{ backgroundColor: C.bgAlt }}>
-        <div className="max-w-7xl mx-auto">
-          <FadeUp className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: C.accent }}>Planos</p>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-5" style={{ color: C.text, letterSpacing: '-0.02em' }}>Escolha o plano ideal</h2>
-            <p className="text-base" style={{ color: C.muted }}>Todos os planos incluem 14 dias de teste grátis. Sem fidelidade.</p>
-          </FadeUp>
-
-          <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start"
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger(0.1)}>
-            {plans.map((plan) => (
-              <motion.div key={plan.name}
-                variants={{ hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}
-                whileHover={plan.highlight
-                  ? { y: -7, boxShadow: '0 24px 60px -12px rgba(187,26,35,0.38)' }
-                  : { y: -4, boxShadow: '0 16px 40px -8px rgba(0,0,0,0.45)' }
-                }
-                transition={{ duration: 0.25 }}
-                className="relative rounded-2xl border p-8 flex flex-col"
-                style={{
-                  backgroundColor: plan.highlight ? C.card : C.bg,
-                  borderColor: plan.highlight ? C.accent : C.border,
-                  boxShadow: plan.highlight ? '0 8px 32px rgba(187,26,35,0.18)' : 'none',
-                }}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: C.accent, color: '#fff', boxShadow: '0 4px 16px rgba(187,26,35,0.55)' }}>
-                    ✦ Mais popular
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className="font-bold text-xl mb-1" style={{ color: C.text }}>{plan.name}</h3>
-                  <p className="text-sm" style={{ color: C.faint }}>{plan.desc}</p>
-                </div>
-                <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-sm font-medium" style={{ color: C.muted }}>R$</span>
-                  <span className="text-5xl font-bold" style={{ color: C.text }}>{plan.price}</span>
-                  <span className="text-sm" style={{ color: C.faint }}>/mês</span>
-                </div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Link href="/register" className="w-full py-3 rounded-xl text-sm font-semibold text-center mb-8 block"
-                    style={plan.highlight
-                      ? { backgroundColor: C.accent, color: '#fff', boxShadow: '0 4px 16px rgba(187,26,35,0.45)' }
-                      : { backgroundColor: C.card2, color: C.text }}>
-                    Começar teste grátis
-                  </Link>
-                </motion.div>
-                <ul className="space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-3 text-sm" style={{ color: 'rgba(230,227,222,0.70)' }}>
-                      <Check className="w-4 h-4 shrink-0" style={{ color: C.accent }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── DEPOIMENTOS ─────────────────────────────────────────────────── */}
-      <section id="depoimentos" className="py-24 px-6" style={{ backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto">
-          <FadeUp className="text-center mb-16">
-            <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: C.accent }}>Depoimentos</p>
-            <h2 className="text-4xl lg:text-5xl font-bold" style={{ color: C.text, letterSpacing: '-0.02em' }}>Quem usa, recomenda</h2>
-          </FadeUp>
-
-          <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger(0.1)}>
-            {testimonials.map((t, i) => (
-              <motion.div key={t.name}
-                variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55 } } }}
-                whileHover={{ y: -5, boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(187,26,35,0.22)' }}
-                transition={{ duration: 0.25 }}
-                className="p-7 rounded-2xl border flex flex-col gap-5"
-                style={{ backgroundColor: C.card, borderColor: C.border }}
-              >
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <motion.div key={j}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 + i * 0.08 + j * 0.06, type: 'spring', stiffness: 280 }}
-                    >
-                      <Star className="w-4 h-4 fill-current" style={{ color: C.accent }} />
-                    </motion.div>
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed flex-1" style={{ color: 'rgba(230,227,222,0.70)' }}>&ldquo;{t.text}&rdquo;</p>
-                <div>
-                  <p className="font-semibold text-sm" style={{ color: C.text }}>{t.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: C.faint }}>{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── CTA ─────────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6" style={{ backgroundColor: C.bgAlt }}>
+      {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 sm:px-6">
         <FadeUp>
-          <div className="max-w-4xl mx-auto text-center rounded-3xl border px-8 py-20 relative overflow-hidden"
-            style={{ backgroundColor: C.card, borderColor: C.border }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 100%, rgba(187,26,35,0.13) 0%, transparent 70%)' }} />
-            <motion.div className="absolute inset-0 pointer-events-none"
-              animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 4, repeat: Infinity }}
-              style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 110%, rgba(187,26,35,0.08) 0%, transparent 60%)' }}
-            />
-            <p className="text-xs font-medium tracking-widest uppercase mb-6" style={{ color: C.accent }}>Comece hoje</p>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-6" style={{ color: C.text, letterSpacing: '-0.02em' }}>
-              Pronto para revolucionar<br />sua barbearia?
-            </h2>
-            <p className="text-base mb-10 max-w-xl mx-auto" style={{ color: C.muted }}>
-              Junte-se a mais de 2.500 barbearias que já estão usando o Barberstack para amplificar sua gestão.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link href="/register" className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold"
-                  style={{ backgroundColor: C.accent, color: '#fff', boxShadow: '0 8px 32px rgba(187,26,35,0.48)' }}>
-                  Criar conta grátis <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <a href="#" className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-medium border"
-                  style={{ borderColor: C.border, color: C.text }}>
-                  Falar com vendas
-                </a>
-              </motion.div>
-            </div>
+          <div
+            className="max-w-3xl mx-auto text-center rounded-3xl p-12"
+            style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Comece hoje mesmo</h2>
+            <p className="opacity-80 mb-8 max-w-md mx-auto">14 dias grátis, sem cartão de crédito. Configure em minutos e veja a diferença.</p>
+            <Link
+              href="/registrar"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-white transition-opacity hover:opacity-90"
+              style={{ color: 'hsl(var(--primary))' }}
+            >
+              Criar conta grátis <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </FadeUp>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="border-t px-6 pt-16 pb-10" style={{ borderColor: C.border, backgroundColor: C.bg }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
-            <div className="md:col-span-1">
-              <Link href="/" className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: C.accent, boxShadow: '0 0 14px rgba(187,26,35,0.38)' }}>
-                  <Scissors className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-semibold text-base" style={{ color: C.text }}>Barberstack</span>
-              </Link>
-              <p className="text-xs leading-relaxed" style={{ color: C.faint }}>O sistema completo para barbearias modernas.</p>
+      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
+      <footer className="border-t py-8 px-4 sm:px-6" style={{ borderColor: 'hsl(var(--border))' }}>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary))' }}>
+              <Scissors className="w-3 h-3 text-white" />
             </div>
-            {Object.entries(footerLinks).map(([group, links]) => (
-              <div key={group}>
-                <p className="text-xs font-semibold tracking-wider uppercase mb-5" style={{ color: 'rgba(230,227,222,0.28)' }}>{group}</p>
-                <ul className="space-y-3">
-                  {links.map((l) => (
-                    <li key={l}>
-                      <motion.a href="#" className="text-sm" style={{ color: C.muted }} whileHover={{ color: C.text, x: 2 }} transition={{ duration: 0.15 }}>{l}</motion.a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <span className="font-bold text-sm">Barberstack</span>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t" style={{ borderColor: C.border }}>
-            <p className="text-xs" style={{ color: 'rgba(230,227,222,0.28)' }}>© 2026 Barberstack. Todos os direitos reservados.</p>
-            <div className="flex items-center gap-4">
-              {[Instagram, Youtube, Twitter].map((Icon, i) => (
-                <motion.a key={i} href="#" whileHover={{ scale: 1.2, color: C.accent }} transition={{ duration: 0.15 }} style={{ color: C.faint }}>
-                  <Icon className="w-4 h-4" />
-                </motion.a>
-              ))}
-            </div>
+          <p className="text-xs text-muted-foreground">© 2026 Barberstack. Todos os direitos reservados.</p>
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
+            <a href="#" className="hover:text-foreground transition-colors">Termos</a>
+            <a href="#" className="hover:text-foreground transition-colors">Suporte</a>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
