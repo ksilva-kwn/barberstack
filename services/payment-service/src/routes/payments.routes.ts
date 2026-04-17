@@ -1,21 +1,21 @@
 /**
- * Rotas internas do Payment Service.
- * Estas rotas são chamadas service-to-service (subscription-service → payment-service)
- * pela rede interna Docker e NÃO ficam expostas publicamente via API Gateway.
+ * Rotas do Payment Service.
  *
- * Segurança: dados de cartão nunca trafegam aqui.
- * Apenas { asaasSubId, paymentLink } são retornados — tokens Asaas.
+ * Segurança: dados de cartão NUNCA trafegam aqui.
+ * Apenas tokens Asaas (asaasSubId, paymentLink) são manipulados.
  */
 
 import { Router, Request, Response } from 'express';
-import { prisma } from '@barberstack/database';
 import {
   getBarbershopApiKey,
   createOrGetAsaasCustomer,
   createAsaasSubscription,
   cancelAsaasSubscription,
 } from '../services/asaas-subscription.service';
-import { getBarbershopBalance } from '../services/asaas-account.service';
+import {
+  getBarbershopBalance,
+  requestPixTransfer,
+} from '../services/asaas-account.service';
 
 export const paymentsRouter: Router = Router();
 
@@ -35,10 +35,25 @@ paymentsRouter.get('/balance', async (req: Request, res: Response) => {
   }
 });
 
+// ─── Transferência PIX via CNPJ ──────────────────────────────────────────────
+paymentsRouter.post('/transfer', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { value, description } = req.body as { value: number; description?: string };
+
+  if (!value || value <= 0) {
+    return res.status(400).json({ error: 'Valor inválido para transferência' });
+  }
+
+  try {
+    const result = await requestPixTransfer(barbershopId, value, description);
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[payment/transfer] Erro Asaas:', err?.response?.data ?? err.message);
+    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+  }
+});
+
 // ─── [INTERNAL] Criar assinatura no Asaas ────────────────────────────────────
-// Chamado pelo subscription-service após criar o registro no banco.
-// Body: { barbershopId, clientId, clientName, clientEmail, planName, value, billingCycle, nextDueDate }
-// Retorna: { asaasSubId, paymentLink } ou { asaasSubId: null, paymentLink: null }
 paymentsRouter.post('/internal/subscription', async (req: Request, res: Response) => {
   const {
     barbershopId,
@@ -60,7 +75,6 @@ paymentsRouter.post('/internal/subscription', async (req: Request, res: Response
     nextDueDate: string;
   };
 
-  // Se a barbearia não tem subconta Asaas, retorna null graciosamente
   const apiKey = await getBarbershopApiKey(barbershopId);
   if (!apiKey) {
     return res.json({ asaasSubId: null, paymentLink: null });
@@ -82,24 +96,23 @@ paymentsRouter.post('/internal/subscription', async (req: Request, res: Response
     return res.json(result);
   } catch (err: any) {
     console.error('[payment/internal/subscription] Erro Asaas:', err?.response?.data ?? err.message);
-    // Não falha o fluxo — retorna null para que a assinatura seja criada sem Asaas
     return res.json({ asaasSubId: null, paymentLink: null });
   }
 });
 
-// ─── [INTERNAL] Cancelar assinatura no Asaas ────────────────────────────────
+// ─── [INTERNAL] Cancelar assinatura no Asaas ─────────────────────────────────
 paymentsRouter.delete('/internal/subscription/:asaasSubId', async (req: Request, res: Response) => {
   const { asaasSubId } = req.params;
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
   const apiKey = await getBarbershopApiKey(barbershopId);
-  if (!apiKey) return res.json({ ok: true }); // sem Asaas — nada a fazer
+  if (!apiKey) return res.json({ ok: true });
 
   try {
     await cancelAsaasSubscription(apiKey, asaasSubId);
     return res.json({ ok: true });
   } catch (err: any) {
     console.error('[payment/internal/subscription] Erro ao cancelar no Asaas:', err?.response?.data ?? err.message);
-    return res.json({ ok: true }); // não bloqueia o cancelamento local
+    return res.json({ ok: true });
   }
 });

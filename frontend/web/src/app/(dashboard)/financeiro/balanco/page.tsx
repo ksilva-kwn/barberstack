@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { TrendingUp, TrendingDown, DollarSign, Clock, Loader2, BarChart2, ShoppingCart } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Clock, Loader2, BarChart2, ShoppingCart, Wallet, ArrowUpRight, X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { financialApi } from '@/lib/financial.api';
+import { paymentApi } from '@/lib/payment.api';
 import { cn } from '@/lib/utils';
 
 const RANGES = [
@@ -39,8 +41,109 @@ function KpiCard({ label, value, sub, icon, color = 'default' }: {
   );
 }
 
+// ─── Modal de Saque PIX ───────────────────────────────────────────────────────
+function TransferModal({ balance, onClose }: { balance: number; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [value, setValue] = useState('');
+  const [description, setDescription] = useState('');
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: () => paymentApi.transfer(Number(value), description || undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['asaas-balance'] });
+      setResult({ success: true, message: `Transferência de R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} enviada via PIX.` });
+    },
+    onError: (err: any) => {
+      setResult({ success: false, message: err.response?.data?.error ?? 'Erro ao processar transferência' });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = Number(value);
+    if (!v || v <= 0) return;
+    if (v > balance) return;
+    mutation.mutate();
+  };
+
+  const inputCls = 'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
+
+  return (
+    <Dialog.Root open onOpenChange={o => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60" />
+        <Dialog.Content className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <Dialog.Title className="text-lg font-semibold text-foreground">Sacar via PIX</Dialog.Title>
+            <Dialog.Close className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></Dialog.Close>
+          </div>
+
+          {result ? (
+            <div className="space-y-4">
+              <div className={`flex items-center gap-3 p-4 rounded-lg border ${result.success ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-500' : 'bg-destructive/10 border-destructive/25 text-destructive'}`}>
+                {result.success
+                  ? <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  : <AlertCircle className="w-5 h-5 shrink-0" />}
+                <p className="text-sm">{result.message}</p>
+              </div>
+              {result.success && (
+                <p className="text-xs text-muted-foreground">O valor será creditado na conta vinculada ao CNPJ da barbearia. O prazo depende do banco destino.</p>
+              )}
+              <button onClick={onClose} className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                Fechar
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/40 border border-border text-sm">
+                <p className="text-muted-foreground text-xs mb-0.5">Saldo disponível</p>
+                <p className="font-bold text-foreground text-lg">R$ {balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Valor (R$)</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  max={balance}
+                  value={value}
+                  onChange={e => setValue(e.target.value)}
+                  placeholder="0,00"
+                  required
+                />
+                {Number(value) > balance && (
+                  <p className="text-xs text-destructive mt-1">Valor maior que o saldo disponível</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Descrição <span className="text-muted-foreground font-normal">(opcional)</span></label>
+                <input className={inputCls} value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Retirada mensal" />
+              </div>
+              <p className="text-xs text-muted-foreground">A transferência será feita via PIX para a chave CNPJ da barbearia cadastrada no Asaas.</p>
+              <div className="flex gap-3">
+                <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-accent transition-colors">Cancelar</button>
+                <button
+                  type="submit"
+                  disabled={mutation.isPending || !value || Number(value) <= 0 || Number(value) > balance}
+                  className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                >
+                  {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {mutation.isPending ? 'Processando...' : 'Confirmar saque'}
+                </button>
+              </div>
+            </form>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export default function BalancoPage() {
   const [rangeIdx, setRangeIdx] = useState(0);
+  const [showTransfer, setShowTransfer] = useState(false);
   const range = RANGES[rangeIdx];
   const now = new Date();
 
@@ -54,6 +157,12 @@ export default function BalancoPage() {
   const { data: d, isLoading } = useQuery({
     queryKey: ['balance', from, to],
     queryFn: () => financialApi.balance(from, to).then(r => r.data),
+  });
+
+  const { data: asaasBalance } = useQuery({
+    queryKey: ['asaas-balance'],
+    queryFn: () => paymentApi.balance().then(r => r.data),
+    staleTime: 60_000,
   });
 
   if (isLoading || !d) return (
@@ -81,6 +190,36 @@ export default function BalancoPage() {
           ))}
         </div>
       </div>
+
+      {/* Saldo Asaas */}
+      {asaasBalance?.configured ? (
+        <div className="flex items-center justify-between gap-4 bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Saldo Asaas disponível</p>
+              <p className="text-2xl font-bold text-foreground">
+                R$ {(asaasBalance.balance ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Atualizado em tempo real via subconta</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
+          >
+            <ArrowUpRight className="w-4 h-4" />
+            Sacar via PIX
+          </button>
+        </div>
+      ) : asaasBalance && !asaasBalance.configured ? (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>Subconta Asaas ainda não configurada. Ela é criada automaticamente quando a barbearia se cadastra.</span>
+        </div>
+      ) : null}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -183,6 +322,13 @@ export default function BalancoPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {showTransfer && (
+        <TransferModal
+          balance={asaasBalance?.balance ?? 0}
+          onClose={() => setShowTransfer(false)}
+        />
       )}
 
       {/* Pendências */}

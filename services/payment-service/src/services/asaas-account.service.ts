@@ -1,5 +1,5 @@
 import { prisma } from '@barberstack/database';
-import { createMasterAsaasClient } from '../asaas.client';
+import { createMasterAsaasClient, createSubAccountAsaasClient } from '../asaas.client';
 
 interface CreateSubAccountDto {
   barbershopId: string;
@@ -14,7 +14,7 @@ interface CreateSubAccountDto {
 
 /**
  * Cria uma subconta White-Label no Asaas para a barbearia.
- * Chamado no momento do cadastro da barbearia.
+ * Chamado automaticamente no momento do cadastro da barbearia.
  */
 export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
   const client = createMasterAsaasClient();
@@ -43,38 +43,45 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
 }
 
 /**
- * Consulta o saldo da subconta da barbearia
+ * Consulta o saldo disponível da subconta da barbearia no Asaas.
  */
 export async function getBarbershopBalance(barbershopId: string) {
   const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
 
   if (!shop.asaasApiKey) {
-    throw new Error('Subconta Asaas não configurada para esta barbearia');
+    // Subconta ainda não configurada — retorna saldo zerado sem erro
+    return { balance: 0, configured: false };
   }
 
-  const { createSubAccountAsaasClient } = await import('../asaas.client');
   const client = createSubAccountAsaasClient(shop.asaasApiKey);
   const response = await client.get('/finance/balance');
 
-  return response.data;
+  return { ...response.data, configured: true };
 }
 
 /**
- * Solicita saque do saldo da subconta para conta bancária do dono
+ * Solicita transferência via PIX usando o CNPJ da barbearia como chave.
+ * O dinheiro é sacado da subconta Asaas direto para a conta bancária vinculada ao CNPJ.
  */
-export async function requestWithdrawal(barbershopId: string, amount: number, bankAccountId: string) {
+export async function requestPixTransfer(barbershopId: string, amount: number, description?: string) {
   const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
 
   if (!shop.asaasApiKey) {
-    throw new Error('Subconta Asaas não configurada');
+    throw new Error('Subconta Asaas não configurada para esta barbearia');
+  }
+  if (!shop.document) {
+    throw new Error('CNPJ da barbearia não cadastrado');
   }
 
-  const { createSubAccountAsaasClient } = await import('../asaas.client');
   const client = createSubAccountAsaasClient(shop.asaasApiKey);
+  const cnpj = shop.document.replace(/\D/g, '');
 
   const response = await client.post('/transfers', {
     value: amount,
-    bankAccount: { id: bankAccountId },
+    pixAddressKey: cnpj,
+    pixAddressKeyType: 'CNPJ',
+    description: description || 'Saque Barberstack',
+    operationType: 'PIX',
   });
 
   return response.data;

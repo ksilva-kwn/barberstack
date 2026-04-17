@@ -201,6 +201,21 @@ export class AuthController {
       return { user, barbershop };
     });
 
+    // Fire-and-forget: cria subconta Asaas em background (não bloqueia o registro)
+    const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005';
+    fetch(`${PAYMENT_SERVICE_URL}/payments/internal/subaccount`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        barbershopId: barbershop.id,
+        name: barbershopName,
+        email: barbershopEmail,
+        cpfCnpj: document,
+        phone: barbershopPhone,
+        address, city, state,
+      }),
+    }).catch((err: Error) => console.error('[auth] Erro ao criar subconta Asaas:', err.message));
+
     const token = this.generateToken({ ...user, barbershopId: barbershop.id });
     const refreshToken = this.generateRefreshToken(user.id);
 
