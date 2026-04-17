@@ -36,7 +36,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { BarberPole } from '@/components/ui/barber-pole';
 
 interface SubItem {
   label: string;
@@ -176,15 +175,12 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside className="w-64 flex flex-col h-full shrink-0 border-r border-border" style={{ backgroundColor: 'hsl(var(--sidebar))' }}>
       {/* Logo */}
-      <div className="p-5 border-b border-border">
+      <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0" style={{ boxShadow: '0 4px 12px hsl(var(--primary) / 0.4)' }}>
             <Scissors className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="font-bold text-base text-foreground font-display tracking-tight">Barberstack</span>
-          <div className="ml-auto">
-            <BarberPole />
-          </div>
         </div>
         {user?.barbershop && (
           <p className="text-xs text-muted-foreground mt-1.5 truncate">{user.barbershop.name}</p>
@@ -250,7 +246,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                   isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
                 )}
               >
-                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-3 pb-1">
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-white/10 pl-3 pb-1">
                   {item.children!.map((child) => {
                     const childActive = pathname === child.href;
                     return (
@@ -293,7 +289,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       )}
 
       {/* User / Logout */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-white/10">
         <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm">
           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
             {initials}

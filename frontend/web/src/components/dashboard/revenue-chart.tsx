@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { barbershopApi } from '@/lib/barbershop.api';
@@ -12,7 +13,31 @@ interface Props {
   months?: number;
 }
 
+function useIsDark() {
+  const [dark, setDark] = useState(
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
+  useEffect(() => {
+    const obs = new MutationObserver(() =>
+      setDark(document.documentElement.classList.contains('dark')),
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
 export function RevenueChart({ barbershopId, professionalId, branchId, months = 6 }: Props) {
+  const dark = useIsDark();
+
+  const grid        = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+  const tick        = dark ? '#6b7280' : '#9ca3af';
+  const cursor      = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+  const tooltipBg   = dark ? '#1e1e1e' : '#ffffff';
+  const tooltipBdr  = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)';
+  const tooltipClr  = dark ? '#f3f4f6' : '#111827';
+  const barColor    = 'hsl(38, 65%, 52%)';
+
   const { data, isLoading } = useQuery({
     queryKey: ['revenue-chart', barbershopId, professionalId, branchId, months],
     queryFn: () => barbershopApi.revenueChart(barbershopId, {
@@ -36,33 +61,33 @@ export function RevenueChart({ barbershopId, professionalId, branchId, months = 
       {!isLoading && data && (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 20%)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fill: 'hsl(215, 20.2%, 65.1%)', fontSize: 12 }}
+              tick={{ fill: tick, fontSize: 12 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: 'hsl(215, 20.2%, 65.1%)', fontSize: 11 }}
+              tick={{ fill: tick, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              cursor={{ fill: 'hsl(217.2, 32.6%, 17.5%)', radius: 4 }}
+              cursor={{ fill: cursor, radius: 4 }}
               contentStyle={{
-                backgroundColor: 'hsl(222.2, 47%, 11%)',
-                border: '1px solid hsl(217.2, 32.6%, 17.5%)',
+                backgroundColor: tooltipBg,
+                border: `1px solid ${tooltipBdr}`,
                 borderRadius: 8,
               }}
-              labelStyle={{ color: 'hsl(210, 40%, 98%)' }}
+              labelStyle={{ color: tooltipClr }}
               formatter={(v: number) => [
                 `R$ ${(v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                 'Faturamento',
               ]}
             />
-            <Bar dataKey="revenue" fill="hsl(35, 100%, 50%)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+            <Bar dataKey="revenue" fill={barColor} radius={[4, 4, 0, 0]} maxBarSize={48} />
           </BarChart>
         </ResponsiveContainer>
       )}

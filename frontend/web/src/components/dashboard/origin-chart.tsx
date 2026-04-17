@@ -1,11 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { Loader2 } from 'lucide-react';
 
-const COLORS = ['hsl(35, 100%, 50%)', 'hsl(217.2, 32.6%, 40%)'];
+const COLORS = ['hsl(38, 65%, 52%)', 'hsl(217, 33%, 55%)'];
 
 interface Props {
   barbershopId: string;
@@ -13,7 +14,28 @@ interface Props {
   branchId?: string;
 }
 
+function useIsDark() {
+  const [dark, setDark] = useState(
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
+  useEffect(() => {
+    const obs = new MutationObserver(() =>
+      setDark(document.documentElement.classList.contains('dark')),
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
 export function AppointmentOriginChart({ barbershopId, professionalId, branchId }: Props) {
+  const dark = useIsDark();
+
+  const tooltipBg  = dark ? '#1e1e1e' : '#ffffff';
+  const tooltipBdr = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)';
+  const tooltipClr = dark ? '#f3f4f6' : '#111827';
+  const legendClr  = dark ? '#9ca3af' : '#6b7280';
+
   const { data, isLoading } = useQuery({
     queryKey: ['origin-chart', barbershopId, professionalId, branchId],
     queryFn: () => barbershopApi.originChart(barbershopId, {
@@ -48,10 +70,15 @@ export function AppointmentOriginChart({ barbershopId, professionalId, branchId 
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(222.2, 47%, 11%)', border: '1px solid hsl(217.2, 32.6%, 17.5%)', borderRadius: 8 }}
+              contentStyle={{
+                backgroundColor: tooltipBg,
+                border: `1px solid ${tooltipBdr}`,
+                borderRadius: 8,
+                color: tooltipClr,
+              }}
               formatter={(v: number) => [`${v} agendamentos`]}
             />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: 'hsl(215, 20.2%, 65.1%)' }} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: legendClr }} />
           </PieChart>
         </ResponsiveContainer>
       )}
