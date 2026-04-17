@@ -104,7 +104,7 @@ function PlanModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Ciclo</label>
-                <select className={inputCls} value={billingCycle} onChange={e => setBillingCycle(e.target.value)} disabled={isEdit}>
+                <select className={inputCls} value={billingCycle} onChange={e => setBillingCycle(e.target.value as 'monthly' | 'weekly')} disabled={isEdit}>
                   <option value="monthly">Mensal</option>
                   <option value="weekly">Semanal</option>
                 </select>
