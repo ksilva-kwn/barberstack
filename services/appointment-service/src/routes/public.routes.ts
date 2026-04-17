@@ -121,6 +121,47 @@ publicAppointmentRouter.get('/slots', async (req: Request, res: Response) => {
   return res.json(slots);
 });
 
+// Listar agendamentos do cliente logado no portal
+publicAppointmentRouter.get('/my-appointments', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token necessário' });
+  }
+
+  let clientId: string;
+  try {
+    const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET!) as any;
+    clientId = payload.sub;
+  } catch {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+
+  const now = new Date();
+
+  const [upcoming, past] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { clientId, scheduledAt: { gte: now }, status: { notIn: ['CANCELED', 'NO_SHOW'] } },
+      include: {
+        professional: { include: { user: { select: { name: true, avatarUrl: true } } } },
+        services: { include: { service: { select: { name: true } } } },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 5,
+    }),
+    prisma.appointment.findMany({
+      where: { clientId, scheduledAt: { lt: now } },
+      include: {
+        professional: { include: { user: { select: { name: true, avatarUrl: true } } } },
+        services: { include: { service: { select: { name: true } } } },
+      },
+      orderBy: { scheduledAt: 'desc' },
+      take: 10,
+    }),
+  ]);
+
+  return res.json({ upcoming, past });
+});
+
 // Criar agendamento pelo portal do cliente (requer token do cliente via Authorization header)
 publicAppointmentRouter.post('/appointments', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;

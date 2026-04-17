@@ -29,6 +29,16 @@ export interface PublicShop {
   slug: string;
 }
 
+export interface ClientAppointment {
+  id: string;
+  scheduledAt: string;
+  durationMins: number;
+  status: string;
+  totalAmount: number;
+  professional: { user: { name: string; avatarUrl: string | null } };
+  services: { service: { name: string } }[];
+}
+
 export interface PublicProfessional {
   id: string;
   nickname: string | null;
@@ -90,4 +100,9 @@ export const portalApi = {
 
   register: (data: { name: string; email: string; password: string; phone?: string; barbershopId: string }) =>
     publicApi.post<{ token: string; user: any }>('/api/auth/register', data),
+
+  myAppointments: (token: string) =>
+    publicApi.get<{ upcoming: ClientAppointment[]; past: ClientAppointment[] }>('/api/public/my-appointments', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };

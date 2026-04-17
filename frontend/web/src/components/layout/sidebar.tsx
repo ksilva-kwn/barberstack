@@ -85,7 +85,6 @@ const navItems: NavItem[] = [
       { label: 'Contas a receber',    href: '/financeiro/contas-receber',      icon: <Wallet className="w-3.5 h-3.5" /> },
       { label: 'Criar despesa',       href: '/financeiro/despesas',            icon: <TrendingDown className="w-3.5 h-3.5" /> },
       { label: 'Criar receita',       href: '/financeiro/receitas',            icon: <TrendingUp className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',          href: '/financeiro/relatorios',          icon: <BarChart2 className="w-3.5 h-3.5" /> },
     ],
   },
   {

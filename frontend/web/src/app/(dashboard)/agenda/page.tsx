@@ -20,6 +20,7 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedProfessionalId, setSelectedProfessionalId] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const barbershopId = (user as any)?.barbershopId ?? '';
@@ -37,9 +38,12 @@ export default function AgendaPage() {
     queryFn: () => barbershopApi.professionals().then((r) => r.data),
   });
 
-  const professionals = selectedBranchId
+  const byBranch = selectedBranchId
     ? allProfessionals.filter(p => p.branchId === selectedBranchId)
     : allProfessionals;
+  const professionals = selectedProfessionalId
+    ? byBranch.filter(p => p.id === selectedProfessionalId)
+    : byBranch;
 
   const { data: appointments = [], isLoading: loadingApts } = useQuery({
     queryKey: ['appointments', dateStr],
@@ -143,12 +147,24 @@ export default function AgendaPage() {
           {branches.length > 0 && (
             <select
               value={selectedBranchId}
-              onChange={e => setSelectedBranchId(e.target.value)}
+              onChange={e => { setSelectedBranchId(e.target.value); setSelectedProfessionalId(''); }}
               className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todas as filiais</option>
               {branches.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
+          {byBranch.length > 1 && (
+            <select
+              value={selectedProfessionalId}
+              onChange={e => setSelectedProfessionalId(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">Todos os barbeiros</option>
+              {byBranch.map((p: any) => (
+                <option key={p.id} value={p.id}>{p.user?.name ?? p.nickname ?? p.id}</option>
               ))}
             </select>
           )}

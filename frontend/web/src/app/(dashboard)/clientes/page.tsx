@@ -70,9 +70,12 @@ function AddClientModal({ onClose, onCreated }: { onClose: () => void; onCreated
   );
 }
 
+const PAGE_SIZE = 20;
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ClientesPage() {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const qc = useQueryClient();
 
@@ -80,6 +83,12 @@ export default function ClientesPage() {
     queryKey: ['clients', search],
     queryFn: () => barbershopApi.clients(search || undefined).then(r => r.data),
   });
+
+  // Reset to page 1 whenever search changes
+  const handleSearch = (v: string) => { setSearch(v); setPage(1); };
+
+  const totalPages = Math.max(1, Math.ceil(clients.length / PAGE_SIZE));
+  const paginated = clients.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const blockMutation = useMutation({
     mutationFn: (id: string) => barbershopApi.blockClient(id),
@@ -115,10 +124,10 @@ export default function ClientesPage() {
           className="w-full pl-9 pr-4 py-2 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
           placeholder="Buscar por nome, e-mail ou telefone..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => handleSearch(e.target.value)}
         />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <button onClick={() => handleSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -140,49 +149,100 @@ export default function ClientesPage() {
           </p>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="divide-y divide-border">
-            {clients.map((client: Client) => (
-              <div key={client.id} className="flex items-center gap-4 px-4 py-3 hover:bg-accent/30 transition-colors">
-                <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                  {initials(client.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{client.name}</p>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    {client.email && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Mail className="w-3 h-3" />{client.email}
-                      </span>
-                    )}
-                    {client.phone && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Phone className="w-3 h-3" />{client.phone}
-                      </span>
-                    )}
+        <>
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="divide-y divide-border">
+              {paginated.map((client: Client) => (
+                <div key={client.id} className="flex items-center gap-4 px-4 py-3 hover:bg-accent/30 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                    {initials(client.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{client.name}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {client.email && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Mail className="w-3 h-3" />{client.email}
+                        </span>
+                      )}
+                      {client.phone && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Phone className="w-3 h-3" />{client.phone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted-foreground hidden sm:block">
+                      desde {format(new Date(client.createdAt), "MMM 'de' yyyy", { locale: ptBR })}
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Bloquear ${client.name}? Ele não poderá fazer novos agendamentos.`)) {
+                          blockMutation.mutate(client.id);
+                        }
+                      }}
+                      disabled={blockMutation.isPending}
+                      title="Bloquear cliente"
+                      className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    >
+                      <ShieldOff className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-muted-foreground hidden sm:block">
-                    desde {format(new Date(client.createdAt), "MMM 'de' yyyy", { locale: ptBR })}
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Bloquear ${client.name}? Ele não poderá fazer novos agendamentos.`)) {
-                        blockMutation.mutate(client.id);
-                      }
-                    }}
-                    disabled={blockMutation.isPending}
-                    title="Bloquear cliente"
-                    className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-                  >
-                    <ShieldOff className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, clients.length)} de {clients.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 rounded-lg border border-border text-sm text-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                  .reduce<(number | '…')[]>((acc, p, idx, arr) => {
+                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('…');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === '…' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground text-sm">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p as number)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                          page === p
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border border-border text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 rounded-lg border border-border text-sm text-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Próximo
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {showAddModal && (

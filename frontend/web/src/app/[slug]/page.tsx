@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Scissors, MapPin, Phone, Calendar, Loader2, Clock,
   Star, Instagram, ChevronDown, Mail, ArrowRight,
-  LogIn, UserPlus, X,
+  LogIn, UserPlus, X, User,
 } from 'lucide-react';
 import { portalApi, PublicPhoto, PublicBranch, PublicProfessional } from '@/lib/public.api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -150,17 +150,23 @@ export default function PortalPage() {
     }
   }, [branches]);
 
+  const [loginIntent, setLoginIntent] = useState<'book' | 'account'>('account');
+
   const handleBook = () => {
     const query = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
     if (portalUser) router.push(`/${slug}/agendar${query}`);
-    else setShowAuth(true);
+    else { setLoginIntent('book'); setShowAuth(true); }
   };
 
   const handleAuthSuccess = (user: any) => {
     setPortalUser(user);
     setShowAuth(false);
-    const query = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
-    router.push(`/${slug}/agendar${query}`);
+    if (loginIntent === 'book') {
+      const query = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
+      router.push(`/${slug}/agendar${query}`);
+    } else {
+      router.push(`/${slug}/painel`);
+    }
   };
 
   const handleLogout = () => {
@@ -226,18 +232,23 @@ export default function PortalPage() {
           <div className="flex items-center gap-2 shrink-0">
             {portalUser ? (
               <>
-                <span className="text-xs text-muted-foreground hidden sm:block">Olá, {portalUser.name.split(' ')[0]}</span>
-                <button onClick={handleLogout} className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors">Sair</button>
+                <button
+                  onClick={() => router.push(`/${slug}/painel`)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border transition-colors hover:bg-accent"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{portalUser.name.split(' ')[0]}</span>
+                </button>
                 <button onClick={handleBook} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
                   <Calendar className="w-3.5 h-3.5" /> Agendar
                 </button>
               </>
             ) : (
               <>
-                <button onClick={() => setShowAuth(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border transition-colors hover:bg-accent">
+                <button onClick={() => { setLoginIntent('account'); setShowAuth(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border transition-colors hover:bg-accent">
                   <LogIn className="w-3.5 h-3.5" /> Entrar
                 </button>
-                <button onClick={() => setShowAuth(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                <button onClick={() => { setLoginIntent('account'); setShowAuth(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
                   <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Cadastrar</span>
                 </button>
               </>
