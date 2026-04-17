@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Scissors, Menu, X, Calendar, Receipt, TrendingUp, Users,
   Repeat2, Package, UtensilsCrossed, Check, ArrowRight,
@@ -24,7 +24,7 @@ const G = {
   muted:       '#7A746C',
   faint:       '#2A2620',
   sectionAlt:  '#0F0D0B',
-  serif:       "'Playfair Display', Georgia, 'Times New Roman', serif",
+  serif:       "'Inter', 'Helvetica Neue', Arial, sans-serif",
   sans:        "'Inter', 'Helvetica Neue', Arial, sans-serif",
 };
 
@@ -59,47 +59,6 @@ function BarberPole({ width = 12, height = 52 }: { width?: number; height?: numb
         pointerEvents: 'none',
       }} />
     </div>
-  );
-}
-
-// ─── Straight razor (scroll-driven) ──────────────────────────────────────────
-function Razor({ progress }: { progress: MotionValue<number> }) {
-  const rawAngle = useTransform(progress, [0, 0.25, 0.55, 0.75, 1], [0, 44, 46, 44, 0]);
-  const rawScale = useTransform(progress, [0, 0.12, 0.45, 0.55, 0.88, 1], [0.35, 0.85, 1.4, 1.4, 0.85, 0.35]);
-  const rawOp    = useTransform(progress, [0, 0.08, 0.92, 1], [0, 1, 1, 0]);
-  const angle    = useSpring(rawAngle,  { stiffness: 55, damping: 18 });
-  const scale    = useSpring(rawScale,  { stiffness: 55, damping: 18 });
-  const glowOp   = useTransform(rawAngle, [0, 46], [0.1, 0.55]);
-
-  const W = 460; const H = 270;
-  const px = 185; const py = H / 2;
-  const hW = px; const hH = 40;
-  const bW = 260; const bH = 26;
-
-  return (
-    <motion.div style={{ opacity: rawOp, scale, position: 'relative', width: W, height: H }}>
-      <motion.div style={{ position: 'absolute', left: px - 90, top: py - 90, width: 180, height: 180, borderRadius: '50%', backgroundColor: G.gold, filter: 'blur(56px)', opacity: glowOp, pointerEvents: 'none' }} />
-
-      {/* Handle */}
-      <div style={{ position: 'absolute', left: 0, top: py - hH / 2, width: hW + 8, height: hH, borderRadius: '8px 4px 4px 8px', background: 'linear-gradient(to bottom, #5C4A2A 0%, #3A2E18 50%, #5C4A2A 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.6)' }}>
-        {[20,42,65,88,112,138].map(x => (<div key={x} style={{ position: 'absolute', left: x, top: 5, bottom: 5, width: 1, backgroundColor: 'rgba(0,0,0,0.22)' }} />))}
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 16, background: 'linear-gradient(to right, #888, #ddd, #888)', borderRadius: '0 4px 4px 0' }} />
-      </div>
-
-      {/* Pivot */}
-      <div style={{ position: 'absolute', left: px - 10, top: py - 10, width: 20, height: 20, borderRadius: '50%', background: `radial-gradient(circle at 35% 35%, ${G.goldBright}, ${G.gold}, #7A5A1A)`, boxShadow: `0 2px 10px rgba(0,0,0,0.7), 0 0 0 2px ${G.goldBorder}`, zIndex: 3 }}>
-        <div style={{ position: 'absolute', left: 5, top: 5, width: 5, height: 5, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.5)' }} />
-      </div>
-
-      {/* Blade */}
-      <motion.div style={{ position: 'absolute', left: px, top: py, transformOrigin: '0px 0px', rotate: angle }}>
-        <div style={{ position: 'relative', marginTop: -bH / 2, width: bW, height: bH }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #B0B0B0 0%, #F0F0F0 38%, #D8D8D8 58%, #8A8A8A 100%)', clipPath: 'polygon(0 15%, 80% 0%, 93% 22%, 100% 50%, 93% 78%, 80% 100%, 0 85%)', borderRadius: '0 6px 6px 0' }} />
-          <div style={{ position: 'absolute', top: 1, left: 0, right: '10%', height: 2, background: `linear-gradient(to right, transparent, ${G.goldBright}, transparent)`, opacity: 0.6 }} />
-          <div style={{ position: 'absolute', left: -5, top: 0, bottom: 0, width: 10, background: `linear-gradient(to right, ${G.gold}, ${G.goldBright}, ${G.gold})`, borderRadius: '2px 0 0 2px' }} />
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }
 
@@ -200,18 +159,12 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const razorRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: razorRef, offset: ['start end', 'end start'] });
-  const textOpacity = useTransform(scrollYProgress, [0.3, 0.44, 0.65, 0.78], [0, 1, 1, 0]);
-  const textY       = useTransform(scrollYProgress, [0.3, 0.45], [24, 0]);
-
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  // Hero background — barbershop photo with 80% overlay
   const heroBg = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1920&q=85';
 
   const dividerStyle = { height: 1, background: `linear-gradient(to right, transparent, ${G.goldBorder}, transparent)`, margin: '0 auto', maxWidth: 600 };
@@ -250,13 +203,6 @@ export default function LandingPage() {
 
           {/* Right cluster */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Barber pole service indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 999, border: `1px solid ${G.goldBorder}`, backgroundColor: `${G.gold}08` }} className="hidden sm:flex">
-              <BarberPole width={8} height={28} />
-              <span style={{ fontSize: 10, color: G.gold, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Online</span>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
-            </div>
-
             <Link href="/login" className="hidden sm:inline-flex" style={{ fontSize: 13, padding: '7px 16px', borderRadius: 10, border: `1px solid ${G.goldBorder}`, color: G.muted, textDecoration: 'none', transition: 'all 0.2s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = G.white; (e.currentTarget as HTMLElement).style.borderColor = G.goldBorderBright; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = G.muted;  (e.currentTarget as HTMLElement).style.borderColor = G.goldBorder; }}
@@ -299,11 +245,6 @@ export default function LandingPage() {
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 120% 100% at 50% 50%, transparent 30%, rgba(0,0,0,0.5) 100%)' }} />
           {/* Left side darker for text legibility */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,9,7,0.55) 0%, transparent 60%)' }} />
-        </div>
-
-        {/* Large decorative barber pole — right side, semi-transparent */}
-        <div style={{ position: 'absolute', right: 80, top: '50%', transform: 'translateY(-50%)', opacity: 0.06, zIndex: 1, pointerEvents: 'none' }} className="hidden lg:block">
-          <BarberPole width={40} height={280} />
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto', padding: '110px 24px 80px', width: '100%' }}>
@@ -395,21 +336,6 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
-
-      {/* ── RAZOR STICKY ─────────────────────────────────────────────────── */}
-      <div ref={razorRef} style={{ position: 'relative', height: '250vh' }}>
-        <div style={{ position: 'sticky', top: 0, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#080706', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 50% at 50% 50%, ${G.gold}0C, transparent)` }} />
-          <div style={dividerStyle as any} />
-          <Razor progress={scrollYProgress} />
-          <motion.div style={{ position: 'absolute', textAlign: 'center', pointerEvents: 'none', opacity: textOpacity, y: textY }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: G.gold, marginBottom: 14 }}>Precisão em cada detalhe</p>
-            <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 900, color: G.white, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              Sua barbearia,<br /><em style={{ fontStyle: 'italic', color: G.gold }}>no próximo nível</em>
-            </h2>
-          </motion.div>
-        </div>
-      </div>
 
       {/* ── FEATURES ────────────────────────────────────────────────────── */}
       <section id="funcionalidades" style={{ padding: '100px 24px', backgroundColor: G.sectionAlt }}>
