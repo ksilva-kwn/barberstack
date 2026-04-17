@@ -300,10 +300,10 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/entrar" className="hidden sm:inline-flex text-sm px-4 py-2 rounded-xl border transition-colors hover:bg-accent" style={{ borderColor: 'hsl(var(--border))' }}>
+            <Link href="/login" className="hidden sm:inline-flex text-sm px-4 py-2 rounded-xl border transition-colors hover:bg-accent" style={{ borderColor: 'hsl(var(--border))' }}>
               Entrar
             </Link>
-            <Link href="/registrar" className="text-sm px-4 py-2 rounded-xl font-semibold transition-opacity hover:opacity-90" style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}>
+            <Link href="/register" className="text-sm px-4 py-2 rounded-xl font-semibold transition-opacity hover:opacity-90" style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}>
               Teste grátis
             </Link>
             <button className="md:hidden p-2 rounded-lg hover:bg-accent" onClick={() => setMenuOpen(o => !o)}>
@@ -407,7 +407,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.6, delay: 0.35 }}
               >
                 <Link
-                  href="/registrar"
+                  href="/register"
                   className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-105"
                   style={{ backgroundColor: 'hsl(var(--primary))', color: 'white', boxShadow: '0 12px 32px hsl(var(--primary) / 0.45)' }}
                 >
@@ -627,7 +627,7 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <Link
-                    href="/registrar"
+                    href="/register"
                     className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90"
                     style={highlight
                       ? { backgroundColor: 'white', color: 'hsl(var(--primary))' }
@@ -690,7 +690,7 @@ export default function LandingPage() {
               <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Comece hoje mesmo</h2>
               <p className="opacity-80 mb-8 max-w-md mx-auto">14 dias grátis, sem cartão de crédito. Configure em minutos.</p>
               <Link
-                href="/registrar"
+                href="/register"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-extrabold text-sm bg-white transition-all hover:scale-105 shadow-lg"
                 style={{ color: 'hsl(var(--primary))' }}
               >
