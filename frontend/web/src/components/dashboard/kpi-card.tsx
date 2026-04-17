@@ -14,20 +14,32 @@ export function KpiCard({ title, value, icon, description, trend, variant = 'def
   return (
     <div
       className={cn(
-        'bg-card border rounded-xl p-5 space-y-3',
-        variant === 'warning' && 'border-yellow-500/30 bg-yellow-500/5',
-        variant === 'danger' && 'border-destructive/30 bg-destructive/5',
-        variant === 'default' && 'border-border',
+        'relative rounded-2xl p-5 space-y-3 overflow-hidden transition-all duration-200',
+        'border backdrop-blur-sm',
+        'hover:-translate-y-0.5 hover:shadow-lg',
+        variant === 'default' && 'bg-card/80 border-border hover:border-primary/30 hover:shadow-primary/10',
+        variant === 'warning' && 'bg-yellow-500/5 border-yellow-500/25 hover:shadow-yellow-500/10',
+        variant === 'danger'  && 'bg-destructive/5 border-destructive/25 hover:shadow-destructive/10',
       )}
     >
+      {/* Subtle top gradient line */}
+      <div
+        className={cn(
+          'absolute top-0 left-6 right-6 h-px rounded-full',
+          variant === 'default' && 'bg-gradient-to-r from-transparent via-primary/40 to-transparent',
+          variant === 'warning' && 'bg-gradient-to-r from-transparent via-yellow-500/40 to-transparent',
+          variant === 'danger'  && 'bg-gradient-to-r from-transparent via-destructive/40 to-transparent',
+        )}
+      />
+
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
         <div
           className={cn(
-            'p-2 rounded-lg',
+            'p-2.5 rounded-xl',
             variant === 'default' && 'bg-primary/10 text-primary',
             variant === 'warning' && 'bg-yellow-500/10 text-yellow-500',
-            variant === 'danger' && 'bg-destructive/10 text-destructive',
+            variant === 'danger'  && 'bg-destructive/10 text-destructive',
           )}
         >
           {icon}
@@ -35,12 +47,19 @@ export function KpiCard({ title, value, icon, description, trend, variant = 'def
       </div>
 
       <div>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className={cn(
+          'text-3xl font-bold tracking-tight font-display',
+          variant === 'default' && 'text-foreground',
+          variant === 'warning' && 'text-yellow-500',
+          variant === 'danger'  && 'text-destructive',
+        )}>
+          {value}
+        </p>
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
 
       {trend && (
-        <div className={cn('flex items-center gap-1 text-xs font-medium', trend.positive ? 'text-green-500' : 'text-red-500')}>
+        <div className={cn('flex items-center gap-1.5 text-xs font-semibold', trend.positive ? 'text-emerald-500' : 'text-red-500')}>
           {trend.positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
           <span>{trend.positive ? '+' : '-'}{trend.value}% vs mês anterior</span>
         </div>

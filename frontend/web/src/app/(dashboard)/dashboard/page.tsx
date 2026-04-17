@@ -59,8 +59,8 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Visão geral da sua barbearia</p>
+          <h1 className="text-3xl font-bold text-foreground font-display tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Visão geral da sua barbearia</p>
         </div>
 
         {/* Filters — admin only */}

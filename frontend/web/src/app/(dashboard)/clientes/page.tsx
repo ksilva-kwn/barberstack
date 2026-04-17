@@ -105,7 +105,7 @@ export default function ClientesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+          <h1 className="text-3xl font-bold text-foreground font-display tracking-tight">Clientes</h1>
           <p className="text-muted-foreground text-sm">{clients.length} cliente{clients.length !== 1 ? 's' : ''} cadastrado{clients.length !== 1 ? 's' : ''}</p>
         </div>
         <button

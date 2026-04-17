@@ -137,7 +137,7 @@ export default function AgendaPage() {
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Agenda</h1>
+          <h1 className="text-3xl font-bold text-foreground font-display tracking-tight">Agenda</h1>
           <p className="text-muted-foreground text-sm capitalize">
             {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
