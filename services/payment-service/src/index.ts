@@ -1,8 +1,8 @@
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { paymentsRouter } from './routes/payments.routes';
+import { webhookRouter } from './routes/webhook.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
 
 const app = express();
@@ -16,6 +16,12 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'payment-service' });
 });
 
+// ─── Webhook Asaas — PÚBLICO (antes do requireTenant) ───────────────────────
+// Asaas não envia headers de autenticação, então esta rota não pode estar
+// protegida pelo middleware de tenant. Registrada antes do requireTenant.
+app.use('/payments/webhook', webhookRouter);
+
+// ─── Rotas protegidas ────────────────────────────────────────────────────────
 app.use(requireTenant);
 app.use('/payments', paymentsRouter);
 

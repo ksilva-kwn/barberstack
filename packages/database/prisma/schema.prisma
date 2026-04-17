@@ -435,7 +435,8 @@ model ClientSubscription {
   currentPeriodEnd   DateTime
   usedServicesCount  Int                      @default(0)
 
-  asaasSubId     String? // ID da recorrência no Asaas (subconta da barbearia)
+  asaasSubId     String? // ID da recorrência no Asaas — token da conversa SaaS↔Asaas (nunca dados de cartão)
+  paymentLink    String? // Link de checkout Asaas para o cliente inserir o cartão na primeira cobrança
   lastPaymentAt  DateTime?
   nextPaymentAt  DateTime?
   canceledAt     DateTime?

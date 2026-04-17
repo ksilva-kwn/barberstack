@@ -45,6 +45,13 @@ app.use('/api/auth', createProxyMiddleware({
   pathRewrite: (path) => `/auth${path}`,
 }));
 
+// Webhook Asaas — público (Asaas não envia auth headers)
+app.use('/api/asaas-webhook', createProxyMiddleware({
+  target: process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005',
+  changeOrigin: true,
+  pathRewrite: () => '/payments/webhook/asaas',
+}));
+
 // Rotas públicas do portal do cliente (sem auth)
 app.use('/api/public/shop', createProxyMiddleware({
   target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',

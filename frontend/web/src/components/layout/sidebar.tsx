@@ -32,6 +32,7 @@ import {
   Globe,
   PackagePlus,
   Coffee,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -101,8 +102,11 @@ const navItems: NavItem[] = [
   {
     label: 'Assinaturas',
     icon: Repeat2,
-    href: '/assinaturas',
     adminOnly: true,
+    children: [
+      { label: 'Planos & Assinantes', href: '/assinaturas',            icon: <CreditCard className="w-3.5 h-3.5" /> },
+      { label: 'Relatórios',          href: '/assinaturas/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    ],
   },
   {
     label: 'Barbearia',
