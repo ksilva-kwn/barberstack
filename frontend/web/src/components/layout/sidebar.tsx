@@ -142,7 +142,7 @@ const planLabel: Record<string, string> = {
   OURO:   'Plano Ouro',
 };
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -173,7 +173,7 @@ export function Sidebar() {
   const filtered = navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN');
 
   return (
-    <aside className="w-64 bg-card border-r border-border flex flex-col h-full shrink-0">
+    <aside className="w-64 flex flex-col h-full shrink-0 border-r border-border" style={{ backgroundColor: 'hsl(var(--sidebar))' }}>
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2">
@@ -203,6 +203,7 @@ export function Sidebar() {
               <Link
                 key={item.label}
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   isActive
@@ -252,6 +253,7 @@ export function Sidebar() {
                       <Link
                         key={child.href}
                         href={child.href}
+                        onClick={onClose}
                         className={cn(
                           'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors',
                           childActive
