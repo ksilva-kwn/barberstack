@@ -139,10 +139,11 @@ function Razor({ progress }: { progress: MotionValue<number> }) {
 }
 
 // ─── Animation helpers ────────────────────────────────────────────────────────
-function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
+function FadeUp({ children, delay = 0, className = '', style }: { children: React.ReactNode; delay?: number; className?: string; style?: React.CSSProperties }) {
   return (
     <motion.div
       className={className}
+      style={style}
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
