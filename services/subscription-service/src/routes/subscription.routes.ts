@@ -19,7 +19,8 @@ function toYMD(date: Date) {
 }
 
 // Chama o payment-service para criar/cancelar assinatura Asaas
-async function callPaymentService(path: string, method: 'POST' | 'DELETE', body?: object) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function callPaymentService(path: string, method: 'POST' | 'DELETE', body?: object): Promise<any> {
   try {
     const res = await fetch(`${PAYMENT_SERVICE_URL}${path}`, {
       method,
