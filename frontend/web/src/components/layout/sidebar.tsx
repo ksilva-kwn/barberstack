@@ -173,7 +173,20 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const filtered = navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN');
 
   return (
-    <aside className="w-64 flex flex-col h-full shrink-0 border-r border-border" style={{ backgroundColor: 'hsl(var(--sidebar))' }}>
+    <aside
+      className="w-64 flex flex-col h-full shrink-0 border-r border-white/10"
+      style={{
+        backgroundColor: 'hsl(var(--sidebar))',
+        // Force dark-theme CSS vars so the sidebar looks the same in light and dark mode
+        ['--foreground' as string]:          '38 18% 90%',
+        ['--muted-foreground' as string]:    '38 8% 52%',
+        ['--primary' as string]:             '38 65% 52%',
+        ['--primary-foreground' as string]:  '0 0% 5%',
+        ['--accent' as string]:              '0 0% 16%',
+        ['--accent-foreground' as string]:   '38 18% 90%',
+        ['--border' as string]:              '38 8% 20%',
+      }}
+    >
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">

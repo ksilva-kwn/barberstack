@@ -7,61 +7,70 @@ import { Scissors, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-re
 import { authApi, RegisterBarbershopPayload } from '@/lib/auth.api';
 import { useAuthStore } from '@/store/auth.store';
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+const G = {
+  bg:         '#0D0D0B',
+  card:       '#131210',
+  gold:       '#C4A47C',
+  goldBright: '#D8BC96',
+  goldBorder: 'rgba(196,164,124,0.22)',
+  goldBorderBright: 'rgba(196,164,124,0.45)',
+  goldGlow:   'rgba(196,164,124,0.18)',
+  white:      '#F3F0EA',
+  muted:      '#7A746C',
+  faint:      '#2A2620',
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: 10,
+  background: G.bg,
+  border: `1px solid ${G.goldBorder}`,
+  color: G.white,
+  fontSize: 14,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+function Input({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: G.muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
+      {children}
+    </div>
+  );
+}
 
 function maskCNPJ(v: string) {
-  return v
-    .replace(/\D/g, '')
-    .slice(0, 14)
+  return v.replace(/\D/g, '').slice(0, 14)
     .replace(/^(\d{2})(\d)/, '$1.$2')
     .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
     .replace(/\.(\d{3})(\d)/, '.$1/$2')
     .replace(/(\d{4})(\d)/, '$1-$2');
 }
-
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 10)
-    return d.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').trimEnd();
+  if (d.length <= 10) return d.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').trimEnd();
   return d.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').trimEnd();
 }
-
 function maskCEP(v: string) {
   return v.replace(/\D/g, '').slice(0, 8).replace(/^(\d{5})(\d)/, '$1-$2');
 }
 
-// ─── types ───────────────────────────────────────────────────────────────────
-
 interface FormData {
-  // step 1 – barbearia
-  barbershopName: string;
-  document: string;       // CNPJ formatado
-  barbershopPhone: string;
-  barbershopEmail: string;
-  cep: string;
-  address: string;
-  city: string;
-  state: string;
-  // step 2 – dono
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phone: string;
+  barbershopName: string; document: string; barbershopPhone: string; barbershopEmail: string;
+  cep: string; address: string; city: string; state: string;
+  name: string; email: string; password: string; confirmPassword: string; phone: string;
 }
-
 const empty: FormData = {
   barbershopName: '', document: '', barbershopPhone: '', barbershopEmail: '',
   cep: '', address: '', city: '', state: '',
   name: '', email: '', password: '', confirmPassword: '', phone: '',
 };
 
-// ─── component ───────────────────────────────────────────────────────────────
-
 export default function RegisterPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<FormData>(empty);
   const [showPassword, setShowPassword] = useState(false);
@@ -70,16 +79,12 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const set = (field: keyof FormData, value: string) =>
-    setForm((f) => ({ ...f, [field]: value }));
+  const set = (field: keyof FormData, value: string) => setForm(f => ({ ...f, [field]: value }));
 
-  // ── CNPJ auto-fill ──────────────────────────────────────────────────────
   const handleCNPJ = async (raw: string) => {
-    const masked = maskCNPJ(raw);
-    set('document', masked);
+    const masked = maskCNPJ(raw); set('document', masked);
     const digits = masked.replace(/\D/g, '');
     if (digits.length !== 14) return;
-
     setCnpjLoading(true);
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
@@ -89,20 +94,13 @@ export default function RegisterPage() {
       set('barbershopPhone', maskPhone(data.ddd_telefone_1 ?? ''));
       set('barbershopEmail', data.email ?? '');
       if (data.cep) handleCEP(data.cep);
-    } catch {
-      // silently ignore
-    } finally {
-      setCnpjLoading(false);
-    }
+    } catch { /* ignore */ } finally { setCnpjLoading(false); }
   };
 
-  // ── CEP auto-fill ────────────────────────────────────────────────────────
   const handleCEP = async (raw: string) => {
-    const masked = maskCEP(raw);
-    set('cep', masked);
+    const masked = maskCEP(raw); set('cep', masked);
     const digits = masked.replace(/\D/g, '');
     if (digits.length !== 8) return;
-
     setCepLoading(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
@@ -112,14 +110,9 @@ export default function RegisterPage() {
       set('address', `${data.logradouro ?? ''}${data.bairro ? ', ' + data.bairro : ''}`);
       set('city', data.localidade ?? '');
       set('state', data.uf ?? '');
-    } catch {
-      // silently ignore
-    } finally {
-      setCepLoading(false);
-    }
+    } catch { /* ignore */ } finally { setCepLoading(false); }
   };
 
-  // ── step 1 validation ────────────────────────────────────────────────────
   const validateStep1 = () => {
     if (!form.barbershopName.trim()) return 'Nome da barbearia obrigatório';
     if (form.document.replace(/\D/g, '').length !== 14) return 'CNPJ inválido';
@@ -127,8 +120,6 @@ export default function RegisterPage() {
     if (!form.barbershopEmail.includes('@')) return 'E-mail da barbearia inválido';
     return '';
   };
-
-  // ── step 2 validation ────────────────────────────────────────────────────
   const validateStep2 = () => {
     if (form.name.trim().length < 2) return 'Nome deve ter ao menos 2 caracteres';
     if (!form.email.includes('@')) return 'E-mail inválido';
@@ -140,291 +131,173 @@ export default function RegisterPage() {
   const goNext = () => {
     const err = validateStep1();
     if (err) { setError(err); return; }
-    setError('');
-    setStep(2);
+    setError(''); setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateStep2();
     if (err) { setError(err); return; }
-    setError('');
-    setSubmitting(true);
-
+    setError(''); setSubmitting(true);
     const payload: RegisterBarbershopPayload = {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-      phone: form.phone || undefined,
-      barbershopName: form.barbershopName,
+      name: form.name, email: form.email, password: form.password,
+      phone: form.phone || undefined, barbershopName: form.barbershopName,
       document: form.document.replace(/\D/g, ''),
       barbershopPhone: form.barbershopPhone.replace(/\D/g, ''),
       barbershopEmail: form.barbershopEmail,
-      address: form.address || undefined,
-      city: form.city || undefined,
-      state: form.state || undefined,
+      address: form.address || undefined, city: form.city || undefined, state: form.state || undefined,
     };
-
     try {
       const { data } = await authApi.registerBarbershop(payload);
       setAuth(data.token, data.refreshToken, data.user);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'Erro ao criar conta. Tente novamente.');
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
-  // ── render ───────────────────────────────────────────────────────────────
+  const font = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-lg">
+    <div style={{ minHeight: '100vh', backgroundColor: G.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: font }}>
+      <div style={{ width: '100%', maxWidth: 520 }}>
+
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Scissors className="w-5 h-5 text-primary-foreground" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px ${G.goldGlow}` }}>
+            <Scissors style={{ width: 18, height: 18, color: '#0D0D0B' }} />
           </div>
-          <span className="font-bold text-2xl text-foreground">Barberstack</span>
+          <span style={{ fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', color: G.white }}>
+            <span style={{ color: G.gold }}>Barber</span>stack
+          </span>
         </div>
 
-        {/* Steps indicator */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className={`flex-1 h-1 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-border'}`} />
-          <div className={`flex-1 h-1 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-border'}`} />
+        {/* Step indicator */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <div style={{ flex: 1, height: 3, borderRadius: 99, background: step >= 1 ? G.gold : G.faint }} />
+          <div style={{ flex: 1, height: 3, borderRadius: 99, background: step >= 2 ? G.gold : G.faint }} />
         </div>
-        <p className="text-xs text-muted-foreground mb-4 text-center">
+        <p style={{ fontSize: 11, color: G.muted, marginBottom: 20, textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           {step === 1 ? 'Passo 1 de 2 — Dados da barbearia' : 'Passo 2 de 2 — Dados do responsável'}
         </p>
 
-        <div className="bg-card border border-border rounded-xl p-8">
+        {/* Card */}
+        <div style={{ background: G.card, border: `1px solid ${G.goldBorder}`, borderRadius: 18, padding: '32px 28px', boxShadow: `0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 ${G.goldBorderBright}` }}>
+
           {/* ── STEP 1 ── */}
           {step === 1 && (
-            <div className="space-y-4">
-              <h1 className="text-xl font-semibold text-foreground mb-4">Sua barbearia</h1>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h1 style={{ fontSize: 18, fontWeight: 700, color: G.white, marginBottom: 4 }}>Sua barbearia</h1>
 
-              {/* CNPJ */}
-              <Field label="CNPJ">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={form.document}
-                    onChange={(e) => handleCNPJ(e.target.value)}
-                    placeholder="00.000.000/0001-00"
-                    className={inputCls}
-                  />
-                  {cnpjLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+              <Input label="CNPJ">
+                <div style={{ position: 'relative' }}>
+                  <input type="text" value={form.document} onChange={e => handleCNPJ(e.target.value)} placeholder="00.000.000/0001-00" style={{ ...inputStyle, paddingRight: cnpjLoading ? 40 : 14 }}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  {cnpjLoading && <Loader2 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: G.muted, animation: 'spin 1s linear infinite' }} />}
                 </div>
-              </Field>
+              </Input>
 
-              {/* Nome */}
-              <Field label="Nome da barbearia">
-                <input
-                  type="text"
-                  value={form.barbershopName}
-                  onChange={(e) => set('barbershopName', e.target.value)}
-                  placeholder="Ex: Barbearia do João"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Nome da barbearia">
+                <input type="text" value={form.barbershopName} onChange={e => set('barbershopName', e.target.value)} placeholder="Ex: Barbearia do João" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* Telefone */}
-              <Field label="Telefone da barbearia">
-                <input
-                  type="text"
-                  value={form.barbershopPhone}
-                  onChange={(e) => set('barbershopPhone', maskPhone(e.target.value))}
-                  placeholder="(11) 99999-9999"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Telefone">
+                <input type="text" value={form.barbershopPhone} onChange={e => set('barbershopPhone', maskPhone(e.target.value))} placeholder="(11) 99999-9999" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* E-mail */}
-              <Field label="E-mail da barbearia">
-                <input
-                  type="email"
-                  value={form.barbershopEmail}
-                  onChange={(e) => set('barbershopEmail', e.target.value)}
-                  placeholder="contato@barbearia.com"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="E-mail da barbearia">
+                <input type="email" value={form.barbershopEmail} onChange={e => set('barbershopEmail', e.target.value)} placeholder="contato@barbearia.com" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* CEP */}
-              <Field label="CEP">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={form.cep}
-                    onChange={(e) => handleCEP(e.target.value)}
-                    placeholder="00000-000"
-                    className={inputCls}
-                  />
-                  {cepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+              <Input label="CEP">
+                <div style={{ position: 'relative' }}>
+                  <input type="text" value={form.cep} onChange={e => handleCEP(e.target.value)} placeholder="00000-000" style={{ ...inputStyle, paddingRight: cepLoading ? 40 : 14 }}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  {cepLoading && <Loader2 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: G.muted, animation: 'spin 1s linear infinite' }} />}
                 </div>
-              </Field>
+              </Input>
 
-              {/* Endereço */}
-              <Field label="Endereço">
-                <input
-                  type="text"
-                  value={form.address}
-                  onChange={(e) => set('address', e.target.value)}
-                  placeholder="Rua, número, bairro"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Endereço">
+                <input type="text" value={form.address} onChange={e => set('address', e.target.value)} placeholder="Rua, número, bairro" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* Cidade / Estado */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <Field label="Cidade">
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => set('city', e.target.value)}
-                      placeholder="São Paulo"
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
-                <Field label="UF">
-                  <input
-                    type="text"
-                    value={form.state}
-                    onChange={(e) => set('state', e.target.value.toUpperCase().slice(0, 2))}
-                    placeholder="SP"
-                    className={inputCls}
-                  />
-                </Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                <Input label="Cidade">
+                  <input type="text" value={form.city} onChange={e => set('city', e.target.value)} placeholder="São Paulo" style={inputStyle}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                </Input>
+                <Input label="UF">
+                  <input type="text" value={form.state} onChange={e => set('state', e.target.value.toUpperCase().slice(0, 2))} placeholder="SP" style={inputStyle}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                </Input>
               </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p style={{ fontSize: 13, color: '#f87171', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8 }}>{error}</p>}
 
-              <button
-                type="button"
-                onClick={goNext}
-                className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-              >
-                Próximo
-                <ArrowRight className="w-4 h-4" />
+              <button type="button" onClick={goNext} style={{ marginTop: 4, padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, color: '#0D0D0B', fontWeight: 700, fontSize: 14, boxShadow: `0 8px 24px ${G.goldGlow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                Próximo <ArrowRight style={{ width: 16, height: 16 }} />
               </button>
             </div>
           )}
 
           {/* ── STEP 2 ── */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <h1 className="text-xl font-semibold text-foreground mb-4">Responsável pela conta</h1>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h1 style={{ fontSize: 18, fontWeight: 700, color: G.white, marginBottom: 4 }}>Responsável pela conta</h1>
 
-              {/* Nome */}
-              <Field label="Seu nome">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => set('name', e.target.value)}
-                  placeholder="João Silva"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Seu nome">
+                <input type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="João Silva" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* E-mail */}
-              <Field label="Seu e-mail">
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  placeholder="seu@email.com"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Seu e-mail">
+                <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* Telefone */}
-              <Field label="Seu telefone (opcional)">
-                <input
-                  type="text"
-                  value={form.phone}
-                  onChange={(e) => set('phone', maskPhone(e.target.value))}
-                  placeholder="(11) 99999-9999"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Telefone (opcional)">
+                <input type="text" value={form.phone} onChange={e => set('phone', maskPhone(e.target.value))} placeholder="(11) 99999-9999" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {/* Senha */}
-              <Field label="Senha">
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={(e) => set('password', e.target.value)}
-                    placeholder="••••••••"
-                    className={`${inputCls} pr-10`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <Input label="Senha">
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} placeholder="••••••••" style={{ ...inputStyle, paddingRight: 42 }}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: G.muted, display: 'flex' }}>
+                    {showPassword ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
                   </button>
                 </div>
-              </Field>
+              </Input>
 
-              {/* Confirmar senha */}
-              <Field label="Confirmar senha">
-                <input
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(e) => set('confirmPassword', e.target.value)}
-                  placeholder="••••••••"
-                  className={inputCls}
-                />
-              </Field>
+              <Input label="Confirmar senha">
+                <input type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} placeholder="••••••••" style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+              </Input>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p style={{ fontSize: 13, color: '#f87171', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8 }}>{error}</p>}
 
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setStep(1); setError(''); }}
-                  className="flex-1 py-2.5 rounded-lg border border-border text-foreground font-medium text-sm hover:bg-accent transition-colors flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button type="button" onClick={() => { setStep(1); setError(''); }} style={{ flex: 1, padding: '12px', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: `1px solid ${G.goldBorder}`, color: G.muted, fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <ArrowLeft style={{ width: 16, height: 16 }} /> Voltar
                 </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {submitting ? 'Criando conta...' : 'Criar conta'}
+                <button type="submit" disabled={submitting} style={{ flex: 1, padding: '12px', borderRadius: 10, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, color: '#0D0D0B', fontWeight: 700, fontSize: 14, opacity: submitting ? 0.7 : 1 }}>
+                  {submitting ? 'Criando...' : 'Criar conta'}
                 </button>
               </div>
             </form>
           )}
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
+        <p style={{ textAlign: 'center', fontSize: 13, color: G.muted, marginTop: 24 }}>
           Já tem uma conta?{' '}
-          <Link href="/login" className="text-primary hover:underline">
-            Entrar
-          </Link>
+          <Link href="/login" style={{ color: G.gold, textDecoration: 'none', fontWeight: 600 }}>Entrar</Link>
         </p>
       </div>
-    </div>
-  );
-}
-
-// ─── tiny helpers ─────────────────────────────────────────────────────────────
-
-const inputCls =
-  'w-full px-3 py-2.5 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-foreground mb-1.5">{label}</label>
-      {children}
     </div>
   );
 }

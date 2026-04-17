@@ -55,21 +55,24 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 
-  /* Grain texture on body */
+  /* Grain texture — dark mode only (on light bg the white noise is visible as stripes) */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: 9999;
     pointer-events: none;
-    opacity: 0.028;
+    opacity: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-size: 200px 200px;
   }
+  .dark body::before {
+    opacity: 0.028;
+  }
 
-  /* Serif titles utility */
+  /* Display font utility — Inter across the whole app */
   .font-display {
-    font-family: 'Playfair Display', 'Georgia', serif;
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   }
 
   /* Glassmorphism card */
