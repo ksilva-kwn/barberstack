@@ -10,6 +10,7 @@ interface CreateSubAccountDto {
   address?: string;
   city?: string;
   state?: string;
+  postalCode?: string;
 }
 
 /**
@@ -27,7 +28,7 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
     address: dto.address,
     city: dto.city,
     state: dto.state,
-    postalCode: undefined,
+    postalCode: dto.postalCode?.replace(/\D/g, ''),
     accountType: 'EMPRESA',
   });
 
