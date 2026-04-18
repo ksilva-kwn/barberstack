@@ -116,6 +116,9 @@ export const barbershopApi = {
   updatePortal: (barbershopId: string, data: { slug?: string; coverUrl?: string | null; logoUrl?: string | null; description?: string | null }) =>
     api.put<BarbershopPortal>(`/api/barbershops/${barbershopId}/portal`, data),
 
+  getSettings: (barbershopId: string) =>
+    api.get<BarbershopSettings>(`/api/barbershops/${barbershopId}/settings`),
+
   updateSettings: (barbershopId: string, data: Partial<Omit<BarbershopSettings, 'id' | 'document'>>) =>
     api.put<BarbershopSettings>(`/api/barbershops/${barbershopId}/settings`, data),
 

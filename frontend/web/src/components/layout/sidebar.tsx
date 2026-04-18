@@ -33,6 +33,7 @@ import {
   PackagePlus,
   Coffee,
   CreditCard,
+  ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -106,6 +107,7 @@ const navItems: NavItem[] = [
     children: [
       { label: 'Planos & Assinantes', href: '/assinaturas',            icon: <CreditCard className="w-3.5 h-3.5" /> },
       { label: 'Relatórios',          href: '/assinaturas/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Saque PIX',           href: '/assinaturas/saque',      icon: <ArrowUpRight className="w-3.5 h-3.5" /> },
     ],
   },
   {
