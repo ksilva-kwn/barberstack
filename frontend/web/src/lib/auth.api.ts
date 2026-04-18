@@ -23,6 +23,8 @@ export interface RegisterBarbershopPayload {
   address?: string;
   city?: string;
   state?: string;
+  zipCode?: string;
+  companyType?: string;
 }
 
 export const authApi = {

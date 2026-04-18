@@ -61,11 +61,13 @@ interface FormData {
   barbershopName: string; document: string; barbershopPhone: string; barbershopEmail: string;
   cep: string; address: string; city: string; state: string;
   name: string; email: string; password: string; confirmPassword: string; phone: string;
+  companyType: string;
 }
 const empty: FormData = {
   barbershopName: '', document: '', barbershopPhone: '', barbershopEmail: '',
   cep: '', address: '', city: '', state: '',
   name: '', email: '', password: '', confirmPassword: '', phone: '',
+  companyType: 'INDIVIDUAL',
 };
 
 export default function RegisterPage() {
@@ -76,23 +78,37 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLocked, setCnpjLocked] = useState(false);
+  const [cepLocked, setCepLocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const set = (field: keyof FormData, value: string) => setForm(f => ({ ...f, [field]: value }));
 
+  const mapCompanyType = (porte: string): string => {
+    const p = (porte ?? '').toUpperCase();
+    if (p.includes('MEI')) return 'MEI';
+    if (p.includes('MICRO') || p.includes('EPP') || p.includes('PEQUENO')) return 'LIMITED';
+    return 'LIMITED';
+  };
+
   const handleCNPJ = async (raw: string) => {
     const masked = maskCNPJ(raw); set('document', masked);
     const digits = masked.replace(/\D/g, '');
-    if (digits.length !== 14) return;
+    if (digits.length !== 14) { setCnpjLocked(false); return; }
     setCnpjLoading(true);
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
       if (!res.ok) return;
       const data = await res.json();
-      set('barbershopName', data.razao_social ?? '');
-      set('barbershopPhone', maskPhone(data.ddd_telefone_1 ?? ''));
-      set('barbershopEmail', data.email ?? '');
+      setForm(f => ({
+        ...f,
+        barbershopName:  data.razao_social ?? f.barbershopName,
+        barbershopPhone: maskPhone(data.ddd_telefone_1 ?? f.barbershopPhone),
+        barbershopEmail: data.email ?? f.barbershopEmail,
+        companyType:     mapCompanyType(data.porte ?? ''),
+      }));
+      setCnpjLocked(true);
       if (data.cep) handleCEP(data.cep);
     } catch { /* ignore */ } finally { setCnpjLoading(false); }
   };
@@ -100,16 +116,20 @@ export default function RegisterPage() {
   const handleCEP = async (raw: string) => {
     const masked = maskCEP(raw); set('cep', masked);
     const digits = masked.replace(/\D/g, '');
-    if (digits.length !== 8) return;
+    if (digits.length !== 8) { setCepLocked(false); return; }
     setCepLoading(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       if (!res.ok) return;
       const data = await res.json();
       if (data.erro) return;
-      set('address', `${data.logradouro ?? ''}${data.bairro ? ', ' + data.bairro : ''}`);
-      set('city', data.localidade ?? '');
-      set('state', data.uf ?? '');
+      setForm(f => ({
+        ...f,
+        address: `${data.logradouro ?? ''}${data.bairro ? ', ' + data.bairro : ''}`,
+        city:    data.localidade ?? '',
+        state:   data.uf ?? '',
+      }));
+      setCepLocked(true);
     } catch { /* ignore */ } finally { setCepLoading(false); }
   };
 
@@ -146,6 +166,8 @@ export default function RegisterPage() {
       barbershopPhone: form.barbershopPhone.replace(/\D/g, ''),
       barbershopEmail: form.barbershopEmail,
       address: form.address || undefined, city: form.city || undefined, state: form.state || undefined,
+      zipCode: form.cep.replace(/\D/g, '') || undefined,
+      companyType: form.companyType || undefined,
     };
     try {
       const { data } = await authApi.registerBarbershop(payload);
@@ -203,13 +225,15 @@ export default function RegisterPage() {
               </Input>
 
               <Input label="Telefone">
-                <input type="text" value={form.barbershopPhone} onChange={e => set('barbershopPhone', maskPhone(e.target.value))} placeholder="(11) 99999-9999" style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                <input type="text" value={form.barbershopPhone} readOnly={cnpjLocked} onChange={e => !cnpjLocked && set('barbershopPhone', maskPhone(e.target.value))} placeholder="(11) 99999-9999"
+                  style={{ ...inputStyle, ...(cnpjLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                  onFocus={e => !cnpjLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
               </Input>
 
               <Input label="E-mail da barbearia">
-                <input type="email" value={form.barbershopEmail} onChange={e => set('barbershopEmail', e.target.value)} placeholder="contato@barbearia.com" style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                <input type="email" value={form.barbershopEmail} readOnly={cnpjLocked} onChange={e => !cnpjLocked && set('barbershopEmail', e.target.value)} placeholder="contato@barbearia.com"
+                  style={{ ...inputStyle, ...(cnpjLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                  onFocus={e => !cnpjLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
               </Input>
 
               <Input label="CEP">
@@ -221,18 +245,21 @@ export default function RegisterPage() {
               </Input>
 
               <Input label="Endereço">
-                <input type="text" value={form.address} onChange={e => set('address', e.target.value)} placeholder="Rua, número, bairro" style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                <input type="text" value={form.address} readOnly={cepLocked} onChange={e => !cepLocked && set('address', e.target.value)} placeholder="Rua, número, bairro"
+                  style={{ ...inputStyle, ...(cepLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                  onFocus={e => !cepLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
               </Input>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
                 <Input label="Cidade">
-                  <input type="text" value={form.city} onChange={e => set('city', e.target.value)} placeholder="São Paulo" style={inputStyle}
-                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  <input type="text" value={form.city} readOnly={cepLocked} onChange={e => !cepLocked && set('city', e.target.value)} placeholder="São Paulo"
+                    style={{ ...inputStyle, ...(cepLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                    onFocus={e => !cepLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
                 </Input>
                 <Input label="UF">
-                  <input type="text" value={form.state} onChange={e => set('state', e.target.value.toUpperCase().slice(0, 2))} placeholder="SP" style={inputStyle}
-                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  <input type="text" value={form.state} readOnly={cepLocked} onChange={e => !cepLocked && set('state', e.target.value.toUpperCase().slice(0, 2))} placeholder="SP"
+                    style={{ ...inputStyle, ...(cepLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                    onFocus={e => !cepLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
                 </Input>
               </div>
 

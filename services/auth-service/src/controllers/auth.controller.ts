@@ -159,6 +159,7 @@ export class AuthController {
       city:            z.string().optional(),
       state:           z.string().optional(),
       zipCode:         z.string().optional(),
+      companyType:     z.string().optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -169,7 +170,7 @@ export class AuthController {
     const {
       name, email, password, phone,
       barbershopName, document, barbershopPhone, barbershopEmail,
-      address, city, state, zipCode,
+      address, city, state, zipCode, companyType,
     } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -213,7 +214,7 @@ export class AuthController {
         email: barbershopEmail,
         cpfCnpj: document,
         phone: barbershopPhone,
-        address, city, state, postalCode: zipCode,
+        address, city, state, postalCode: zipCode, companyType,
       }),
     }).catch((err: Error) => console.error('[auth] Erro ao criar subconta Asaas:', err.message));
 
