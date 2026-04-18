@@ -52,6 +52,13 @@ app.use('/api/asaas-webhook', createProxyMiddleware({
   pathRewrite: () => '/payments/webhook/asaas',
 }));
 
+// Validação de saque Asaas — público (Asaas chama antes de processar cada transfer)
+app.use('/api/asaas-transfer-validation', createProxyMiddleware({
+  target: process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005',
+  changeOrigin: true,
+  pathRewrite: () => '/payments/webhook/transfer-validation',
+}));
+
 // Rotas públicas do portal do cliente (sem auth)
 app.use('/api/public/shop', createProxyMiddleware({
   target: process.env.BARBERSHOP_SERVICE_URL || 'http://barbershop-service:3002',
