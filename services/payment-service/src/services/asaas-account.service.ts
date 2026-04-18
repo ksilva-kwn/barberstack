@@ -12,6 +12,7 @@ interface CreateSubAccountDto {
   state?: string;
   postalCode?: string;
   companyType?: string;
+  incomeValue?: number;
 }
 
 /**
@@ -32,6 +33,7 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
     postalCode: dto.postalCode?.replace(/\D/g, ''),
     accountType: 'EMPRESA',
     companyType: dto.companyType ?? 'INDIVIDUAL',
+    incomeValue: dto.incomeValue ?? 5000,
   });
 
   const { id: asaasAccountId, apiKey: asaasApiKey, walletId: asaasWalletId } = response.data;

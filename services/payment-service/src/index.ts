@@ -23,9 +23,9 @@ app.use('/payments/webhook', webhookRouter);
 // ─── Subconta — INTERNAL (service-to-service, sem tenant header) ─────────────
 // Chamado pelo auth-service após criar uma nova barbearia.
 app.post('/payments/internal/subaccount', async (req: Request, res: Response) => {
-  const { barbershopId, name, email, cpfCnpj, phone, address, city, state, postalCode, companyType } = req.body as {
+  const { barbershopId, name, email, cpfCnpj, phone, address, city, state, postalCode, companyType, incomeValue } = req.body as {
     barbershopId: string; name: string; email: string; cpfCnpj: string;
-    phone: string; address?: string; city?: string; state?: string; postalCode?: string; companyType?: string;
+    phone: string; address?: string; city?: string; state?: string; postalCode?: string; companyType?: string; incomeValue?: number;
   };
 
   if (!barbershopId || !name || !email || !cpfCnpj || !phone) {
@@ -33,7 +33,7 @@ app.post('/payments/internal/subaccount', async (req: Request, res: Response) =>
   }
 
   try {
-    const result = await createAsaasSubAccount({ barbershopId, name, email, cpfCnpj, phone, address, city, state, postalCode, companyType });
+    const result = await createAsaasSubAccount({ barbershopId, name, email, cpfCnpj, phone, address, city, state, postalCode, companyType, incomeValue });
     return res.status(201).json(result);
   } catch (err: any) {
     console.error('[payment/internal/subaccount] Erro Asaas:', err?.response?.data ?? err.message);
