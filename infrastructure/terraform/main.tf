@@ -140,3 +140,27 @@ resource "aws_ssm_parameter" "allowed_origins" {
     ignore_changes = [value]
   }
 }
+
+# ASAAS_ENV — 'sandbox' ou 'production'
+resource "aws_ssm_parameter" "asaas_env" {
+  name        = "/barberstack/${var.environment}/ASAAS_ENV"
+  type        = "String"
+  value       = "sandbox"
+  description = "Barberstack — Ambiente Asaas: 'sandbox' ou 'production'"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# ASAAS_TRANSFER_VALIDATION_TOKEN — gere com: openssl rand -hex 32
+resource "aws_ssm_parameter" "asaas_transfer_validation_token" {
+  name        = "/barberstack/${var.environment}/ASAAS_TRANSFER_VALIDATION_TOKEN"
+  type        = "SecureString"
+  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
+  description = "Barberstack — Token secreto para validar webhooks de saque Asaas | Gere com: openssl rand -hex 32"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

@@ -1,11 +1,12 @@
 # =============================================================================
-# SSM Parameter Store — Barberstack
+# SSM Parameter Store — Barberstack (módulo core)
 #
-# Terraform cria todos os parâmetros automaticamente na primeira execução.
 # Parâmetros auto-gerados: DB_PASSWORD, JWT_SECRET
-# Placeholders (atualizar no console SSM):
-#   ASAAS_MASTER_API_KEY, ASAAS_TRANSFER_VALIDATION_TOKEN,
-#   GITHUB_TOKEN, DATABASE_URL, WHATSAPP_API_TOKEN, WHATSAPP_API_URL
+# Placeholders (atualizar no console SSM): ASAAS_MASTER_API_KEY, GITHUB_TOKEN
+#
+# Demais parâmetros (DATABASE_URL, JWT_EXPIRES_IN, ALLOWED_ORIGINS,
+# ASAAS_ENV, ASAAS_TRANSFER_VALIDATION_TOKEN, WHATSAPP_*) estão
+# definidos como recursos root em main.tf.
 #
 # lifecycle { ignore_changes = [value] } garante que edições feitas no console
 # SSM não sejam sobrescritas em applies futuros do Terraform.
@@ -79,107 +80,6 @@ resource "aws_ssm_parameter" "github_token" {
   }
 
   tags = { Name = "${var.project}-${var.environment}-github-token" }
-}
-
-# ─── Database ─────────────────────────────────────────────────────────────────
-
-resource "aws_ssm_parameter" "database_url" {
-  name        = "${local.prefix}/DATABASE_URL"
-  type        = "SecureString"
-  value       = "PLACEHOLDER_postgresql://barberstack:SENHA@HOST:5432/barberstack"
-  description = "Barberstack — Connection string PostgreSQL | Formato: postgresql://user:pass@host:5432/db"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-database-url" }
-}
-
-# ─── JWT ──────────────────────────────────────────────────────────────────────
-
-resource "aws_ssm_parameter" "jwt_expires_in" {
-  name        = "${local.prefix}/JWT_EXPIRES_IN"
-  type        = "String"
-  value       = "7d"
-  description = "Barberstack — Expiração dos tokens JWT (ex: 7d, 24h)"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-jwt-expires-in" }
-}
-
-# ─── API Gateway ──────────────────────────────────────────────────────────────
-
-resource "aws_ssm_parameter" "allowed_origins" {
-  name        = "${local.prefix}/ALLOWED_ORIGINS"
-  type        = "String"
-  value       = "https://barberstack.kwnsilva.com.br"
-  description = "Barberstack — CORS origens permitidas (separadas por vírgula)"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-allowed-origins" }
-}
-
-# ─── Asaas ────────────────────────────────────────────────────────────────────
-
-resource "aws_ssm_parameter" "asaas_env" {
-  name        = "${local.prefix}/ASAAS_ENV"
-  type        = "String"
-  value       = "sandbox"
-  description = "Barberstack — Ambiente Asaas: 'sandbox' ou 'production'"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-asaas-env" }
-}
-
-resource "aws_ssm_parameter" "asaas_transfer_validation_token" {
-  name        = "${local.prefix}/ASAAS_TRANSFER_VALIDATION_TOKEN"
-  type        = "SecureString"
-  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
-  description = "Barberstack — Token secreto para validar webhooks de saque Asaas | Gere com: openssl rand -hex 32"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-asaas-transfer-token" }
-}
-
-# ─── WhatsApp / Notificações ──────────────────────────────────────────────────
-
-resource "aws_ssm_parameter" "whatsapp_api_url" {
-  name        = "${local.prefix}/WHATSAPP_API_URL"
-  type        = "String"
-  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
-  description = "Barberstack — URL da API de WhatsApp (ex: Evolution API)"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-whatsapp-url" }
-}
-
-resource "aws_ssm_parameter" "whatsapp_api_token" {
-  name        = "${local.prefix}/WHATSAPP_API_TOKEN"
-  type        = "SecureString"
-  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
-  description = "Barberstack — Token de autenticação da API de WhatsApp"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = { Name = "${var.project}-${var.environment}-whatsapp-token" }
 }
 
 # ─── Leitura dos valores (para passar ao EC2/RDS/Amplify) ─────────────────────
