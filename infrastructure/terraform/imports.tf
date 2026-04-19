@@ -14,7 +14,3 @@ import {
   id = "/barberstack/production/ASAAS_ENV"
 }
 
-import {
-  to = aws_ssm_parameter.asaas_transfer_validation_token
-  id = "/barberstack/production/ASAAS_TRANSFER_VALIDATION_TOKEN"
-}
