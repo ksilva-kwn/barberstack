@@ -243,15 +243,15 @@ export class AuthController {
   };
 
   deleteAccount = async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token não fornecido' });
+    // Headers injetados pelo authMiddleware do API Gateway
+    const userId       = req.headers['x-user-id'] as string;
+    const barbershopId = req.headers['x-barbershop-id'] as string;
+
+    if (!userId || !barbershopId) {
+      return res.status(401).json({ error: 'Não autorizado' });
     }
+
     try {
-      const token = authHeader.split(' ')[1];
-      const payload = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string; barbershopId?: string };
-      const userId = payload.sub;
-      const barbershopId = payload.barbershopId;
 
       if (!barbershopId) {
         return res.status(400).json({ error: 'Conta sem barbearia vinculada' });
@@ -279,12 +279,13 @@ export class AuthController {
       // Deleta barbearia (cascade apaga usuários, assinaturas, agendamentos, etc.)
       await prisma.barbershop.delete({ where: { id: barbershopId } });
 
-      // Deleta usuário se ainda existir (ex: SUPER_ADMIN sem barbershop)
+      // Deleta usuário se ainda existir
       await prisma.user.deleteMany({ where: { id: userId } });
 
       return res.json({ ok: true, asaasSkipped });
-    } catch {
-      return res.status(401).json({ error: 'Token inválido' });
+    } catch (err: any) {
+      console.error('[auth/deleteAccount]', err?.message);
+      return res.status(500).json({ error: 'Erro ao excluir conta. Tente novamente.' });
     }
   };
 

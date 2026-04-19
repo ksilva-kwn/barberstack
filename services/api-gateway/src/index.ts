@@ -129,6 +129,13 @@ app.use('/api/payments', createProxyMiddleware({
   pathRewrite: (path) => `/payments${path}`,
 }));
 
+// Exclusão de conta — protegida, roteada para auth-service
+app.use('/api/account', createProxyMiddleware({
+  target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
+  changeOrigin: true,
+  pathRewrite: () => '/auth/account',
+}));
+
 app.use('/api/notifications', createProxyMiddleware({
   target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3006',
   changeOrigin: true,
