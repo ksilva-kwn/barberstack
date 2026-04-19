@@ -24,4 +24,7 @@ export const paymentApi = {
 
   onboardingUrl: () =>
     api.get<{ url: string | null }>('/api/payments/onboarding-url'),
+
+  activate: () =>
+    api.post<{ onboardingUrl: string | null; alreadyActivated: boolean }>('/api/payments/activate'),
 };

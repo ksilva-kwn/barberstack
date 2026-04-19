@@ -107,6 +107,33 @@ barbershopRouter.put('/:id/portal', async (req: Request, res: Response) => {
   return res.json(shop);
 });
 
+// Buscar configurações da barbearia
+barbershopRouter.get('/:id/settings', async (req: Request, res: Response) => {
+  const shop = await prisma.barbershop.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, name: true, phone: true, email: true, document: true, address: true, city: true, state: true, zipCode: true, companyType: true, incomeValue: true, asaasAccountId: true },
+  });
+  if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
+  return res.json({ ...shop, asaasActivated: !!shop.asaasAccountId });
+});
+
+// Atualizar dados financeiros (faturamento, tipo empresa) — usado no onboarding etapa 2
+barbershopRouter.patch('/:id/financial', async (req: Request, res: Response) => {
+  const schema = z.object({
+    incomeValue: z.number().positive(),
+    companyType: z.string().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const shop = await prisma.barbershop.update({
+    where: { id: req.params.id },
+    data: parsed.data,
+    select: { id: true, incomeValue: true, companyType: true },
+  });
+  return res.json(shop);
+});
+
 // Atualizar dados gerais da barbearia (nome, contato, endereço)
 barbershopRouter.put('/:id/settings', async (req: Request, res: Response) => {
   const schema = z.object({

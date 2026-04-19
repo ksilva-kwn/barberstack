@@ -172,7 +172,7 @@ export default function RegisterPage() {
     try {
       const { data } = await authApi.registerBarbershop(payload);
       setAuth(data.token, data.refreshToken, data.user);
-      router.push('/dashboard');
+      router.push('/register/financeiro');
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'Erro ao criar conta. Tente novamente.');
     } finally { setSubmitting(false); }

@@ -160,6 +160,7 @@ export class AuthController {
       state:           z.string().optional(),
       zipCode:         z.string().optional(),
       companyType:     z.string().optional(),
+      incomeValue:     z.number().positive().optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -170,7 +171,7 @@ export class AuthController {
     const {
       name, email, password, phone,
       barbershopName, document, barbershopPhone, barbershopEmail,
-      address, city, state, zipCode, companyType,
+      address, city, state, zipCode, companyType, incomeValue,
     } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -192,7 +193,12 @@ export class AuthController {
 
     const { user, barbershop } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const barbershop = await tx.barbershop.create({
-        data: { name: barbershopName, document, phone: barbershopPhone, email: barbershopEmail, address, city, state, slug },
+        data: {
+          name: barbershopName, document, phone: barbershopPhone, email: barbershopEmail,
+          address, city, state, zipCode, companyType,
+          incomeValue: incomeValue ? incomeValue : undefined,
+          slug,
+        },
       });
 
       const passwordHash = await bcrypt.hash(password, 12);
@@ -203,20 +209,7 @@ export class AuthController {
       return { user, barbershop };
     });
 
-    // Fire-and-forget: cria subconta Asaas em background (não bloqueia o registro)
-    const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005';
-    fetch(`${PAYMENT_SERVICE_URL}/payments/internal/subaccount`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        barbershopId: barbershop.id,
-        name: barbershopName,
-        email: barbershopEmail,
-        cpfCnpj: document,
-        phone: barbershopPhone,
-        address, city, state, postalCode: zipCode, companyType,
-      }),
-    }).catch((err: Error) => console.error('[auth] Erro ao criar subconta Asaas:', err.message));
+    // Subconta Asaas criada manualmente pelo usuário dentro do app (Assinaturas → Ativar)
 
     const token = this.generateToken({ ...user, barbershopId: barbershop.id });
     const refreshToken = this.generateRefreshToken(user.id);

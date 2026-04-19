@@ -16,6 +16,7 @@ import {
   getBarbershopBalance,
   requestPixTransfer,
   getOnboardingUrl,
+  activateAsaasSubAccount,
 } from '../services/asaas-account.service';
 
 export const paymentsRouter: Router = Router();
@@ -23,6 +24,18 @@ export const paymentsRouter: Router = Router();
 // ─── Saúde ───────────────────────────────────────────────────────────────────
 paymentsRouter.get('/health', (_req: Request, res: Response) => {
   return res.json({ status: 'ok', service: 'payment-service' });
+});
+
+// ─── Ativar subconta Asaas (chamado pelo usuário dentro do app) ───────────────
+paymentsRouter.post('/activate', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  try {
+    const result = await activateAsaasSubAccount(barbershopId);
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[payment/activate] Erro:', err?.response?.data ?? err.message);
+    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+  }
 });
 
 // ─── Link de onboarding Asaas ────────────────────────────────────────────────

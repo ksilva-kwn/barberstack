@@ -48,6 +48,39 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
 }
 
 /**
+ * Cria a subconta Asaas usando os dados já salvos no banco.
+ * Chamado quando o usuário clica em "Ativar cobranças" dentro do app.
+ */
+export async function activateAsaasSubAccount(barbershopId: string) {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+
+  if (shop.asaasAccountId) {
+    const onboardingUrl = await getOnboardingUrl(barbershopId);
+    return { alreadyActivated: true, onboardingUrl };
+  }
+
+  if (!shop.document) throw new Error('CNPJ não cadastrado');
+  if (!shop.phone)    throw new Error('Telefone não cadastrado');
+
+  const result = await createAsaasSubAccount({
+    barbershopId,
+    name:        shop.name,
+    email:       shop.email,
+    cpfCnpj:     shop.document,
+    phone:       shop.phone,
+    address:     shop.address    ?? undefined,
+    city:        shop.city       ?? undefined,
+    state:       shop.state      ?? undefined,
+    postalCode:  shop.zipCode    ?? undefined,
+    companyType: shop.companyType ?? 'INDIVIDUAL',
+    incomeValue: shop.incomeValue ? Number(shop.incomeValue) : 5000,
+  });
+
+  const onboardingUrl = await getOnboardingUrl(barbershopId);
+  return { ...result, alreadyActivated: false, onboardingUrl };
+}
+
+/**
  * Retorna o link de onboarding White-Label do Asaas para a subconta completar o cadastro.
  */
 export async function getOnboardingUrl(barbershopId: string): Promise<string | null> {

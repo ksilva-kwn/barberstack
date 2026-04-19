@@ -100,6 +100,9 @@ export interface BarbershopSettings {
   city: string | null;
   state: string | null;
   zipCode: string | null;
+  companyType: string | null;
+  incomeValue: number | null;
+  asaasActivated: boolean;
 }
 
 export interface BarbershopPhoto {
@@ -121,6 +124,9 @@ export const barbershopApi = {
 
   updateSettings: (barbershopId: string, data: Partial<Omit<BarbershopSettings, 'id' | 'document'>>) =>
     api.put<BarbershopSettings>(`/api/barbershops/${barbershopId}/settings`, data),
+
+  updateFinancial: (barbershopId: string, data: { incomeValue: number; companyType?: string }) =>
+    api.patch(`/api/barbershops/${barbershopId}/financial`, data),
 
   photos: (barbershopId: string) =>
     api.get<BarbershopPhoto[]>(`/api/barbershops/${barbershopId}/photos`),

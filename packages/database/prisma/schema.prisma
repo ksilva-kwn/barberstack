@@ -111,6 +111,10 @@ model Barbershop {
   saasPlan   SaasPlan @default(BRONZE)
   saasSub    SaasSubscription?
 
+  // Dados financeiros (usados para criar subconta Asaas)
+  companyType  String?          // MEI | LIMITED | INDIVIDUAL
+  incomeValue  Decimal?         @db.Decimal(10, 2) // Faturamento mensal estimado
+
   // Integração Asaas (subconta white-label)
   asaasAccountId  String? @unique // ID da subconta no Asaas
   asaasApiKey     String? // API Key da subconta

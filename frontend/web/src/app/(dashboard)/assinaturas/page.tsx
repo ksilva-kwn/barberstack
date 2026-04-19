@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Repeat2, Users, CreditCard, AlertTriangle, Loader2, X,
-         ToggleLeft, ToggleRight, ExternalLink, Pencil, Ban, Check } from 'lucide-react';
+         ToggleLeft, ToggleRight, ExternalLink, Pencil, Ban, Check, Zap } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { subscriptionApi, ClientPlan, ClientSubscription, SubStatus } from '@/lib/subscription.api';
 import { barbershopApi } from '@/lib/barbershop.api';
+import { paymentApi } from '@/lib/payment.api';
+import { useAuth } from '@/hooks/use-auth';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const inputCls = 'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
@@ -470,8 +472,91 @@ function SubscribersTab() {
   );
 }
 
+// ─── Card de ativação do módulo de cobranças ──────────────────────────────────
+function ActivationCard() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+
+  const handleActivate = async () => {
+    setLoading(true); setError('');
+    try {
+      const { data } = await paymentApi.activate();
+      if (data.onboardingUrl) {
+        window.open(data.onboardingUrl, '_blank');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'Erro ao ativar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Assinaturas</h1>
+        <p className="text-muted-foreground text-sm">Planos recorrentes para seus clientes</p>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-8 flex flex-col items-center text-center gap-5">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Zap className="w-8 h-8 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Ative o módulo de cobranças</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md">
+            Para criar planos e cobrar seus clientes automaticamente via cartão de crédito, você precisa ativar sua conta de pagamentos.
+            O processo leva menos de 5 minutos e é feito diretamente com o Asaas.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground w-full max-w-sm">
+          {['Cobranças automáticas via cartão', 'Link de pagamento para o cliente', 'Saque via PIX para seu CNPJ'].map(item => (
+            <div key={item} className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 text-destructive text-sm">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleActivate}
+          disabled={loading}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Ativando...</>
+          ) : (
+            <><Zap className="w-4 h-4" /> Ativar módulo de cobranças</>
+          )}
+        </button>
+
+        <p className="text-xs text-muted-foreground">
+          Você será redirecionado para o Asaas para completar o cadastro com seus documentos.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AssinaturasPage() {
+  const { user } = useAuth();
+  const barbershopId = user?.barbershopId ?? '';
+
+  const { data: settings, isLoading: loadingSettings } = useQuery({
+    queryKey: ['barbershop-settings', barbershopId],
+    queryFn: () => barbershopApi.getSettings(barbershopId).then(r => r.data),
+    enabled: !!barbershopId,
+  });
+
   const { data: reports } = useQuery({
     queryKey: ['subscription-reports'],
     queryFn: () => subscriptionApi.reports().then(r => r.data),
@@ -483,6 +568,18 @@ export default function AssinaturasPage() {
     { label: 'Inadimplentes',            value: reports?.defaultingCount ?? '—', icon: <AlertTriangle className="w-5 h-5" />, cls: 'text-yellow-500' },
     { label: 'Cancelamentos este mês',   value: reports?.canceledThisMonth ?? '—', icon: <Repeat2 className="w-5 h-5" />, cls: 'text-destructive' },
   ];
+
+  if (loadingSettings) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!settings?.asaasActivated) {
+    return <ActivationCard />;
+  }
 
   return (
     <div className="space-y-6">
