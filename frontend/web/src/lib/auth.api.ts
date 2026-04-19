@@ -42,4 +42,7 @@ export const authApi = {
 
   registerBarbershop: (payload: RegisterBarbershopPayload) =>
     api.post<LoginResponse>('/api/auth/register/barbershop', payload),
+
+  deleteAccount: () =>
+    api.delete<{ ok: boolean; asaasSkipped: boolean }>('/api/auth/account'),
 };

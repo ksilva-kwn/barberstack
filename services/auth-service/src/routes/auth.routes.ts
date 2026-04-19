@@ -10,3 +10,4 @@ authRouter.post('/refresh', ctrl.refreshToken);
 authRouter.post('/logout', ctrl.logout);
 authRouter.get('/me', ctrl.me);
 authRouter.post('/register/barbershop', ctrl.registerBarbershop);
+authRouter.delete('/account', ctrl.deleteAccount);

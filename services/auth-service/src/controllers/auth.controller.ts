@@ -242,6 +242,52 @@ export class AuthController {
     });
   };
 
+  deleteAccount = async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token não fornecido' });
+    }
+    try {
+      const token = authHeader.split(' ')[1];
+      const payload = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string; barbershopId?: string };
+      const userId = payload.sub;
+      const barbershopId = payload.barbershopId;
+
+      if (!barbershopId) {
+        return res.status(400).json({ error: 'Conta sem barbearia vinculada' });
+      }
+
+      // Verifica saldo Asaas antes de deletar subconta
+      let asaasSkipped = false;
+      const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3005';
+      try {
+        const balanceRes = await fetch(`${PAYMENT_SERVICE_URL}/payments/balance`, {
+          headers: { 'x-barbershop-id': barbershopId },
+        });
+        const balanceData = await balanceRes.json() as { balance: number; configured: boolean };
+        if (balanceData.configured && balanceData.balance > 0) {
+          asaasSkipped = true; // Tem saldo — não fecha subconta Asaas
+        } else if (balanceData.configured) {
+          // Sem saldo — fecha subconta Asaas (fire-and-forget)
+          fetch(`${PAYMENT_SERVICE_URL}/payments/internal/close-account`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'x-barbershop-id': barbershopId },
+          }).catch(() => {});
+        }
+      } catch { /* ignora erro do Asaas — deleta mesmo assim */ }
+
+      // Deleta barbearia (cascade apaga usuários, assinaturas, agendamentos, etc.)
+      await prisma.barbershop.delete({ where: { id: barbershopId } });
+
+      // Deleta usuário se ainda existir (ex: SUPER_ADMIN sem barbershop)
+      await prisma.user.deleteMany({ where: { id: userId } });
+
+      return res.json({ ok: true, asaasSkipped });
+    } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+  };
+
   private generateToken(user: { id: string; email: string; role: string; barbershopId?: string | null }) {
     return jwt.sign(
       {

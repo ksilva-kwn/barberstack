@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Loader2, Building2, Phone, Mail, MapPin, Hash, Clock } from 'lucide-react';
+import { Save, Loader2, Building2, Phone, Mail, MapPin, Hash, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { barbershopApi, BarbershopSettings, BusinessHoursEntry } from '@/lib/barbershop.api';
 import { useAuthStore } from '@/store/auth.store';
+import { authApi } from '@/lib/auth.api';
+import { useRouter } from 'next/navigation';
 
 const inputCls =
   'w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors';
@@ -45,12 +47,101 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Page ──────────────────────────────────────────────────────────────────
 
+// ─── Modal: Excluir Conta ───────────────────────────────────────────────────
+function DeleteAccountModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const { clearAuth, refreshToken } = useAuthStore();
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+
+  const handleDelete = async () => {
+    if (confirm !== 'CONFIRMAR') { setError('Digite CONFIRMAR para continuar'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await authApi.deleteAccount();
+      if (res.data.asaasSkipped) {
+        alert('Conta excluída. Atenção: sua subconta Asaas ainda tem saldo e não foi fechada. Acesse o painel do Asaas para realizar o saque.');
+      }
+      if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
+      clearAuth();
+      router.push('/');
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'Erro ao excluir conta. Tente novamente.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-card border border-destructive/30 rounded-xl p-6 w-full max-w-md shadow-xl space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Excluir conta permanentemente</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Esta ação não pode ser desfeita.</p>
+          </div>
+        </div>
+
+        <div className="text-sm text-muted-foreground space-y-1">
+          <p>Serão excluídos permanentemente:</p>
+          <ul className="list-disc list-inside space-y-0.5 text-xs pl-1">
+            <li>Todos os dados da barbearia</li>
+            <li>Agendamentos, clientes e profissionais</li>
+            <li>Planos e assinaturas</li>
+            <li>Conta de acesso</li>
+          </ul>
+          <p className="text-xs mt-2 text-yellow-500">Se houver saldo na conta Asaas, ela <strong>não</strong> será fechada — faça o saque antes de excluir.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            Digite <span className="font-mono font-bold text-foreground">CONFIRMAR</span> para continuar
+          </label>
+          <input
+            autoFocus
+            value={confirm}
+            onChange={e => { setConfirm(e.target.value); setError(''); }}
+            placeholder="CONFIRMAR"
+            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40 font-mono"
+          />
+        </div>
+
+        {error && (
+          <p className="text-xs text-destructive flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />{error}
+          </p>
+        )}
+
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading || confirm !== 'CONFIRMAR'}
+            className="flex-1 px-4 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            Excluir tudo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────
+
 export default function ConfiguracoesPage() {
   const { user } = useAuthStore();
   const barbershopId = user?.barbershopId ?? '';
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [hoursSaved, setHoursSaved] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [form, setForm] = useState({
     name: '', phone: '', email: '', address: '', city: '', state: '', zipCode: '',
@@ -291,6 +382,26 @@ export default function ConfiguracoesPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Zona de Perigo ────────────────────────────────────────────── */}
+      <div className="bg-card border border-destructive/20 rounded-xl p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <h3 className="font-medium text-destructive text-sm">Zona de perigo</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Excluir a conta remove permanentemente todos os dados da barbearia, clientes, agendamentos e assinaturas. Se houver saldo na conta Asaas, faça o saque antes.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/40 text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Excluir conta
+        </button>
+      </div>
+
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
     </div>
   );
 }
