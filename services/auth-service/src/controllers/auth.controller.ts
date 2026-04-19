@@ -174,9 +174,15 @@ export class AuthController {
       address, city, state, zipCode, companyType, incomeValue,
     } = parsed.data;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ error: 'Email já cadastrado' });
+    const [existingUser, existingShop] = await Promise.all([
+      prisma.user.findUnique({ where: { email } }),
+      prisma.barbershop.findUnique({ where: { document } }),
+    ]);
+    if (existingShop) {
+      return res.status(409).json({ error: 'CNPJ já cadastrado. Faça login ou recupere seu acesso.' });
+    }
+    if (existingUser) {
+      return res.status(409).json({ error: 'E-mail já cadastrado' });
     }
 
     const baseSlug = barbershopName
