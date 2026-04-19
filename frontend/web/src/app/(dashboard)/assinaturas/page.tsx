@@ -485,7 +485,12 @@ function ActivationCard() {
         window.open(data.onboardingUrl, '_blank');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Erro ao ativar. Tente novamente.');
+      const msg = err.response?.data?.error ?? '';
+      if (msg.includes('CNPJ_ALREADY_IN_USE')) {
+        setError('Este CNPJ já possui uma conta Asaas vinculada a outro cadastro. Entre em contato com o suporte.');
+      } else {
+        setError(msg || 'Erro ao ativar. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
