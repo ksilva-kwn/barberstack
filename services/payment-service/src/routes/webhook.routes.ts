@@ -12,13 +12,13 @@ import { prisma } from '@barberstack/database';
 export const webhookRouter: Router = Router();
 
 // ── Validação de saque — Asaas chama antes de processar cada transfer ────────
-// Responde { authorized: true } para aprovar ou { authorized: false } para bloquear.
+// Asaas espera { "status": "APPROVED" } ou { "status": "REFUSED", "refuseReason": "..." }
 webhookRouter.post('/transfer-validation', (req: Request, res: Response) => {
   const token = process.env.ASAAS_TRANSFER_VALIDATION_TOKEN;
   if (token && req.headers['asaas-access-token'] !== token) {
-    return res.status(200).json({ authorized: false, reason: 'Token inválido' });
+    return res.status(200).json({ status: 'REFUSED', refuseReason: 'Token inválido' });
   }
-  return res.status(200).json({ authorized: true });
+  return res.status(200).json({ status: 'APPROVED' });
 });
 
 webhookRouter.post('/asaas', async (req: Request, res: Response) => {
