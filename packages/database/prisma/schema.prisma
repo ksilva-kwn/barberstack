@@ -375,7 +375,7 @@ model AppointmentService {
   appointmentId String
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   serviceId     String
-  service       Service     @relation(fields: [serviceId], references: [id])
+  service       Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   price        Decimal @db.Decimal(10, 2) // Preço no momento do agendamento
   durationMins Int
@@ -415,7 +415,7 @@ model ClientPlanService {
   clientPlanId String
   clientPlan   ClientPlan @relation(fields: [clientPlanId], references: [id], onDelete: Cascade)
   serviceId    String
-  service      Service    @relation(fields: [serviceId], references: [id])
+  service      Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   limitPerCycle Int? // null = ilimitado no ciclo
 
