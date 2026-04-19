@@ -225,15 +225,15 @@ export default function RegisterPage() {
               </Input>
 
               <Input label="Telefone">
-                <input type="text" value={form.barbershopPhone} readOnly={cnpjLocked} onChange={e => !cnpjLocked && set('barbershopPhone', maskPhone(e.target.value))} placeholder="(11) 99999-9999"
-                  style={{ ...inputStyle, ...(cnpjLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
-                  onFocus={e => !cnpjLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                <input type="text" value={form.barbershopPhone} onChange={e => set('barbershopPhone', maskPhone(e.target.value))} placeholder="(11) 99999-9999"
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
               </Input>
 
               <Input label="E-mail da barbearia">
-                <input type="email" value={form.barbershopEmail} readOnly={cnpjLocked} onChange={e => !cnpjLocked && set('barbershopEmail', e.target.value)} placeholder="contato@barbearia.com"
-                  style={{ ...inputStyle, ...(cnpjLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
-                  onFocus={e => !cnpjLocked && (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                <input type="email" value={form.barbershopEmail} onChange={e => set('barbershopEmail', e.target.value)} placeholder="contato@barbearia.com"
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
               </Input>
 
               <Input label="CEP">
