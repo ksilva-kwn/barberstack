@@ -38,7 +38,6 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
 
   const { id: asaasAccountId, apiKey: asaasApiKey, walletId: asaasWalletId } = response.data;
 
-  // Persiste no banco
   await prisma.barbershop.update({
     where: { id: dto.barbershopId },
     data: { asaasAccountId, asaasApiKey, asaasWalletId },
@@ -62,19 +61,41 @@ export async function activateAsaasSubAccount(barbershopId: string) {
   if (!shop.document) throw new Error('CNPJ não cadastrado');
   if (!shop.phone)    throw new Error('Telefone não cadastrado');
 
-  const result = await createAsaasSubAccount({
-    barbershopId,
-    name:        shop.name,
-    email:       shop.email,
-    cpfCnpj:     shop.document,
-    phone:       shop.phone,
-    address:     shop.address    ?? undefined,
-    city:        shop.city       ?? undefined,
-    state:       shop.state      ?? undefined,
-    postalCode:  shop.zipCode    ?? undefined,
-    companyType: shop.companyType ?? 'INDIVIDUAL',
-    incomeValue: shop.incomeValue ? Number(shop.incomeValue) : 5000,
-  });
+  let result: { asaasAccountId: string; asaasApiKey: string | null; asaasWalletId: string | null };
+  try {
+    result = await createAsaasSubAccount({
+      barbershopId,
+      name:        shop.name,
+      email:       shop.email,
+      cpfCnpj:     shop.document,
+      phone:       shop.phone,
+      address:     shop.address    ?? undefined,
+      city:        shop.city       ?? undefined,
+      state:       shop.state      ?? undefined,
+      postalCode:  shop.zipCode    ?? undefined,
+      companyType: shop.companyType ?? 'INDIVIDUAL',
+      incomeValue: shop.incomeValue ? Number(shop.incomeValue) : 5000,
+    });
+  } catch (err: any) {
+    // CNPJ já cadastrado no Asaas — vincula a conta existente
+    const isCnpjInUse = JSON.stringify(err?.response?.data ?? '').toLowerCase().includes('cpfcnpj');
+    if (!isCnpjInUse) throw err;
+
+    const client = createMasterAsaasClient();
+    const listRes = await client.get(`/accounts?cpfCnpj=${shop.document.replace(/\D/g, '')}`);
+    const existing = listRes.data?.data?.[0];
+    if (!existing) throw new Error('CNPJ já em uso no Asaas mas não foi possível localizar a conta.');
+
+    await prisma.barbershop.update({
+      where: { id: barbershopId },
+      data: {
+        asaasAccountId: existing.id,
+        asaasWalletId:  existing.walletId ?? null,
+        // apiKey não é retornado na listagem — usuário precisa completar onboarding
+      },
+    });
+    result = { asaasAccountId: existing.id, asaasApiKey: null, asaasWalletId: existing.walletId ?? null };
+  }
 
   const onboardingUrl = await getOnboardingUrl(barbershopId);
   return { ...result, alreadyActivated: false, onboardingUrl };
