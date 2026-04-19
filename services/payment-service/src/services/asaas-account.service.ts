@@ -48,6 +48,22 @@ export async function createAsaasSubAccount(dto: CreateSubAccountDto) {
 }
 
 /**
+ * Retorna o link de onboarding White-Label do Asaas para a subconta completar o cadastro.
+ */
+export async function getOnboardingUrl(barbershopId: string): Promise<string | null> {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+  if (!shop.asaasAccountId) return null;
+
+  const client = createMasterAsaasClient();
+  try {
+    const response = await client.get(`/accounts/${shop.asaasAccountId}/onboardingUrl`);
+    return response.data?.onboardingUrl ?? response.data?.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Consulta o saldo disponível da subconta da barbearia no Asaas.
  */
 export async function getBarbershopBalance(barbershopId: string) {

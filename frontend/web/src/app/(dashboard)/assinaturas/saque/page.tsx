@@ -6,6 +6,7 @@ import { Wallet, ArrowUpRight, Loader2, AlertTriangle, CheckCircle2, Info } from
 import { paymentApi } from '@/lib/payment.api';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { useAuth } from '@/hooks/use-auth';
+import { ExternalLink } from 'lucide-react';
 
 const fmt = (v: number) =>
   `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -25,6 +26,12 @@ export default function SaquePage() {
   const { data: balanceData, isLoading: loadingBalance, refetch } = useQuery({
     queryKey: ['asaas-balance'],
     queryFn: () => paymentApi.balance().then(r => r.data),
+    retry: false,
+  });
+
+  const { data: onboardingData } = useQuery({
+    queryKey: ['asaas-onboarding-url'],
+    queryFn: () => paymentApi.onboardingUrl().then(r => r.data),
     retry: false,
   });
 
@@ -70,6 +77,26 @@ export default function SaquePage() {
       {loadingBalance ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : onboardingData?.url ? (
+        <div className="flex items-start gap-4 p-5 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+          <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-yellow-500">Cadastro financeiro incompleto</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Para ativar saques e receber pagamentos, complete o cadastro da sua conta Asaas.
+              O processo é feito diretamente na plataforma deles e leva menos de 5 minutos.
+            </p>
+            <a
+              href={onboardingData.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Completar cadastro financeiro
+            </a>
+          </div>
         </div>
       ) : !configured ? (
         <div className="flex items-start gap-3 p-5 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500">

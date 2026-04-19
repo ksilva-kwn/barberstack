@@ -15,6 +15,7 @@ import {
 import {
   getBarbershopBalance,
   requestPixTransfer,
+  getOnboardingUrl,
 } from '../services/asaas-account.service';
 
 export const paymentsRouter: Router = Router();
@@ -22,6 +23,17 @@ export const paymentsRouter: Router = Router();
 // ─── Saúde ───────────────────────────────────────────────────────────────────
 paymentsRouter.get('/health', (_req: Request, res: Response) => {
   return res.json({ status: 'ok', service: 'payment-service' });
+});
+
+// ─── Link de onboarding Asaas ────────────────────────────────────────────────
+paymentsRouter.get('/onboarding-url', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  try {
+    const url = await getOnboardingUrl(barbershopId);
+    return res.json({ url });
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 // ─── Saldo da subconta Asaas ─────────────────────────────────────────────────

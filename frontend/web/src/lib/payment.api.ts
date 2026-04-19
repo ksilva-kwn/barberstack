@@ -21,4 +21,7 @@ export const paymentApi = {
 
   transfer: (value: number, description?: string) =>
     api.post<AsaasTransferResult>('/api/payments/transfer', { value, description }),
+
+  onboardingUrl: () =>
+    api.get<{ url: string | null }>('/api/payments/onboarding-url'),
 };
