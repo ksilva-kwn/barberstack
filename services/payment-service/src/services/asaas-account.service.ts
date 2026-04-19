@@ -114,6 +114,20 @@ export async function getBarbershopBalance(barbershopId: string) {
 }
 
 /**
+ * Remove a subconta Asaas da barbearia (chamado apenas quando saldo = 0).
+ */
+export async function closeAsaasAccount(barbershopId: string) {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+
+  if (!shop.asaasAccountId) return { skipped: true, reason: 'no_account' };
+
+  const client = createMasterAsaasClient();
+  await client.delete(`/accounts/${shop.asaasAccountId}`);
+
+  return { removed: true };
+}
+
+/**
  * Solicita transferência via PIX usando o CNPJ da barbearia como chave.
  * O dinheiro é sacado da subconta Asaas direto para a conta bancária vinculada ao CNPJ.
  */

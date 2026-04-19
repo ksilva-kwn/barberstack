@@ -17,6 +17,7 @@ import {
   requestPixTransfer,
   getOnboardingUrl,
   activateAsaasSubAccount,
+  closeAsaasAccount,
 } from '../services/asaas-account.service';
 
 export const paymentsRouter: Router = Router();
@@ -74,6 +75,18 @@ paymentsRouter.post('/transfer', async (req: Request, res: Response) => {
     return res.json(result);
   } catch (err: any) {
     console.error('[payment/transfer] Erro Asaas:', err?.response?.data ?? err.message);
+    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+  }
+});
+
+// ─── [INTERNAL] Fechar subconta Asaas (balance = 0, conta excluída) ──────────
+paymentsRouter.delete('/internal/close-account', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  try {
+    const result = await closeAsaasAccount(barbershopId);
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[payment/close-account] Erro Asaas:', err?.response?.data ?? err.message);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
   }
 });
