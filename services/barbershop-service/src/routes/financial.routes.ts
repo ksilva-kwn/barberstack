@@ -341,6 +341,202 @@ financialRouter.delete('/commission-payments/:id', async (req: Request, res: Res
   return res.status(204).send();
 });
 
+// ─── Comissões sobre assinaturas ─────────────────────────────────────────────
+
+// Retorna o relatório de comissões de planos para o período, calculando pelo
+// modelo configurado na barbearia (FIXED | PROPORTIONAL | RANKING).
+financialRouter.get('/plan-commissions', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { from, to } = req.query as Record<string, string>;
+
+  const dateFrom = from ? new Date(from)              : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const dateTo   = to   ? new Date(to + 'T23:59:59') : new Date();
+
+  const shop = await prisma.barbershop.findUniqueOrThrow({
+    where: { id: barbershopId },
+    select: { planCommissionModel: true, planCommissionFixedValue: true },
+  });
+
+  // Atendimentos vinculados a planos no período (pagos)
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      paymentStatus: 'PAID',
+      scheduledAt: { gte: dateFrom, lte: dateTo },
+      clientSubscriptionId: { not: null },
+    },
+    include: {
+      professional: { include: { user: { select: { name: true } } } },
+      clientSubscription: { include: { clientPlan: { select: { price: true } } } },
+    },
+  });
+
+  // Receita total de assinaturas no período (pagamentos recebidos)
+  const paidSubs = await prisma.clientSubscription.findMany({
+    where: {
+      barbershopId,
+      status: { in: ['ACTIVE', 'DEFAULTING'] },
+      lastPaymentAt: { gte: dateFrom, lte: dateTo },
+    },
+    include: { clientPlan: { select: { price: true } } },
+  });
+  const totalRevenue = paidSubs.reduce((s, sub) => s + Number(sub.clientPlan.price), 0);
+
+  // Agrupa atendimentos por barbeiro
+  const byPro: Record<string, {
+    professionalId: string;
+    name: string;
+    totalSubscriptionServices: number;
+    commissionAmount: number;
+  }> = {};
+
+  for (const apt of appointments) {
+    const pid = apt.professionalId;
+    if (!byPro[pid]) {
+      byPro[pid] = {
+        professionalId: pid,
+        name: apt.professional.nickname ?? apt.professional.user.name,
+        totalSubscriptionServices: 0,
+        commissionAmount: 0,
+      };
+    }
+    byPro[pid].totalSubscriptionServices++;
+  }
+
+  const pros = Object.values(byPro);
+  const totalApts = pros.reduce((s, p) => s + p.totalSubscriptionServices, 0);
+  const model = shop.planCommissionModel;
+
+  if (model === 'FIXED') {
+    const fixedValue = Number(shop.planCommissionFixedValue ?? 0);
+    for (const p of pros) {
+      p.commissionAmount = p.totalSubscriptionServices * fixedValue;
+    }
+  } else if (model === 'PROPORTIONAL') {
+    for (const p of pros) {
+      p.commissionAmount = totalApts > 0 ? (p.totalSubscriptionServices / totalApts) * totalRevenue : 0;
+    }
+  } else if (model === 'RANKING') {
+    // Ordena por atendimentos desc e aplica pesos: 1º→3, 2º→2, demais→1
+    pros.sort((a, b) => b.totalSubscriptionServices - a.totalSubscriptionServices);
+    const weights = pros.map((_, i) => i === 0 ? 3 : i === 1 ? 2 : 1);
+    const totalWeight = weights.reduce((s, w) => s + w, 0);
+    for (let i = 0; i < pros.length; i++) {
+      pros[i].commissionAmount = totalWeight > 0 ? (weights[i] / totalWeight) * totalRevenue : 0;
+    }
+  }
+
+  return res.json({
+    model,
+    totalRevenue,
+    totalSubscriptionServices: totalApts,
+    professionals: pros,
+  });
+});
+
+// Configuração do modelo de comissão de planos
+financialRouter.get('/plan-commission-config', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const shop = await prisma.barbershop.findUniqueOrThrow({
+    where: { id: barbershopId },
+    select: { planCommissionModel: true, planCommissionFixedValue: true },
+  });
+  return res.json({
+    model: shop.planCommissionModel,
+    fixedValue: shop.planCommissionFixedValue ? Number(shop.planCommissionFixedValue) : null,
+  });
+});
+
+financialRouter.patch('/plan-commission-config', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { model, fixedValue } = req.body as { model: string; fixedValue?: number };
+
+  const allowed = ['FIXED', 'PROPORTIONAL', 'RANKING'];
+  if (!allowed.includes(model)) {
+    return res.status(400).json({ error: 'Modelo inválido. Use FIXED, PROPORTIONAL ou RANKING.' });
+  }
+  if (model === 'FIXED' && (!fixedValue || fixedValue <= 0)) {
+    return res.status(400).json({ error: 'Informe o valor fixo por atendimento.' });
+  }
+
+  const shop = await prisma.barbershop.update({
+    where: { id: barbershopId },
+    data: {
+      planCommissionModel:      model,
+      planCommissionFixedValue: model === 'FIXED' ? fixedValue : null,
+    },
+    select: { planCommissionModel: true, planCommissionFixedValue: true },
+  });
+
+  return res.json({
+    model: shop.planCommissionModel,
+    fixedValue: shop.planCommissionFixedValue ? Number(shop.planCommissionFixedValue) : null,
+  });
+});
+
+// Listar pagamentos de comissão de planos por ano
+financialRouter.get('/plan-commission-payments', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { year, professionalId } = req.query as Record<string, string>;
+
+  const where: any = { barbershopId };
+  if (year)           where.year           = parseInt(year);
+  if (professionalId) where.professionalId = professionalId;
+
+  const payments = await prisma.planCommissionPayment.findMany({
+    where,
+    include: { professional: { include: { user: { select: { name: true } } } } },
+    orderBy: [{ year: 'desc' }, { month: 'desc' }],
+  });
+  return res.json(payments);
+});
+
+// Marcar mês de comissão de plano como pago
+financialRouter.post('/plan-commission-payments', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { professionalId, year, month, model, totalSubscriptionServices, subscriptionRevenue, commissionAmount, notes } = req.body;
+
+  if (!professionalId || !year || !month || commissionAmount === undefined) {
+    return res.status(400).json({ error: 'professionalId, year, month e commissionAmount são obrigatórios' });
+  }
+
+  const payment = await prisma.planCommissionPayment.upsert({
+    where: { barbershopId_professionalId_year_month: { barbershopId, professionalId, year: +year, month: +month } },
+    create: {
+      barbershopId, professionalId,
+      year: +year, month: +month,
+      model: model ?? 'PROPORTIONAL',
+      totalSubscriptionServices: +totalSubscriptionServices || 0,
+      subscriptionRevenue:       +subscriptionRevenue      || 0,
+      commissionAmount:          +commissionAmount,
+      isPaid: true, paidAt: new Date(),
+      notes: notes ?? null,
+    },
+    update: {
+      model: model ?? 'PROPORTIONAL',
+      totalSubscriptionServices: +totalSubscriptionServices || 0,
+      subscriptionRevenue:       +subscriptionRevenue      || 0,
+      commissionAmount:          +commissionAmount,
+      isPaid: true, paidAt: new Date(),
+      notes: notes ?? null,
+    },
+    include: { professional: { include: { user: { select: { name: true } } } } },
+  });
+
+  return res.status(201).json(payment);
+});
+
+// Desmarcar pagamento de comissão de plano
+financialRouter.delete('/plan-commission-payments/:id', async (req: Request, res: Response): Promise<any> => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const updated = await prisma.planCommissionPayment.updateMany({
+    where: { id: req.params.id, barbershopId },
+    data: { isPaid: false, paidAt: null },
+  });
+  if (updated.count === 0) return res.status(404).json({ error: 'Registro não encontrado' });
+  return res.status(204).send();
+});
+
 // ─── Relatório financeiro ─────────────────────────────────────────────────────
 financialRouter.get('/report', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;

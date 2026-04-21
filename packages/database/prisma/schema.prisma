@@ -120,6 +120,10 @@ model Barbershop {
   asaasApiKey     String? // API Key da subconta
   asaasWalletId   String? // Wallet ID para saques
 
+  // Configuração de comissão sobre assinaturas
+  planCommissionModel      String   @default("PROPORTIONAL") // FIXED | PROPORTIONAL | RANKING
+  planCommissionFixedValue Decimal? @db.Decimal(10, 2)       // Usado apenas no modelo FIXED
+
   // Relações
   users         User[]
   professionals Professional[]
@@ -129,8 +133,9 @@ model Barbershop {
   clientSubs    ClientSubscription[]
   products      Product[]
   transactions  FinancialTransaction[]
-  commissions        Commission[]
-  commissionPayments CommissionPayment[]
+  commissions            Commission[]
+  commissionPayments     CommissionPayment[]
+  planCommissionPayments PlanCommissionPayment[]
   photos             BarbershopPhoto[]
   branches           BarbershopBranch[]
   businessHours      BarbershopBusinessHours[]
@@ -250,13 +255,14 @@ model Professional {
   updatedAt      DateTime @updatedAt
 
   // Relações
-  appointments        Appointment[]
-  schedules           Schedule[]
-  commissions         Commission[]
-  commissionPayments  CommissionPayment[]
-  professionalServices ProfessionalService[]
-  dayOffs             ProfessionalDayOff[]
-  recurringBlocks     ProfessionalRecurringBlock[]
+  appointments             Appointment[]
+  schedules                Schedule[]
+  commissions              Commission[]
+  commissionPayments       CommissionPayment[]
+  planCommissionPayments   PlanCommissionPayment[]
+  professionalServices     ProfessionalService[]
+  dayOffs                  ProfessionalDayOff[]
+  recurringBlocks          ProfessionalRecurringBlock[]
 
   @@index([barbershopId])
   @@map("professionals")
@@ -322,6 +328,10 @@ model Appointment {
 
   branchId  String?
   branch    BarbershopBranch? @relation(fields: [branchId], references: [id])
+
+  // Assinatura do cliente (preenchido quando o atendimento faz parte de um plano)
+  clientSubscriptionId String?
+  clientSubscription   ClientSubscription? @relation(fields: [clientSubscriptionId], references: [id])
 
   scheduledAt    DateTime
   durationMins   Int
@@ -447,6 +457,8 @@ model ClientSubscription {
   suspendedAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  appointments Appointment[]
 
   @@index([barbershopId])
   @@index([clientId])
@@ -665,4 +677,33 @@ model CommissionPayment {
   @@index([barbershopId])
   @@index([professionalId])
   @@map("commission_payments")
+}
+
+// Pagamento de comissão sobre receita de assinaturas dos clientes
+model PlanCommissionPayment {
+  id             String       @id @default(cuid())
+  barbershopId   String
+  barbershop     Barbershop   @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  year  Int
+  month Int // 1–12
+
+  model                     String  // FIXED | PROPORTIONAL | RANKING
+  totalSubscriptionServices Int     @default(0) // atendimentos de plano no período
+  subscriptionRevenue       Decimal @db.Decimal(10, 2) @default(0) // receita total de planos no período
+  commissionAmount          Decimal @db.Decimal(10, 2)             // valor a pagar ao barbeiro
+
+  isPaid Boolean   @default(false)
+  paidAt DateTime?
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([barbershopId, professionalId, year, month])
+  @@index([barbershopId])
+  @@index([professionalId])
+  @@map("plan_commission_payments")
 }

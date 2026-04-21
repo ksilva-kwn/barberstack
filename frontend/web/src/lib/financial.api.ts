@@ -76,6 +76,43 @@ export interface ReportData {
   ticketMedio: number;
 }
 
+export type PlanCommissionModel = 'FIXED' | 'PROPORTIONAL' | 'RANKING';
+
+export interface PlanCommissionConfig {
+  model: PlanCommissionModel;
+  fixedValue: number | null;
+}
+
+export interface PlanCommissionProfessional {
+  professionalId: string;
+  name: string;
+  totalSubscriptionServices: number;
+  commissionAmount: number;
+}
+
+export interface PlanCommissionReport {
+  model: PlanCommissionModel;
+  totalRevenue: number;
+  totalSubscriptionServices: number;
+  professionals: PlanCommissionProfessional[];
+}
+
+export interface PlanCommissionPayment {
+  id: string;
+  professionalId: string;
+  year: number;
+  month: number;
+  model: PlanCommissionModel;
+  totalSubscriptionServices: number;
+  subscriptionRevenue: number;
+  commissionAmount: number;
+  isPaid: boolean;
+  paidAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  professional: { nickname: string | null; user: { name: string } };
+}
+
 export const financialApi = {
   balance: (from?: string, to?: string) =>
     api.get<BalanceData>('/api/financial/balance', { params: { from, to } }),
@@ -109,6 +146,27 @@ export const financialApi = {
 
   report: (from?: string, to?: string) =>
     api.get<ReportData>('/api/financial/report', { params: { from, to } }),
+
+  planCommissions: (params?: { from?: string; to?: string }) =>
+    api.get<PlanCommissionReport>('/api/financial/plan-commissions', { params }),
+
+  planCommissionConfig: () =>
+    api.get<PlanCommissionConfig>('/api/financial/plan-commission-config'),
+
+  updatePlanCommissionConfig: (data: { model: PlanCommissionModel; fixedValue?: number }) =>
+    api.patch<PlanCommissionConfig>('/api/financial/plan-commission-config', data),
+
+  planCommissionPayments: (params?: { year?: number; professionalId?: string }) =>
+    api.get<PlanCommissionPayment[]>('/api/financial/plan-commission-payments', { params }),
+
+  markPlanCommissionPaid: (data: {
+    professionalId: string; year: number; month: number; model: string;
+    totalSubscriptionServices: number; subscriptionRevenue: number;
+    commissionAmount: number; notes?: string;
+  }) => api.post<PlanCommissionPayment>('/api/financial/plan-commission-payments', data),
+
+  unmarkPlanCommissionPaid: (id: string) =>
+    api.delete(`/api/financial/plan-commission-payments/${id}`),
 };
 
 export const EXPENSE_CATEGORIES = [
