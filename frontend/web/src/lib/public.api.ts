@@ -65,6 +65,27 @@ export interface PublicPhoto {
   caption: string | null;
 }
 
+export interface PublicPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  billingCycle: 'monthly' | 'weekly';
+  services: { service: { id: string; name: string }; limitPerCycle: number | null }[];
+}
+
+export interface ClientSubscription {
+  id: string;
+  clientPlanId: string;
+  status: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  paymentLink: string | null;
+  clientPlan: PublicPlan & {
+    services: { service: { id: string; name: string }; limitPerCycle: number | null }[];
+  };
+}
+
 export const portalApi = {
   shop: (slug: string) =>
     publicApi.get<PublicShop>(`/api/public/shop/${slug}`),
@@ -103,6 +124,24 @@ export const portalApi = {
 
   myAppointments: (token: string) =>
     publicApi.get<{ upcoming: ClientAppointment[]; past: ClientAppointment[] }>('/api/public/my-appointments', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  plans: (slug: string) =>
+    publicApi.get<PublicPlan[]>(`/api/public/shop/${slug}/plans`),
+
+  mySubscription: (token: string, slug: string) =>
+    publicApi.get<ClientSubscription | null>('/api/subscriptions/my', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  subscribe: (token: string, clientId: string, clientPlanId: string) =>
+    publicApi.post('/api/subscriptions', { clientId, clientPlanId }, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  cancelSubscription: (token: string, subscriptionId: string) =>
+    publicApi.delete(`/api/subscriptions/${subscriptionId}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

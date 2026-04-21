@@ -82,3 +82,21 @@ publicRouter.get('/:slug/services', async (req: Request, res: Response) => {
   });
   return res.json(services);
 });
+
+// Lista planos de assinatura ativos da barbearia (público)
+publicRouter.get('/:slug/plans', async (req: Request, res: Response) => {
+  const shop = await prisma.barbershop.findUnique({
+    where: { slug: req.params.slug },
+    select: { id: true },
+  });
+  if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });
+
+  const plans = await prisma.clientPlan.findMany({
+    where: { barbershopId: shop.id, isActive: true },
+    include: {
+      services: { include: { service: { select: { id: true, name: true } } } },
+    },
+    orderBy: { price: 'asc' },
+  });
+  return res.json(plans);
+});

@@ -23,7 +23,7 @@ export default function PortalLoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     const raw = sessionStorage.getItem(`portal-auth-${slug}`);
-    if (raw) router.replace(`/${slug}/agendar`);
+    if (raw) router.replace(`/${slug}/painel`);
   }, [slug, router]);
 
   const { data: shop } = useQuery({
@@ -41,7 +41,7 @@ export default function PortalLoginPage() {
       if (mode === 'login') {
         const { data } = await portalApi.login(form.email, form.password);
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
-        router.push(`/${slug}/agendar`);
+        router.push(`/${slug}/painel`);
       } else {
         if (!form.name) { setError('Nome obrigatório'); setSubmitting(false); return; }
         if (!shop) { setError('Erro ao carregar dados da barbearia'); setSubmitting(false); return; }
@@ -53,7 +53,7 @@ export default function PortalLoginPage() {
           barbershopId: shop.id,
         });
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
-        router.push(`/${slug}/agendar`);
+        router.push(`/${slug}/painel`);
       }
     } catch (err: any) {
       const raw = err.response?.data?.error;

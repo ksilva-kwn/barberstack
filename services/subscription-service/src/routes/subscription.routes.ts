@@ -209,6 +209,23 @@ subscriptionRouter.get('/reports', async (req: Request, res: Response) => {
 
 // ─── ASSINATURAS ──────────────────────────────────────────────────────────────
 
+// GET /my — assinatura ativa do cliente logado
+subscriptionRouter.get('/my', async (req: Request, res: Response) => {
+  const clientId    = req.headers['x-user-id'] as string;
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+
+  const sub = await prisma.clientSubscription.findFirst({
+    where: { clientId, barbershopId, status: { in: ['ACTIVE', 'DEFAULTING'] } },
+    include: {
+      clientPlan: {
+        include: { services: { include: { service: { select: { id: true, name: true } } } } },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return res.json(sub ?? null);
+});
+
 // GET / — listar assinaturas
 subscriptionRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
