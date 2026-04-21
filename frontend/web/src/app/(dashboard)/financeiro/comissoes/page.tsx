@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -8,7 +8,7 @@ import {
   Loader2, Users, ChevronDown, ChevronUp, Scissors,
   CreditCard, Settings2, Trophy, Equal, DollarSign,
 } from 'lucide-react';
-import { financialApi, CommissionReport, PlanCommissionModel } from '@/lib/financial.api';
+import { financialApi, PlanCommissionModel, PlanCommissionConfig } from '@/lib/financial.api';
 import { cn } from '@/lib/utils';
 
 const fmt = (v: number) =>
@@ -20,7 +20,7 @@ const MODEL_LABELS: Record<PlanCommissionModel, string> = {
   RANKING:      'Ranking (mais atendimentos = maior %)',
 };
 
-const MODEL_ICONS: Record<PlanCommissionModel, React.ReactNode> = {
+const MODEL_ICONS: Record<PlanCommissionModel, ReactNode> = {
   FIXED:        <DollarSign className="w-4 h-4" />,
   PROPORTIONAL: <Equal className="w-4 h-4" />,
   RANKING:      <Trophy className="w-4 h-4" />,
@@ -150,11 +150,17 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
     queryFn: () => financialApi.planCommissions({ from, to }).then(r => r.data),
   });
 
-  const { data: config } = useQuery({
+  const { data: config } = useQuery<PlanCommissionConfig>({
     queryKey: ['plan-commission-config'],
     queryFn: () => financialApi.planCommissionConfig().then(r => r.data),
-    onSuccess: (d) => { setDraftModel(d.model); setDraftFixed(d.fixedValue?.toString() ?? ''); },
   });
+
+  useEffect(() => {
+    if (config) {
+      setDraftModel(config.model);
+      setDraftFixed(config.fixedValue?.toString() ?? '');
+    }
+  }, [config]);
 
   const saveConfig = useMutation({
     mutationFn: () => financialApi.updatePlanCommissionConfig({
