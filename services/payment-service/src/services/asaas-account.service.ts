@@ -1,3 +1,4 @@
+import FormData from 'form-data';
 import { prisma } from '@barberstack/database';
 import { createMasterAsaasClient, createSubAccountAsaasClient } from '../asaas.client';
 
@@ -139,6 +140,82 @@ export async function closeAsaasAccount(barbershopId: string) {
   await client.delete(`/accounts/${shop.asaasAccountId}`);
 
   return { removed: true };
+}
+
+/**
+ * Retorna os itens pendentes do cadastro da subconta Asaas.
+ */
+export async function getAccountStatus(barbershopId: string) {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+  if (!shop.asaasApiKey) return { configured: false, items: [] };
+
+  const client = createSubAccountAsaasClient(shop.asaasApiKey);
+  try {
+    const res = await client.get('/myAccount/commercialInfo');
+    const data = res.data;
+    return {
+      configured: true,
+      status: data.accountStatus ?? null,
+      bankAccountInfoProvided: data.bankAccountInfoProvided ?? false,
+      documentStatus: data.documentStatus ?? 'PENDING',
+    };
+  } catch {
+    return { configured: true, status: null, bankAccountInfoProvided: false, documentStatus: 'PENDING' };
+  }
+}
+
+/**
+ * Submete dados bancários da subconta ao Asaas.
+ */
+export async function submitBankAccount(barbershopId: string, data: {
+  bankCode: string;
+  bankName: string;
+  ownerName: string;
+  cpfCnpj: string;
+  agency: string;
+  account: string;
+  accountDigit: string;
+  bankAccountType: 'CONTA_CORRENTE' | 'CONTA_POUPANCA';
+}) {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+  if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
+
+  const client = createSubAccountAsaasClient(shop.asaasApiKey);
+  const response = await client.post('/myAccount/bankAccount', {
+    bank: { code: data.bankCode, name: data.bankName },
+    accountName: 'Conta Principal',
+    ownerName: data.ownerName,
+    cpfCnpj: data.cpfCnpj.replace(/\D/g, ''),
+    agency: data.agency.replace(/\D/g, ''),
+    account: data.account.replace(/\D/g, ''),
+    accountDigit: data.accountDigit,
+    bankAccountType: data.bankAccountType,
+  });
+  return response.data;
+}
+
+/**
+ * Faz upload de documento para a subconta Asaas.
+ */
+export async function uploadDocument(barbershopId: string, type: string, fileBuffer: Buffer, fileName: string, mimeType: string) {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+  if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
+
+  const env = (process.env.ASAAS_ENV || 'sandbox') as 'sandbox' | 'production';
+  const baseURL = env === 'production' ? 'https://api.asaas.com/v3' : 'https://sandbox.asaas.com/api/v3';
+
+  const form = new FormData();
+  form.append('type', type);
+  form.append('documentFile', fileBuffer, { filename: fileName, contentType: mimeType });
+
+  const axios = (await import('axios')).default;
+  const response = await axios.post(`${baseURL}/myAccount/documents`, form, {
+    headers: {
+      access_token: shop.asaasApiKey,
+      ...form.getHeaders(),
+    },
+  });
+  return response.data;
 }
 
 /**

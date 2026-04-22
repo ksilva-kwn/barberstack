@@ -538,7 +538,7 @@ export default function LandingPage() {
                 onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
               >{l}</a>
             ))}
-            <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center' }}>
+            <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', marginLeft: 16 }}>
               <img
                 src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
                 alt="Serviços financeiros Asaas"
