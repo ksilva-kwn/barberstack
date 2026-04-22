@@ -53,11 +53,17 @@ export default function AsaasSetupPage() {
     setActivationError('');
     try {
       const res = await paymentApi.activate();
-      setOnboardingUrl(res.data.onboardingUrl);
+      const url = res.data.onboardingUrl;
+      if (url) {
+        setOnboardingUrl(url);
+      } else {
+        setActivationError('Link de acesso indisponível no momento. Tente novamente em alguns instantes ou acesse diretamente em asaas.com com o e-mail da barbearia.');
+      }
       qc.invalidateQueries({ queryKey: ['asaas-account-status'] });
+      qc.invalidateQueries({ queryKey: ['asaas-onboarding-url'] });
       qc.invalidateQueries({ queryKey: ['asaas-balance'] });
     } catch (err: any) {
-      setActivationError(err.response?.data?.error ?? 'Erro ao ativar conta. Tente novamente.');
+      setActivationError(err.response?.data?.error ?? 'Erro ao buscar link. Tente novamente.');
     } finally {
       setActivating(false);
     }

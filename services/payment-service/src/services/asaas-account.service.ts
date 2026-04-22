@@ -102,12 +102,14 @@ export async function getOnboardingUrl(barbershopId: string): Promise<string | n
   for (const endpoint of [`/accounts/${shop.asaasAccountId}/loginUrl`, `/accounts/${shop.asaasAccountId}/onboardingUrl`]) {
     try {
       const response = await client.get(endpoint);
+      console.log(`[getOnboardingUrl] ${endpoint} →`, JSON.stringify(response.data));
       const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
       if (url) return url;
-    } catch {
-      // tenta o próximo
+    } catch (err: any) {
+      console.warn(`[getOnboardingUrl] ${endpoint} falhou:`, err?.response?.status, JSON.stringify(err?.response?.data ?? err.message));
     }
   }
+  console.warn('[getOnboardingUrl] nenhum endpoint retornou URL para', shop.asaasAccountId);
   return null;
 }
 
