@@ -54,6 +54,7 @@ enum AppointmentOrigin {
 }
 
 enum ClientSubscriptionStatus {
+  PENDING_PAYMENT // Aguardando primeiro pagamento
   ACTIVE
   DEFAULTING  // Inadimplente
   CANCELING   // Cancelado pelo cliente, acesso até fim do período

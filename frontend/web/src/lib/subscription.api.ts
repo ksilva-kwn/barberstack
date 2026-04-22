@@ -1,6 +1,6 @@
 import { api } from './api';
 
-export type SubStatus = 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | 'SUSPENDED';
+export type SubStatus = 'PENDING_PAYMENT' | 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | 'SUSPENDED';
 
 export interface PlanService {
   serviceId: string;

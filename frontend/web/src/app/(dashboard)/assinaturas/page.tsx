@@ -17,11 +17,12 @@ import { useAuth } from '@/hooks/use-auth';
 const inputCls = 'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
 
 const statusLabel: Record<SubStatus, { label: string; cls: string }> = {
-  ACTIVE:     { label: 'Ativo',       cls: 'bg-emerald-500/15 text-emerald-500' },
-  DEFAULTING: { label: 'Inadimplente', cls: 'bg-yellow-500/15 text-yellow-500' },
-  CANCELING:  { label: 'Cancelando',  cls: 'bg-amber-500/15 text-amber-500' },
-  CANCELED:   { label: 'Cancelado',   cls: 'bg-destructive/15 text-destructive' },
-  SUSPENDED:  { label: 'Suspenso',    cls: 'bg-muted text-muted-foreground' },
+  PENDING_PAYMENT: { label: 'Ag. Pagamento', cls: 'bg-blue-500/15 text-blue-500' },
+  ACTIVE:          { label: 'Ativo',          cls: 'bg-emerald-500/15 text-emerald-500' },
+  DEFAULTING:      { label: 'Inadimplente',   cls: 'bg-yellow-500/15 text-yellow-500' },
+  CANCELING:       { label: 'Cancelando',     cls: 'bg-amber-500/15 text-amber-500' },
+  CANCELED:        { label: 'Cancelado',      cls: 'bg-destructive/15 text-destructive' },
+  SUSPENDED:       { label: 'Suspenso',       cls: 'bg-muted text-muted-foreground' },
 };
 
 // ─── Modal: Criar/Editar Plano ────────────────────────────────────────────────

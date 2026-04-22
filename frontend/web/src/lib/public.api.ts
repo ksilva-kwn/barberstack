@@ -78,7 +78,7 @@ export interface PublicPlan {
 export interface ClientSubscription {
   id: string;
   clientPlanId: string;
-  status: 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | string;
+  status: 'PENDING_PAYMENT' | 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   canceledAt: string | null;

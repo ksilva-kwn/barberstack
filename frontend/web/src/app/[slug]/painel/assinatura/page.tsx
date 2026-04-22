@@ -165,26 +165,25 @@ function ActivePlanCard({
   canceling: boolean;
 }) {
   const isCanceling = sub.status === 'CANCELING';
+  const isPending   = sub.status === 'PENDING_PAYMENT';
+
+  const borderColor = isCanceling ? 'border-amber-500/30' : isPending ? 'border-blue-500/30' : 'border-primary/30';
+  const headerBg    = isCanceling
+    ? 'bg-gradient-to-r from-amber-500/15 to-amber-500/5'
+    : isPending
+      ? 'bg-gradient-to-r from-blue-500/15 to-blue-500/5'
+      : 'bg-gradient-to-r from-primary/20 to-primary/5';
+  const iconColor   = isCanceling ? 'text-amber-500' : isPending ? 'text-blue-500' : 'text-primary';
+  const iconBg      = isCanceling ? 'bg-amber-500/20' : isPending ? 'bg-blue-500/20' : 'bg-primary/20';
 
   return (
-    <div className={cn(
-      'rounded-2xl border overflow-hidden',
-      isCanceling ? 'border-amber-500/30' : 'border-primary/30',
-    )}>
+    <div className={cn('rounded-2xl border overflow-hidden', borderColor)}>
       {/* Header colorido */}
-      <div className={cn(
-        'px-5 py-4',
-        isCanceling
-          ? 'bg-gradient-to-r from-amber-500/15 to-amber-500/5'
-          : 'bg-gradient-to-r from-primary/20 to-primary/5',
-      )}>
+      <div className={cn('px-5 py-4', headerBg)}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-              isCanceling ? 'bg-amber-500/20' : 'bg-primary/20',
-            )}>
-              <CreditCard className={cn('w-5 h-5', isCanceling ? 'text-amber-500' : 'text-primary')} />
+            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+              <CreditCard className={cn('w-5 h-5', iconColor)} />
             </div>
             <div>
               <p className="font-bold text-foreground">{sub.clientPlan.name}</p>
@@ -201,6 +200,10 @@ function ActivePlanCard({
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 shrink-0">
               <CalendarClock className="w-3 h-3" /> Cancelando
             </span>
+          ) : isPending ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30 shrink-0">
+              <Loader2 className="w-3 h-3 animate-spin" /> Aguardando pagamento
+            </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ativo
@@ -211,6 +214,21 @@ function ActivePlanCard({
 
       {/* Body */}
       <div className="px-5 py-4 space-y-4">
+        {/* Aguardando pagamento */}
+        {isPending && (
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <CreditCard className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-500">
+                Pagamento pendente
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Insira seu cartão para ativar o plano. Seus benefícios começam após a confirmação.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Aviso cancelamento */}
         {isCanceling && (
           <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -288,8 +306,8 @@ function ActivePlanCard({
           </a>
         )}
 
-        {/* Cancelar */}
-        {!isCanceling && (
+        {/* Cancelar — não mostra em PENDING_PAYMENT nem CANCELING */}
+        {!isCanceling && !isPending && (
           <button
             onClick={onCancel}
             disabled={canceling}
@@ -463,8 +481,9 @@ export default function AssinaturaPage() {
   if (!auth) return null;
 
   const isLoading = loadingSub || loadingPlans;
-  const hasSub    = !!sub && sub.status !== 'CANCELED';
+  const hasSub      = !!sub && sub.status !== 'CANCELED';
   const isCanceling = sub?.status === 'CANCELING';
+  const isPending   = sub?.status === 'PENDING_PAYMENT';
 
   // Lógica de destaque: usa isFeatured manual; fallback = primeiro plano ativo se nenhum marcado
   const anyFeatured = (plans as PublicPlan[]).some(p => p.isFeatured);
@@ -546,8 +565,8 @@ export default function AssinaturaPage() {
               />
             )}
 
-            {/* Planos disponíveis */}
-            {plans.length > 0 && !isCanceling && (
+            {/* Planos disponíveis — esconde quando tem pendente ou cancelando */}
+            {plans.length > 0 && !isCanceling && !isPending && (
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-muted-foreground" />

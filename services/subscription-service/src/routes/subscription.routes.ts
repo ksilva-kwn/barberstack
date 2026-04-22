@@ -217,7 +217,7 @@ subscriptionRouter.get('/my', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
   const sub = await prisma.clientSubscription.findFirst({
-    where: { clientId, barbershopId, status: { in: ['ACTIVE', 'DEFAULTING', 'CANCELING'] } },
+    where: { clientId, barbershopId, status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'DEFAULTING', 'CANCELING'] } },
     include: {
       clientPlan: {
         include: { services: { include: { service: { select: { id: true, name: true } } } } },
@@ -266,11 +266,12 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
   const end  = addMonths(now, plan.billingCycle === 'weekly' ? 0 : 1);
   if (plan.billingCycle === 'weekly') end.setDate(end.getDate() + 7);
 
-  // 1. Cria o registro no banco
+  // 1. Cria o registro como PENDING_PAYMENT — só ativa após confirmação do pagamento
   const sub = await prisma.clientSubscription.create({
     data: {
       ...parsed.data,
       barbershopId,
+      status:             'PENDING_PAYMENT',
       currentPeriodStart: now,
       currentPeriodEnd:   end,
       nextPaymentAt:      end,
@@ -278,7 +279,9 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
     include: { clientPlan: true, client: { select: { name: true } } },
   });
 
-  // 2. Solicita criação no Asaas (falha silenciosamente se não configurado)
+  console.log(`[subscription] Criada sub ${sub.id} para cliente ${parsed.data.clientId} — status PENDING_PAYMENT`);
+
+  // 2. Solicita criação no Asaas
   const asaasResult = await callPaymentService('/payments/internal/subscription', 'POST', {
     barbershopId,
     clientId:    parsed.data.clientId,
@@ -290,7 +293,9 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
     nextDueDate: toYMD(end),
   });
 
-  // 3. Persiste asaasSubId e paymentLink se retornados
+  console.log(`[subscription] Resultado Asaas para sub ${sub.id}:`, JSON.stringify(asaasResult));
+
+  // 3. Persiste asaasSubId e paymentLink; se Asaas não configurado, mantém PENDING_PAYMENT
   let finalSub = sub;
   if (asaasResult?.asaasSubId) {
     finalSub = await prisma.clientSubscription.update({
@@ -301,6 +306,9 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
       },
       include: { clientPlan: true, client: { select: { name: true } } },
     });
+    console.log(`[subscription] Sub ${sub.id} vinculada ao Asaas: ${asaasResult.asaasSubId}, paymentLink: ${asaasResult.paymentLink}`);
+  } else {
+    console.warn(`[subscription] Sub ${sub.id} sem vínculo Asaas — barbearia sem API key ou erro no payment-service`);
   }
 
   return res.status(201).json(finalSub);
