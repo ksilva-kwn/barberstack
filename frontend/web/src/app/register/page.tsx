@@ -48,6 +48,12 @@ function maskCNPJ(v: string) {
     .replace(/\.(\d{3})(\d)/, '.$1/$2')
     .replace(/(\d{4})(\d)/, '$1-$2');
 }
+function maskCPF(v: string) {
+  return v.replace(/\D/g, '').slice(0, 11)
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+}
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 10) return d.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').trimEnd();
@@ -58,12 +64,14 @@ function maskCEP(v: string) {
 }
 
 interface FormData {
+  documentType: 'cnpj' | 'cpf';
   barbershopName: string; document: string; barbershopPhone: string; barbershopEmail: string;
   cep: string; address: string; city: string; state: string;
   name: string; email: string; password: string; confirmPassword: string; phone: string;
   companyType: string;
 }
 const empty: FormData = {
+  documentType: 'cnpj',
   barbershopName: '', document: '', barbershopPhone: '', barbershopEmail: '',
   cep: '', address: '', city: '', state: '',
   name: '', email: '', password: '', confirmPassword: '', phone: '',
@@ -92,10 +100,14 @@ export default function RegisterPage() {
     return 'LIMITED';
   };
 
-  const handleCNPJ = async (raw: string) => {
-    const masked = maskCNPJ(raw); set('document', masked);
+  const handleDocument = async (raw: string) => {
+    const isCnpj = form.documentType === 'cnpj';
+    const masked = isCnpj ? maskCNPJ(raw) : maskCPF(raw);
+    set('document', masked);
     const digits = masked.replace(/\D/g, '');
-    if (digits.length !== 14) { setCnpjLocked(false); return; }
+    if (isCnpj && digits.length !== 14) { setCnpjLocked(false); return; }
+    if (!isCnpj && digits.length !== 11) { setCnpjLocked(false); return; }
+    if (!isCnpj) { setCnpjLocked(false); return; } // CPF: sem auto-fill
     setCnpjLoading(true);
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
@@ -135,7 +147,9 @@ export default function RegisterPage() {
 
   const validateStep1 = () => {
     if (!form.barbershopName.trim()) return 'Nome da barbearia obrigatório';
-    if (form.document.replace(/\D/g, '').length !== 14) return 'CNPJ inválido';
+    const docDigits = form.document.replace(/\D/g, '');
+    if (form.documentType === 'cnpj' && docDigits.length !== 14) return 'CNPJ inválido';
+    if (form.documentType === 'cpf'  && docDigits.length !== 11)  return 'CPF inválido';
     if (form.barbershopPhone.replace(/\D/g, '').length < 10) return 'Telefone inválido';
     if (!form.barbershopEmail.includes('@')) return 'E-mail da barbearia inválido';
     return '';
@@ -211,10 +225,36 @@ export default function RegisterPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <h1 style={{ fontSize: 18, fontWeight: 700, color: G.white, marginBottom: 4 }}>Sua barbearia</h1>
 
-              <Input label="CNPJ">
+              {/* Seletor CPF / CNPJ */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {(['cnpj', 'cpf'] as const).map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => { setForm(f => ({ ...f, documentType: type, document: '' })); setCnpjLocked(false); }}
+                    style={{
+                      padding: '10px', borderRadius: 10, border: `1px solid ${form.documentType === type ? G.gold : G.goldBorder}`,
+                      background: form.documentType === type ? `rgba(196,164,124,0.12)` : 'transparent',
+                      color: form.documentType === type ? G.gold : G.muted,
+                      fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                  >
+                    {type === 'cnpj' ? 'Pessoa Jurídica (CNPJ)' : 'Pessoa Física (CPF)'}
+                  </button>
+                ))}
+              </div>
+
+              <Input label={form.documentType === 'cnpj' ? 'CNPJ' : 'CPF'}>
                 <div style={{ position: 'relative' }}>
-                  <input type="text" value={form.document} onChange={e => handleCNPJ(e.target.value)} placeholder="00.000.000/0001-00" style={{ ...inputStyle, paddingRight: cnpjLoading ? 40 : 14 }}
-                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)} onBlur={e => (e.target.style.borderColor = G.goldBorder)} />
+                  <input
+                    type="text"
+                    value={form.document}
+                    onChange={e => handleDocument(e.target.value)}
+                    placeholder={form.documentType === 'cnpj' ? '00.000.000/0001-00' : '000.000.000-00'}
+                    style={{ ...inputStyle, paddingRight: cnpjLoading ? 40 : 14 }}
+                    onFocus={e => (e.target.style.borderColor = G.goldBorderBright)}
+                    onBlur={e => (e.target.style.borderColor = G.goldBorder)}
+                  />
                   {cnpjLoading && <Loader2 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: G.muted, animation: 'spin 1s linear infinite' }} />}
                 </div>
               </Input>

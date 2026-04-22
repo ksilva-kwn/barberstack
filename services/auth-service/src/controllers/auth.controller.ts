@@ -152,7 +152,7 @@ export class AuthController {
       phone:    z.string().optional(),
       // Dados da barbearia
       barbershopName:  z.string().min(2),
-      document:        z.string().min(11), // CNPJ sem formatação
+      document:        z.string().min(11).max(14), // CPF (11) ou CNPJ (14) sem formatação
       barbershopPhone: z.string().min(10),
       barbershopEmail: z.string().email(),
       address:         z.string().optional(),
@@ -179,7 +179,7 @@ export class AuthController {
       prisma.barbershop.findUnique({ where: { document } }),
     ]);
     if (existingShop) {
-      return res.status(409).json({ error: 'CNPJ já cadastrado. Faça login ou recupere seu acesso.' });
+      return res.status(409).json({ error: 'CPF/CNPJ já cadastrado. Faça login ou recupere seu acesso.' });
     }
     if (existingUser) {
       return res.status(409).json({ error: 'E-mail já cadastrado' });
