@@ -71,15 +71,17 @@ export interface PublicPlan {
   description: string | null;
   price: number;
   billingCycle: 'monthly' | 'weekly';
+  isFeatured: boolean;
   services: { service: { id: string; name: string }; limitPerCycle: number | null }[];
 }
 
 export interface ClientSubscription {
   id: string;
   clientPlanId: string;
-  status: string;
+  status: 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  canceledAt: string | null;
   paymentLink: string | null;
   clientPlan: PublicPlan & {
     services: { service: { id: string; name: string }; limitPerCycle: number | null }[];

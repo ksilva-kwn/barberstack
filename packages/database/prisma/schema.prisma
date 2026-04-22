@@ -409,6 +409,7 @@ model ClientPlan {
   price         Decimal  @db.Decimal(10, 2)
   billingCycle  String   @default("monthly") // monthly | weekly
   isActive      Boolean  @default(true)
+  isFeatured    Boolean  @default(false)    // Exibido como destaque no portal
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

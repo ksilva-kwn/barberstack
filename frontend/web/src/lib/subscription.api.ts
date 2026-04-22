@@ -1,6 +1,6 @@
 import { api } from './api';
 
-export type SubStatus = 'ACTIVE' | 'DEFAULTING' | 'CANCELED' | 'SUSPENDED';
+export type SubStatus = 'ACTIVE' | 'DEFAULTING' | 'CANCELING' | 'CANCELED' | 'SUSPENDED';
 
 export interface PlanService {
   serviceId: string;
@@ -15,6 +15,7 @@ export interface ClientPlan {
   price: number;
   billingCycle: 'monthly' | 'weekly';
   isActive: boolean;
+  isFeatured: boolean;
   createdAt: string;
   services: PlanService[];
   _count?: { subscriptions: number };
@@ -53,12 +54,12 @@ export const subscriptionApi = {
 
   createPlan: (data: {
     name: string; price: number; billingCycle: string;
-    description?: string; serviceIds: string[];
+    description?: string; isFeatured?: boolean; serviceIds: string[];
   }) => api.post<ClientPlan>('/api/subscriptions/plans', data),
 
   updatePlan: (id: string, data: {
     name?: string; price?: number;
-    description?: string | null; serviceIds?: string[];
+    description?: string | null; isFeatured?: boolean; serviceIds?: string[];
   }) => api.put<ClientPlan>(`/api/subscriptions/plans/${id}`, data),
 
   togglePlan: (id: string) =>

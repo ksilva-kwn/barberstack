@@ -113,7 +113,11 @@ export default function PortalPage() {
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`portal-auth-${slug}`);
-    if (raw) setPortalUser(JSON.parse(raw).user);
+    if (raw) {
+      setPortalUser(JSON.parse(raw).user);
+      router.replace(`/${slug}/painel`);
+      return;
+    }
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);

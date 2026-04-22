@@ -65,15 +65,24 @@ export async function createAsaasSubscription(
 
   const asaasSubId: string = sub.data.id;
 
-  // Busca o link de pagamento da primeira cobrança
-  let paymentLink: string | null = null;
-  try {
-    const payments = await asaas.get('/payments', {
-      params: { subscription: asaasSubId, limit: 1 },
-    });
-    paymentLink = payments.data?.data?.[0]?.invoiceUrl ?? null;
-  } catch {
-    // não crítico — o webhook PAYMENT_CREATED também traz o link
+  // Tenta obter o paymentLink direto da resposta da assinatura
+  let paymentLink: string | null = sub.data.paymentLink ?? null;
+
+  // Se não veio, busca a primeira cobrança (com retry — Asaas pode demorar ~1s para criá-la)
+  if (!paymentLink) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise(r => setTimeout(r, 800));
+      try {
+        const payments = await asaas.get('/payments', {
+          params: { subscription: asaasSubId, limit: 1 },
+        });
+        const first = payments.data?.data?.[0];
+        paymentLink = first?.invoiceUrl ?? first?.bankSlipUrl ?? null;
+        if (paymentLink) break;
+      } catch {
+        // não crítico
+      }
+    }
   }
 
   return { asaasSubId, paymentLink };

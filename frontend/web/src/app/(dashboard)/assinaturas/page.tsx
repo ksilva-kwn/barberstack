@@ -17,10 +17,11 @@ import { useAuth } from '@/hooks/use-auth';
 const inputCls = 'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
 
 const statusLabel: Record<SubStatus, { label: string; cls: string }> = {
-  ACTIVE:     { label: 'Ativo',        cls: 'bg-emerald-500/15 text-emerald-500' },
+  ACTIVE:     { label: 'Ativo',       cls: 'bg-emerald-500/15 text-emerald-500' },
   DEFAULTING: { label: 'Inadimplente', cls: 'bg-yellow-500/15 text-yellow-500' },
-  CANCELED:   { label: 'Cancelado',    cls: 'bg-destructive/15 text-destructive' },
-  SUSPENDED:  { label: 'Suspenso',     cls: 'bg-muted text-muted-foreground' },
+  CANCELING:  { label: 'Cancelando',  cls: 'bg-amber-500/15 text-amber-500' },
+  CANCELED:   { label: 'Cancelado',   cls: 'bg-destructive/15 text-destructive' },
+  SUSPENDED:  { label: 'Suspenso',    cls: 'bg-muted text-muted-foreground' },
 };
 
 // ─── Modal: Criar/Editar Plano ────────────────────────────────────────────────
@@ -43,6 +44,7 @@ function PlanModal({
   const [price, setPrice]             = useState(plan?.price?.toString() ?? '');
   const [description, setDescription] = useState(plan?.description ?? '');
   const [billingCycle, setBillingCycle] = useState(plan?.billingCycle ?? 'monthly');
+  const [isFeatured, setIsFeatured]   = useState(plan?.isFeatured ?? false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
     plan?.services.map(s => s.serviceId) ?? [],
   );
@@ -65,12 +67,12 @@ function PlanModal({
       if (isEdit) {
         await subscriptionApi.updatePlan(plan.id, {
           name, price: Number(price), description: description || null,
-          serviceIds: selectedServiceIds,
+          isFeatured, serviceIds: selectedServiceIds,
         });
       } else {
         await subscriptionApi.createPlan({
           name, price: Number(price), description: description || undefined,
-          billingCycle, serviceIds: selectedServiceIds,
+          billingCycle, isFeatured, serviceIds: selectedServiceIds,
         });
       }
       qc.invalidateQueries({ queryKey: ['plans'] });
@@ -116,6 +118,32 @@ function PlanModal({
               <label className="block text-sm font-medium text-foreground mb-1">Descrição <span className="text-muted-foreground font-normal">(opcional)</span></label>
               <textarea className={inputCls} rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: 4 cortes por mês + barba inclusa" />
             </div>
+
+            {/* Toggle destaque */}
+            <button
+              type="button"
+              onClick={() => setIsFeatured(v => !v)}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition-colors ${
+                isFeatured
+                  ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-500'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Zap className={`w-4 h-4 ${isFeatured ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                <div className="text-left">
+                  <p className={`text-sm font-medium ${isFeatured ? 'text-yellow-500' : 'text-foreground'}`}>
+                    Plano destaque
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Aparece destacado no portal do cliente
+                  </p>
+                </div>
+              </div>
+              <div className={`w-10 h-6 rounded-full transition-colors relative ${isFeatured ? 'bg-yellow-500' : 'bg-muted'}`}>
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${isFeatured ? 'translate-x-5' : 'translate-x-1'}`} />
+              </div>
+            </button>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Serviços incluídos</label>
@@ -302,7 +330,12 @@ function PlansTab() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(plans as ClientPlan[]).map(plan => (
-            <div key={plan.id} className={`bg-card border rounded-xl p-5 flex flex-col gap-3 transition-colors ${plan.isActive ? 'border-border' : 'border-border opacity-60'}`}>
+            <div key={plan.id} className={`bg-card border rounded-xl p-5 flex flex-col gap-3 transition-colors ${plan.isActive ? 'border-border' : 'border-border opacity-60'} ${plan.isFeatured ? 'ring-1 ring-yellow-500/40' : ''}`}>
+              {plan.isFeatured && (
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-yellow-500 -mt-1">
+                  <Zap className="w-3 h-3" /> Destaque no portal
+                </div>
+              )}
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-semibold text-foreground">{plan.name}</p>

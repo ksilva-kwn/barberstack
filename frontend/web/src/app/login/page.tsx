@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Scissors, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useAuthStore } from '@/store/auth.store';
+import { useRouter } from 'next/navigation';
 
 const G = {
   bg:         '#0D0D0B',
@@ -32,9 +34,17 @@ const inputStyle: React.CSSProperties = {
 
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
+  const { token, user } = useAuthStore();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (token && user) {
+      router.replace(user.role === 'BARBER' ? '/barbeiro/dashboard' : '/dashboard');
+    }
+  }, [token, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

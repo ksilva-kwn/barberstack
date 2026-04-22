@@ -60,6 +60,7 @@ subscriptionRouter.post('/plans', async (req: Request, res: Response) => {
     price:        z.number().positive(),
     billingCycle: z.enum(['monthly', 'weekly']).default('monthly'),
     description:  z.string().optional(),
+    isFeatured:   z.boolean().optional(),
     serviceIds:   z.array(z.string()).min(1, 'Selecione ao menos um serviço'),
   });
 
@@ -88,6 +89,7 @@ subscriptionRouter.put('/plans/:id', async (req: Request, res: Response) => {
     name:         z.string().min(2).optional(),
     price:        z.number().positive().optional(),
     description:  z.string().optional().nullable(),
+    isFeatured:   z.boolean().optional(),
     serviceIds:   z.array(z.string()).min(1).optional(),
   });
 
@@ -161,10 +163,10 @@ subscriptionRouter.get('/reports', async (req: Request, res: Response) => {
     }),
   ]);
 
-  const active     = allSubs.filter(s => s.status === 'ACTIVE');
+  const active     = allSubs.filter(s => s.status === 'ACTIVE' || s.status === 'CANCELING');
   const defaulting = allSubs.filter(s => s.status === 'DEFAULTING');
   const canceled   = allSubs.filter(s =>
-    s.status === 'CANCELED' &&
+    (s.status === 'CANCELED' || s.status === 'CANCELING') &&
     s.canceledAt &&
     s.canceledAt >= startOfMonth &&
     s.canceledAt <= endOfMonth,
@@ -215,7 +217,7 @@ subscriptionRouter.get('/my', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
   const sub = await prisma.clientSubscription.findFirst({
-    where: { clientId, barbershopId, status: { in: ['ACTIVE', 'DEFAULTING'] } },
+    where: { clientId, barbershopId, status: { in: ['ACTIVE', 'DEFAULTING', 'CANCELING'] } },
     include: {
       clientPlan: {
         include: { services: { include: { service: { select: { id: true, name: true } } } } },
@@ -305,14 +307,20 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
 });
 
 // DELETE /:id — cancelar assinatura
+// Cancela cobrança no Asaas imediatamente mas mantém acesso até currentPeriodEnd
 subscriptionRouter.delete('/:id', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
+
   const sub = await prisma.clientSubscription.findFirst({
     where: { id: req.params.id, barbershopId },
   });
   if (!sub) return res.status(404).json({ error: 'Assinatura não encontrada' });
 
-  // Cancela no Asaas se houver vínculo
+  if (sub.status === 'CANCELED') {
+    return res.status(400).json({ error: 'Assinatura já cancelada' });
+  }
+
+  // 1. Cancela no Asaas — interrompe novas cobranças imediatamente
   if (sub.asaasSubId) {
     await callPaymentService(
       `/payments/internal/subscription/${sub.asaasSubId}`,
@@ -320,9 +328,15 @@ subscriptionRouter.delete('/:id', async (req: Request, res: Response) => {
     );
   }
 
+  // 2. Marca como CANCELING — acesso continua até currentPeriodEnd
   const updated = await prisma.clientSubscription.update({
     where: { id: req.params.id },
-    data: { status: 'CANCELED', canceledAt: new Date() },
+    data: { status: 'CANCELING', canceledAt: new Date() },
+    include: {
+      clientPlan: {
+        include: { services: { include: { service: { select: { id: true, name: true } } } } },
+      },
+    },
   });
   return res.json(updated);
 });
