@@ -18,6 +18,25 @@ const fmt = (v: number) =>
 const fmtDate = (d: string) =>
   format(new Date(d), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
 
+// ─── Badge Asaas ──────────────────────────────────────────────────────────────
+function AsaasBadge() {
+  return (
+    <a
+      href="https://www.asaas.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
+        <rect width="24" height="24" rx="5" fill="#00BCD4" opacity="0.15" />
+        <path d="M12 4.5C7.86 4.5 4.5 7.86 4.5 12s3.36 7.5 7.5 7.5 7.5-3.36 7.5-7.5S16.14 4.5 12 4.5zm0 13.5c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm.5-10h-1.5v4.25l3.5 2.1.75-1.23-2.75-1.63V8z" fill="#00BCD4" />
+      </svg>
+      Pagamentos processados com segurança pelo
+      <span className="font-semibold text-[#00BCD4]">Asaas</span>
+    </a>
+  );
+}
+
 // ─── Modal de confirmação ──────────────────────────────────────────────────────
 function ConfirmModal({
   plan,
@@ -138,6 +157,7 @@ function ConfirmModal({
           </div>
 
           {/* Botão confirmar */}
+
           <button
             onClick={onConfirm}
             disabled={loading}
@@ -148,6 +168,8 @@ function ConfirmModal({
               : <><CreditCard className="w-5 h-5" /> {hasSub ? 'Confirmar troca' : 'Confirmar e pagar'} <ArrowRight className="w-4 h-4" /></>
             }
           </button>
+
+          <AsaasBadge />
         </div>
       </div>
     </>
@@ -603,6 +625,11 @@ export default function AssinaturaPage() {
             )}
           </>
         )}
+      </div>
+
+      {/* Asaas badge */}
+      <div className="pt-2 pb-4">
+        <AsaasBadge />
       </div>
 
       {/* Modal de confirmação */}
