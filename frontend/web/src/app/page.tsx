@@ -531,25 +531,21 @@ export default function LandingPage() {
             <span style={{ fontFamily: G.serif, fontWeight: 800, fontSize: 14 }}><span style={{ color: G.gold }}>Barber</span>stack</span>
           </div>
           <p style={{ fontSize: 12, color: G.muted }}>© 2026 Barberstack. Todos os direitos reservados.</p>
-          <div style={{ display: 'flex', gap: 20, fontSize: 12, color: G.muted }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 12, color: G.muted }}>
             {['Privacidade', 'Termos', 'Suporte'].map(l => (
               <a key={l} href="#" style={{ color: G.muted, textDecoration: 'none', transition: 'color 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = G.white)}
                 onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
               >{l}</a>
             ))}
+            <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center' }}>
+              <img
+                src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
+                alt="Serviços financeiros Asaas"
+                style={{ height: 36, objectFit: 'contain' }}
+              />
+            </a>
           </div>
-        </div>
-        {/* Asaas badge */}
-        <div style={{ maxWidth: 1100, margin: '16px auto 0', borderTop: `1px solid ${G.faint}`, paddingTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <p style={{ fontSize: 11, color: G.muted }}>Serviços financeiros processados por</p>
-          <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer">
-            <img
-              src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
-              alt="Serviços financeiros Asaas"
-              style={{ height: 40, objectFit: 'contain' }}
-            />
-          </a>
         </div>
       </footer>
     </div>

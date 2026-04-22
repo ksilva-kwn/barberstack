@@ -29,7 +29,7 @@ function AsaasBadge() {
     >
       <span>Serviços financeiros processados por</span>
       <img
-        src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
+        src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
         alt="Serviços financeiros Asaas"
         className="h-10 object-contain"
       />
