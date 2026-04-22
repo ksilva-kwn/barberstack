@@ -30,6 +30,7 @@ COPY package.json pnpm-workspace.yaml ./
 COPY --from=deps /app/pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
+COPY --from=deps /app/packages/logger/node_modules ./packages/logger/node_modules
 COPY --from=deps /app/services/${SERVICE}/node_modules ./services/${SERVICE}/node_modules
 COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
