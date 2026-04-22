@@ -57,7 +57,9 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
-          <img src="/logo.png" alt="BarberStack" style={{ height: 40, width: 'auto', filter: 'invert(1)' }} />
+          <div style={{ background: '#fff', borderRadius: 12, padding: '8px 16px', display: 'inline-flex' }}>
+            <img src="/logo.png" alt="BarberStack" style={{ height: 44, width: 'auto' }} />
+          </div>
         </div>
 
         {/* Card */}

@@ -5,6 +5,7 @@ import { QueryProvider } from '@/components/providers/query-provider';
 export const metadata: Metadata = {
   title: 'Barberstack — Gestão de Barbearias',
   description: 'SaaS completo para gestão de barbearias: agenda, financeiro, estoque, bar e muito mais.',
+  icons: { icon: '/favicon.png', apple: '/favicon.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -43,7 +43,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu className="w-5 h-5" />
             </button>
-            <img src="/logo.png" alt="BarberStack" className="h-6 w-auto dark:invert" />
+            <div style={{ background: '#fff', borderRadius: 8, padding: '3px 10px', display: 'inline-flex' }}>
+              <img src="/logo.png" alt="BarberStack" style={{ height: 26, width: 'auto' }} />
+            </div>
           </div>
 
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">

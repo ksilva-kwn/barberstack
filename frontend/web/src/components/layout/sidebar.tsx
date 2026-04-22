@@ -197,7 +197,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
-          <img src="/logo.png" alt="BarberStack" className="h-8 w-auto dark:invert" />
+          <div style={{ background: '#fff', borderRadius: 10, padding: '5px 12px', display: 'inline-flex' }}>
+            <img src="/logo.png" alt="BarberStack" style={{ height: 32, width: 'auto' }} />
+          </div>
         </div>
         {user?.barbershop && (
           <p className="text-xs text-muted-foreground mt-1.5 truncate">{user.barbershop.name}</p>

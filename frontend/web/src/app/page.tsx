@@ -183,7 +183,9 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
 
           {/* Logo */}
-          <img src="/logo.png" alt="BarberStack" style={{ height: 36, width: 'auto', filter: 'invert(1)' }} />
+          <div style={{ background: '#fff', borderRadius: 10, padding: '5px 12px', display: 'inline-flex' }}>
+            <img src="/logo.png" alt="BarberStack" style={{ height: 32, width: 'auto' }} />
+          </div>
 
           {/* Links */}
           <nav style={{ display: 'flex', gap: 28, fontSize: 13 }} className="hidden md:flex">
@@ -519,7 +521,9 @@ export default function LandingPage() {
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: `1px solid ${G.goldBorder}`, padding: '32px 24px', backgroundColor: G.bg }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <img src="/logo.png" alt="BarberStack" style={{ height: 28, width: 'auto', filter: 'invert(1)' }} />
+          <div style={{ background: '#fff', borderRadius: 8, padding: '4px 10px', display: 'inline-flex' }}>
+            <img src="/logo.png" alt="BarberStack" style={{ height: 24, width: 'auto' }} />
+          </div>
           <p style={{ fontSize: 12, color: G.muted }}>© 2026 Barberstack. Todos os direitos reservados.</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 12, color: G.muted }}>
             {['Privacidade', 'Termos', 'Suporte'].map(l => (
