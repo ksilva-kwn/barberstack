@@ -88,7 +88,6 @@ const navItems: NavItem[] = [
       { label: 'Contas a receber',    href: '/financeiro/contas-receber',      icon: <Wallet className="w-3.5 h-3.5" /> },
       { label: 'Criar despesa',       href: '/financeiro/despesas',            icon: <TrendingDown className="w-3.5 h-3.5" /> },
       { label: 'Criar receita',       href: '/financeiro/receitas',            icon: <TrendingUp className="w-3.5 h-3.5" /> },
-      { label: 'Conta Asaas',         href: '/financeiro/asaas',               icon: <CreditCard className="w-3.5 h-3.5" /> },
     ],
   },
   {
@@ -108,7 +107,8 @@ const navItems: NavItem[] = [
     children: [
       { label: 'Planos & Assinantes', href: '/assinaturas',            icon: <CreditCard className="w-3.5 h-3.5" /> },
       { label: 'Relatórios',          href: '/assinaturas/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
-      { label: 'Saque PIX',           href: '/assinaturas/saque',      icon: <ArrowUpRight className="w-3.5 h-3.5" /> },
+      { label: 'Saque',               href: '/assinaturas/saque',      icon: <ArrowUpRight className="w-3.5 h-3.5" /> },
+      { label: 'Conta Asaas',         href: '/financeiro/asaas',       icon: <Wallet className="w-3.5 h-3.5" /> },
     ],
   },
   {

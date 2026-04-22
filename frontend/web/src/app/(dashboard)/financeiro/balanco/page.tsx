@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { TrendingUp, TrendingDown, DollarSign, Clock, Loader2, BarChart2, ShoppingCart, Wallet, ArrowUpRight, X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Clock, Loader2, BarChart2, ShoppingCart, Wallet, ArrowUpRight, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { financialApi } from '@/lib/financial.api';
 import { paymentApi } from '@/lib/payment.api';
@@ -142,30 +141,6 @@ function TransferModal({ balance, onClose }: { balance: number; onClose: () => v
   );
 }
 
-function AsaasActivationCard() {
-  const router = useRouter();
-  return (
-    <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-5">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-          <AlertCircle className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-amber-400 text-sm">Conta de pagamentos não ativada</p>
-          <p className="text-amber-400/80 text-xs mt-1 leading-relaxed">
-            Configure sua subconta Asaas para receber pagamentos de assinaturas e sacar via PIX.
-          </p>
-        </div>
-        <button
-          onClick={() => router.push('/financeiro/asaas')}
-          className="shrink-0 flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors"
-        >
-          Configurar
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function BalancoPage() {
   const [rangeIdx, setRangeIdx] = useState(0);
@@ -183,12 +158,6 @@ export default function BalancoPage() {
   const { data: d, isLoading } = useQuery({
     queryKey: ['balance', from, to],
     queryFn: () => financialApi.balance(from, to).then(r => r.data),
-  });
-
-  const { data: asaasBalance } = useQuery({
-    queryKey: ['asaas-balance'],
-    queryFn: () => paymentApi.balance().then(r => r.data),
-    staleTime: 60_000,
   });
 
   if (isLoading || !d) return (
@@ -217,32 +186,6 @@ export default function BalancoPage() {
         </div>
       </div>
 
-      {/* Saldo Asaas */}
-      {asaasBalance?.configured ? (
-        <div className="flex items-center justify-between gap-4 bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Saldo Asaas disponível</p>
-              <p className="text-2xl font-bold text-foreground">
-                R$ {(asaasBalance.balance ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">Atualizado em tempo real via subconta</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowTransfer(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
-          >
-            <ArrowUpRight className="w-4 h-4" />
-            Sacar via PIX
-          </button>
-        </div>
-      ) : asaasBalance && !asaasBalance.configured ? (
-        <AsaasActivationCard />
-      ) : null}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
