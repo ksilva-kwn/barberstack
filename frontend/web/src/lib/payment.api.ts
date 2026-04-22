@@ -22,17 +22,6 @@ export interface AsaasAccountStatus {
   documentStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'AWAITING_APPROVAL';
 }
 
-export interface BankAccountData {
-  bankCode: string;
-  bankName: string;
-  ownerName: string;
-  cpfCnpj: string;
-  agency: string;
-  account: string;
-  accountDigit: string;
-  bankAccountType: 'CONTA_CORRENTE' | 'CONTA_POUPANCA';
-}
-
 export const paymentApi = {
   balance: () =>
     api.get<AsaasBalance>('/api/payments/balance'),
@@ -48,16 +37,4 @@ export const paymentApi = {
 
   accountStatus: () =>
     api.get<AsaasAccountStatus>('/api/payments/account-status'),
-
-  submitBankAccount: (data: BankAccountData) =>
-    api.post('/api/payments/bank-account', data),
-
-  uploadDocument: (type: string, file: File) => {
-    const form = new FormData();
-    form.append('type', type);
-    form.append('file', file);
-    return api.post('/api/payments/documents', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
 };
