@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
 import { z } from 'zod';
+import { logger } from '@barberstack/logger';
 
 export const subscriptionRouter: Router = Router();
 
@@ -29,7 +30,7 @@ async function callPaymentService(path: string, method: 'POST' | 'DELETE', body?
     });
     if (res.ok) return res.json();
   } catch (err) {
-    console.error('[subscription] Erro ao chamar payment-service:', err);
+    logger.error('subscription-service', `[payment-service] erro na chamada: ${err}`);
   }
   return null;
 }
@@ -286,7 +287,7 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
     include: { clientPlan: true, client: { select: { name: true } } },
   });
 
-  console.log(`[subscription] Criada sub ${sub.id} para cliente ${parsed.data.clientId} — status PENDING_PAYMENT`);
+  logger.info(barbershopId, `[subscription] criada ${sub.id} para cliente ${parsed.data.clientId} — PENDING_PAYMENT`);
 
   // 2. Solicita criação no Asaas
   const asaasResult = await callPaymentService('/payments/internal/subscription', 'POST', {
@@ -300,7 +301,7 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
     nextDueDate: toYMD(end),
   });
 
-  console.log(`[subscription] Resultado Asaas para sub ${sub.id}:`, JSON.stringify(asaasResult));
+  logger.info(barbershopId, `[subscription] resultado Asaas para ${sub.id}: ${JSON.stringify(asaasResult)}`);
 
   // 3. Persiste asaasSubId e paymentLink; se Asaas não configurado, mantém PENDING_PAYMENT
   let finalSub = sub;
@@ -313,9 +314,9 @@ subscriptionRouter.post('/', async (req: Request, res: Response) => {
       },
       include: { clientPlan: true, client: { select: { name: true } } },
     });
-    console.log(`[subscription] Sub ${sub.id} vinculada ao Asaas: ${asaasResult.asaasSubId}, paymentLink: ${asaasResult.paymentLink}`);
+    logger.info(barbershopId, `[subscription] ${sub.id} vinculada ao Asaas: ${asaasResult.asaasSubId}`);
   } else {
-    console.warn(`[subscription] Sub ${sub.id} sem vínculo Asaas — barbearia sem API key ou erro no payment-service`);
+    logger.warn(barbershopId, `[subscription] ${sub.id} sem vínculo Asaas — barbearia sem API key ou erro no payment-service`);
   }
 
   return res.status(201).json(finalSub);

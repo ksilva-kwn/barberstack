@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma, UserRole, Prisma } from '@barberstack/database';
+import { logger } from '@barberstack/logger';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -284,7 +285,7 @@ export class AuthController {
 
       return res.json({ ok: true, asaasSkipped });
     } catch (err: any) {
-      console.error('[auth/deleteAccount]', err?.message);
+      logger.error(barbershopId ?? 'auth-service', `[deleteAccount] ${err?.message}`);
       return res.status(500).json({ error: 'Erro ao excluir conta. Tente novamente.' });
     }
   };

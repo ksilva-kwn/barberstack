@@ -8,6 +8,7 @@
 
 import { Router, Request, Response } from 'express';
 import { prisma } from '@barberstack/database';
+import { logger } from '@barberstack/logger';
 
 export const webhookRouter: Router = Router();
 
@@ -87,6 +88,6 @@ webhookRouter.post('/asaas', async (req: Request, res: Response) => {
       });
     }
   } catch (err) {
-    console.error('[webhook/asaas] Erro ao processar evento:', err);
+    logger.error('webhook', `[asaas] erro ao processar evento: ${err}`);
   }
 });

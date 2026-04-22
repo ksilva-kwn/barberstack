@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
+import { logger } from '@barberstack/logger';
 
 export const notificationRouter: Router = Router();
 
@@ -8,6 +9,7 @@ export const notificationRouter: Router = Router();
  * Body: { phone, clientName, professionalName, scheduledAt, services }
  */
 notificationRouter.post('/whatsapp/reminder', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
   const { phone, clientName, professionalName, scheduledAt, services } = req.body;
 
   const date = new Date(scheduledAt);
@@ -18,7 +20,7 @@ notificationRouter.post('/whatsapp/reminder', async (req: Request, res: Response
   const message = `Olá ${clientName}! 💈\n\nLembrando do seu agendamento:\n📅 ${formattedDate}\n✂️ Com: ${professionalName}\n💇 Serviços: ${services}\n\nAté logo!`;
 
   if (!process.env.WHATSAPP_API_URL || !process.env.WHATSAPP_API_TOKEN) {
-    console.log('[WhatsApp Mock]', { phone, message });
+    logger.info(barbershopId, `[whatsapp/mock] lembrete para ${phone} — ${clientName}`);
     return res.json({ sent: true, mock: true });
   }
 
@@ -35,9 +37,10 @@ notificationRouter.post('/whatsapp/reminder', async (req: Request, res: Response
 });
 
 notificationRouter.post('/whatsapp/confirm', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
   const { phone, clientName, appointmentId } = req.body;
   const message = `Olá ${clientName}! Confirme seu agendamento respondendo SIM. 💈`;
 
-  console.log('[WhatsApp Confirm]', { phone, message, appointmentId });
+  logger.info(barbershopId, `[whatsapp/confirm] ${phone} — agendamento ${appointmentId}`);
   return res.json({ sent: true, message });
 });

@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { appointmentRouter } from './routes/appointment.routes';
 import { publicAppointmentRouter } from './routes/public.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
+import { logger } from '@barberstack/logger';
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -18,4 +19,4 @@ app.use('/public', publicAppointmentRouter);
 
 app.use(requireTenant);
 app.use('/appointments', appointmentRouter);
-app.listen(PORT, () => console.log(`📅 Appointment Service running on port ${PORT}`));
+app.listen(PORT, () => logger.info('appointment-service', `📅 Appointment Service running on port ${PORT}`));

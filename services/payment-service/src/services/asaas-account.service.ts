@@ -1,5 +1,6 @@
 import { prisma } from '@barberstack/database';
 import { createMasterAsaasClient, createSubAccountAsaasClient } from '../asaas.client';
+import { logger } from '@barberstack/logger';
 
 interface CreateSubAccountDto {
   barbershopId: string;
@@ -101,11 +102,11 @@ export async function getOnboardingUrl(barbershopId: string): Promise<string | n
     for (const endpoint of ['/myAccount/loginUrl', '/myAccount/onboardingUrl']) {
       try {
         const response = await subClient.get(endpoint);
-        console.log(`[getOnboardingUrl] subaccount ${endpoint} →`, JSON.stringify(response.data));
+        logger.info(shop.name, `[asaas/loginUrl] subaccount ${endpoint} → ${JSON.stringify(response.data)}`);
         const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
         if (url) return url;
       } catch (err: any) {
-        console.warn(`[getOnboardingUrl] subaccount ${endpoint} falhou:`, err?.response?.status, JSON.stringify(err?.response?.data ?? err.message));
+        logger.warn(shop.name, `[asaas/loginUrl] subaccount ${endpoint} falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
       }
     }
   }
@@ -115,15 +116,15 @@ export async function getOnboardingUrl(barbershopId: string): Promise<string | n
   for (const endpoint of [`/accounts/${shop.asaasAccountId}/loginUrl`, `/accounts/${shop.asaasAccountId}/onboardingUrl`]) {
     try {
       const response = await masterClient.get(endpoint);
-      console.log(`[getOnboardingUrl] master ${endpoint} →`, JSON.stringify(response.data));
+      logger.info(shop.name, `[asaas/loginUrl] master ${endpoint} → ${JSON.stringify(response.data)}`);
       const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
       if (url) return url;
     } catch (err: any) {
-      console.warn(`[getOnboardingUrl] master ${endpoint} falhou:`, err?.response?.status, JSON.stringify(err?.response?.data ?? err.message));
+      logger.warn(shop.name, `[asaas/loginUrl] master ${endpoint} falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
     }
   }
 
-  console.warn('[getOnboardingUrl] nenhum endpoint retornou URL para', shop.asaasAccountId);
+  logger.warn(shop.name, `[asaas/loginUrl] nenhum endpoint retornou URL (accountId: ${shop.asaasAccountId})`);
   return null;
 }
 

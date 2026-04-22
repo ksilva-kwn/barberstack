@@ -8,6 +8,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml ./
 COPY packages/database/package.json ./packages/database/
+COPY packages/logger/package.json ./packages/logger/
 COPY services/payment-service/package.json ./services/payment-service/
 RUN pnpm install --no-frozen-lockfile
 
@@ -20,9 +21,11 @@ COPY --from=deps /app/packages/database/node_modules ./packages/database/node_mo
 COPY --from=deps /app/services/payment-service/node_modules ./services/payment-service/node_modules
 COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
+COPY packages/logger ./packages/logger
 COPY services/payment-service ./services/payment-service
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
+RUN pnpm --filter @barberstack/logger build
 RUN pnpm --filter @barberstack/payment-service build
 RUN pnpm --filter @barberstack/payment-service deploy --prod /deploy
 RUN cp -r services/payment-service/dist /deploy/dist

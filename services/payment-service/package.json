@@ -8,6 +8,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@barberstack/logger": "workspace:*",
     "@barberstack/database": "workspace:*",
     "axios": "^1.7.2",
     "cors": "^2.8.5",

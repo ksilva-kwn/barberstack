@@ -3,6 +3,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { authRouter } from './routes/auth.routes';
+import { logger } from '@barberstack/logger';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3001;
@@ -18,7 +19,7 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 
 app.listen(PORT, () => {
-  console.log(`🔐 Auth Service running on port ${PORT}`);
+  logger.info('auth-service', `🔐 Auth Service running on port ${PORT}`);
 });
 
 export default app;

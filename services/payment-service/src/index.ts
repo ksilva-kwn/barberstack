@@ -11,6 +11,7 @@ import {
   createAsaasSubscription,
   cancelAsaasSubscription,
 } from './services/asaas-subscription.service';
+import { logger } from '@barberstack/logger';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -42,7 +43,7 @@ app.post('/payments/internal/subaccount', async (req: Request, res: Response) =>
     const result = await createAsaasSubAccount({ barbershopId, name, email, cpfCnpj, phone, address, city, state, postalCode, companyType, incomeValue });
     return res.status(201).json(result);
   } catch (err: any) {
-    console.error('[payment/internal/subaccount] Erro Asaas:', err?.response?.data ?? err.message);
+    logger.error(barbershopId, `[subaccount] ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
   }
 });
@@ -56,17 +57,17 @@ app.post('/payments/internal/subscription', async (req: Request, res: Response) 
 
   const apiKey = await getBarbershopApiKey(barbershopId);
   if (!apiKey) {
-    console.warn(`[payment/internal/subscription] Sem API key para barbershop ${barbershopId}`);
+    logger.warn(barbershopId, '[subscription] sem API key Asaas — assinatura criada sem vínculo');
     return res.json({ asaasSubId: null, paymentLink: null });
   }
 
   try {
     const customerId = await createOrGetAsaasCustomer(apiKey, { name: clientName, email: clientEmail }, clientId);
     const result = await createAsaasSubscription(apiKey, customerId, { name: planName, value, billingCycle }, nextDueDate);
-    console.log(`[payment/internal/subscription] Criada sub Asaas para barbershop ${barbershopId}:`, JSON.stringify(result));
+    logger.info(barbershopId, `[subscription] criada no Asaas: ${JSON.stringify(result)}`);
     return res.json(result);
   } catch (err: any) {
-    console.error('[payment/internal/subscription] Erro Asaas:', err?.response?.data ?? err.message);
+    logger.error(barbershopId, `[subscription] erro Asaas: ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.json({ asaasSubId: null, paymentLink: null });
   }
 });
@@ -83,7 +84,7 @@ app.delete('/payments/internal/subscription/:asaasSubId', async (req: Request, r
     await cancelAsaasSubscription(apiKey, asaasSubId);
     return res.json({ ok: true });
   } catch (err: any) {
-    console.error('[payment/internal/subscription] Erro ao cancelar no Asaas:', err?.response?.data ?? err.message);
+    logger.error(barbershopId ?? 'payment-service', `[subscription/cancel] ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.json({ ok: true });
   }
 });
@@ -93,5 +94,5 @@ app.use(requireTenant);
 app.use('/payments', paymentsRouter);
 
 app.listen(PORT, () => {
-  console.log(`💳 Payment Service running on port ${PORT}`);
+  logger.info('payment-service', `💳 Payment Service running on port ${PORT}`);
 });

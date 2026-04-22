@@ -14,6 +14,7 @@ import {
   closeAsaasAccount,
   getAccountStatus,
 } from '../services/asaas-account.service';
+import { logger } from '@barberstack/logger';
 
 
 export const paymentsRouter: Router = Router();
@@ -30,7 +31,7 @@ paymentsRouter.post('/activate', async (req: Request, res: Response) => {
     const result = await activateAsaasSubAccount(barbershopId);
     return res.json(result);
   } catch (err: any) {
-    console.error('[payment/activate] Erro:', err?.response?.data ?? err.message);
+    logger.error(barbershopId, `[activate] ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
   }
 });
@@ -70,7 +71,7 @@ paymentsRouter.post('/transfer', async (req: Request, res: Response) => {
     const result = await requestPixTransfer(barbershopId, value, description);
     return res.json(result);
   } catch (err: any) {
-    console.error('[payment/transfer] Erro Asaas:', err?.response?.data ?? err.message);
+    logger.error(barbershopId, `[transfer] ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
   }
 });
@@ -94,7 +95,7 @@ paymentsRouter.delete('/internal/close-account', async (req: Request, res: Respo
     const result = await closeAsaasAccount(barbershopId);
     return res.json(result);
   } catch (err: any) {
-    console.error('[payment/close-account] Erro Asaas:', err?.response?.data ?? err.message);
+    logger.error(barbershopId, `[close-account] ${JSON.stringify(err?.response?.data ?? err.message)}`);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
   }
 });

@@ -10,6 +10,7 @@ import { usersRouter } from './routes/users.routes';
 import { productRouter } from './routes/product.routes';
 import { financialRouter } from './routes/financial.routes';
 import { publicRouter } from './routes/public.routes';
+import { logger } from '@barberstack/logger';
 import { requireTenant } from './middlewares/tenant.middleware';
 
 const app = express();
@@ -32,4 +33,4 @@ app.use('/users', usersRouter);
 app.use('/products', productRouter);
 app.use('/financial', financialRouter);
 
-app.listen(PORT, () => console.log(`✂️  Barbershop Service running on port ${PORT}`));
+app.listen(PORT, () => logger.info('barbershop-service', `✂️  Barbershop Service running on port ${PORT}`));

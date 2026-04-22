@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
+import { logger } from '@barberstack/logger';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -144,7 +145,7 @@ app.use('/api/notifications', createProxyMiddleware({
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 API Gateway running on port ${PORT}`);
+  logger.info('api-gateway', `🚀 API Gateway running on port ${PORT}`);
 });
 
 export default app;
