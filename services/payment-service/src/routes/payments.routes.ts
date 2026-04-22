@@ -7,12 +7,6 @@
 
 import { Router, Request, Response } from 'express';
 import {
-  getBarbershopApiKey,
-  createOrGetAsaasCustomer,
-  createAsaasSubscription,
-  cancelAsaasSubscription,
-} from '../services/asaas-subscription.service';
-import {
   getBarbershopBalance,
   requestPixTransfer,
   getOnboardingUrl,
@@ -91,66 +85,3 @@ paymentsRouter.delete('/internal/close-account', async (req: Request, res: Respo
   }
 });
 
-// ─── [INTERNAL] Criar assinatura no Asaas ────────────────────────────────────
-paymentsRouter.post('/internal/subscription', async (req: Request, res: Response) => {
-  const {
-    barbershopId,
-    clientId,
-    clientName,
-    clientEmail,
-    planName,
-    value,
-    billingCycle,
-    nextDueDate,
-  } = req.body as {
-    barbershopId: string;
-    clientId: string;
-    clientName: string;
-    clientEmail: string;
-    planName: string;
-    value: number;
-    billingCycle: 'monthly' | 'weekly';
-    nextDueDate: string;
-  };
-
-  const apiKey = await getBarbershopApiKey(barbershopId);
-  if (!apiKey) {
-    return res.json({ asaasSubId: null, paymentLink: null });
-  }
-
-  try {
-    const customerId = await createOrGetAsaasCustomer(apiKey, {
-      name: clientName,
-      email: clientEmail,
-    }, clientId);
-
-    const result = await createAsaasSubscription(
-      apiKey,
-      customerId,
-      { name: planName, value, billingCycle },
-      nextDueDate,
-    );
-
-    return res.json(result);
-  } catch (err: any) {
-    console.error('[payment/internal/subscription] Erro Asaas:', err?.response?.data ?? err.message);
-    return res.json({ asaasSubId: null, paymentLink: null });
-  }
-});
-
-// ─── [INTERNAL] Cancelar assinatura no Asaas ─────────────────────────────────
-paymentsRouter.delete('/internal/subscription/:asaasSubId', async (req: Request, res: Response) => {
-  const { asaasSubId } = req.params;
-  const barbershopId = req.headers['x-barbershop-id'] as string;
-
-  const apiKey = await getBarbershopApiKey(barbershopId);
-  if (!apiKey) return res.json({ ok: true });
-
-  try {
-    await cancelAsaasSubscription(apiKey, asaasSubId);
-    return res.json({ ok: true });
-  } catch (err: any) {
-    console.error('[payment/internal/subscription] Erro ao cancelar no Asaas:', err?.response?.data ?? err.message);
-    return res.json({ ok: true });
-  }
-});

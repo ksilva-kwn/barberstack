@@ -5,6 +5,12 @@ import { paymentsRouter } from './routes/payments.routes';
 import { webhookRouter } from './routes/webhook.routes';
 import { requireTenant } from './middlewares/tenant.middleware';
 import { createAsaasSubAccount } from './services/asaas-account.service';
+import {
+  getBarbershopApiKey,
+  createOrGetAsaasCustomer,
+  createAsaasSubscription,
+  cancelAsaasSubscription,
+} from './services/asaas-subscription.service';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -38,6 +44,47 @@ app.post('/payments/internal/subaccount', async (req: Request, res: Response) =>
   } catch (err: any) {
     console.error('[payment/internal/subaccount] Erro Asaas:', err?.response?.data ?? err.message);
     return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+  }
+});
+
+// ─── [INTERNAL] Criar assinatura no Asaas (service-to-service, sem tenant) ───
+app.post('/payments/internal/subscription', async (req: Request, res: Response) => {
+  const { barbershopId, clientId, clientName, clientEmail, planName, value, billingCycle, nextDueDate } = req.body as {
+    barbershopId: string; clientId: string; clientName: string; clientEmail: string;
+    planName: string; value: number; billingCycle: 'monthly' | 'weekly'; nextDueDate: string;
+  };
+
+  const apiKey = await getBarbershopApiKey(barbershopId);
+  if (!apiKey) {
+    console.warn(`[payment/internal/subscription] Sem API key para barbershop ${barbershopId}`);
+    return res.json({ asaasSubId: null, paymentLink: null });
+  }
+
+  try {
+    const customerId = await createOrGetAsaasCustomer(apiKey, { name: clientName, email: clientEmail }, clientId);
+    const result = await createAsaasSubscription(apiKey, customerId, { name: planName, value, billingCycle }, nextDueDate);
+    console.log(`[payment/internal/subscription] Criada sub Asaas para barbershop ${barbershopId}:`, JSON.stringify(result));
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[payment/internal/subscription] Erro Asaas:', err?.response?.data ?? err.message);
+    return res.json({ asaasSubId: null, paymentLink: null });
+  }
+});
+
+// ─── [INTERNAL] Cancelar assinatura no Asaas (service-to-service, sem tenant) ─
+app.delete('/payments/internal/subscription/:asaasSubId', async (req: Request, res: Response) => {
+  const { asaasSubId } = req.params;
+  const { barbershopId } = req.body as { barbershopId?: string };
+
+  const apiKey = barbershopId ? await getBarbershopApiKey(barbershopId) : null;
+  if (!apiKey) return res.json({ ok: true });
+
+  try {
+    await cancelAsaasSubscription(apiKey, asaasSubId);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error('[payment/internal/subscription] Erro ao cancelar no Asaas:', err?.response?.data ?? err.message);
+    return res.json({ ok: true });
   }
 });
 
