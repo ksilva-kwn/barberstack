@@ -542,17 +542,15 @@ export default function LandingPage() {
         </div>
         {/* Asaas badge */}
         <div style={{ maxWidth: 1100, margin: '16px auto 0', borderTop: `1px solid ${G.faint}`, paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-            <rect width="24" height="24" rx="5" fill="#00BCD4" opacity="0.15" />
-            <path d="M12 4.5C7.86 4.5 4.5 7.86 4.5 12s3.36 7.5 7.5 7.5 7.5-3.36 7.5-7.5S16.14 4.5 12 4.5zm0 13.5c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm.5-10h-1.5v4.25l3.5 2.1.75-1.23-2.75-1.63V8z" fill="#00BCD4" />
-          </svg>
           <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: G.muted, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#00BCD4')}
+            style={{ fontSize: 11, color: G.muted, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}
+            onMouseEnter={e => (e.currentTarget.style.color = G.white)}
             onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
           >
-            Pagamentos e cobranças processados com segurança pelo
-            <span style={{ color: '#00BCD4', fontWeight: 600 }}>Asaas</span>
+            Pagamentos processados com segurança pelo
+            <span style={{ background: '#fff', borderRadius: 6, padding: '2px 8px', display: 'inline-flex', alignItems: 'center' }}>
+              <img src="/asaas-logo.png" alt="Asaas" style={{ height: 16, objectFit: 'contain' }} />
+            </span>
           </a>
         </div>
       </footer>
