@@ -25,10 +25,14 @@ function AsaasBadge() {
       href="https://www.asaas.com"
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      className="flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
     >
-      <span>Pagamentos processados com segurança pelo</span>
-      <img src="/asaas-logo.png" alt="Asaas" className="h-4 object-contain" />
+      <span>Serviços financeiros processados por</span>
+      <img
+        src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
+        alt="Serviços financeiros Asaas"
+        className="h-10 object-contain"
+      />
     </a>
   );
 }

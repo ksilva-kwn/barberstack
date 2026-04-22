@@ -541,16 +541,14 @@ export default function LandingPage() {
           </div>
         </div>
         {/* Asaas badge */}
-        <div style={{ maxWidth: 1100, margin: '16px auto 0', borderTop: `1px solid ${G.faint}`, paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: G.muted, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}
-            onMouseEnter={e => (e.currentTarget.style.color = G.white)}
-            onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
-          >
-            Pagamentos processados com segurança pelo
-            <span style={{ background: '#fff', borderRadius: 6, padding: '2px 8px', display: 'inline-flex', alignItems: 'center' }}>
-              <img src="/asaas-logo.png" alt="Asaas" style={{ height: 16, objectFit: 'contain' }} />
-            </span>
+        <div style={{ maxWidth: 1100, margin: '16px auto 0', borderTop: `1px solid ${G.faint}`, paddingTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <p style={{ fontSize: 11, color: G.muted }}>Serviços financeiros processados por</p>
+          <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer">
+            <img
+              src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
+              alt="Serviços financeiros Asaas"
+              style={{ height: 40, objectFit: 'contain' }}
+            />
           </a>
         </div>
       </footer>
