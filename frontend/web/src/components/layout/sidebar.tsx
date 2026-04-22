@@ -197,9 +197,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
-          <div style={{ background: '#fff', borderRadius: 10, padding: '5px 12px', display: 'inline-flex' }}>
-            <img src="/logo.png" alt="BarberStack" style={{ height: 32, width: 'auto' }} />
-          </div>
+          <img src="/favicon.png" alt="BarberStack" style={{ height: 32, width: 'auto' }} />
+          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#F3F0EA', fontFamily: "'Inter', sans-serif" }}>BarberStack</span>
         </div>
         {user?.barbershop && (
           <p className="text-xs text-muted-foreground mt-1.5 truncate">{user.barbershop.name}</p>

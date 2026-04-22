@@ -56,10 +56,9 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400 }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '8px 16px', display: 'inline-flex' }}>
-            <img src="/logo.png" alt="BarberStack" style={{ height: 44, width: 'auto' }} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
+          <img src="/favicon.png" alt="BarberStack" style={{ height: 44, width: 'auto' }} />
+          <span style={{ fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em', color: G.white, fontFamily: "'Inter', sans-serif" }}>BarberStack</span>
         </div>
 
         {/* Card */}
