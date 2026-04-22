@@ -6,7 +6,6 @@
  */
 
 import { Router, Request, Response } from 'express';
-import multer from 'multer';
 import {
   getBarbershopBalance,
   requestPixTransfer,
@@ -14,11 +13,8 @@ import {
   activateAsaasSubAccount,
   closeAsaasAccount,
   getAccountStatus,
-  submitBankAccount,
-  uploadDocument,
 } from '../services/asaas-account.service';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 export const paymentsRouter: Router = Router();
 
@@ -90,47 +86,6 @@ paymentsRouter.get('/account-status', async (req: Request, res: Response) => {
   }
 });
 
-// ─── Dados bancários da subconta ─────────────────────────────────────────────
-paymentsRouter.post('/bank-account', async (req: Request, res: Response) => {
-  const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { bankCode, bankName, ownerName, cpfCnpj, agency, account, accountDigit, bankAccountType } = req.body;
-
-  if (!bankCode || !ownerName || !cpfCnpj || !agency || !account) {
-    return res.status(400).json({ error: 'Campos obrigatórios: banco, titular, CPF/CNPJ, agência, conta' });
-  }
-
-  try {
-    const result = await submitBankAccount(barbershopId, { bankCode, bankName, ownerName, cpfCnpj, agency, account, accountDigit: accountDigit ?? '', bankAccountType: bankAccountType ?? 'CONTA_CORRENTE' });
-    return res.json(result);
-  } catch (err: any) {
-    console.error('[payment/bank-account] status:', err?.response?.status);
-    console.error('[payment/bank-account] data:', JSON.stringify(err?.response?.data));
-    console.error('[payment/bank-account] message:', err?.message);
-    const description = err?.response?.data?.errors?.[0]?.description
-      || err?.response?.data?.message
-      || err?.message
-      || 'Erro desconhecido';
-    return res.status(400).json({ error: description });
-  }
-});
-
-// ─── Upload de documento da subconta ─────────────────────────────────────────
-paymentsRouter.post('/documents', upload.single('file'), async (req: Request, res: Response) => {
-  const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { type } = req.body;
-  const file = (req as any).file;
-
-  if (!file) return res.status(400).json({ error: 'Arquivo obrigatório' });
-  if (!type)  return res.status(400).json({ error: 'Tipo de documento obrigatório' });
-
-  try {
-    const result = await uploadDocument(barbershopId, type, file.buffer, file.originalname, file.mimetype);
-    return res.json(result);
-  } catch (err: any) {
-    console.error('[payment/documents] Erro:', err?.response?.data ?? err.message);
-    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
-  }
-});
 
 // ─── [INTERNAL] Fechar subconta Asaas (balance = 0, conta excluída) ──────────
 paymentsRouter.delete('/internal/close-account', async (req: Request, res: Response) => {
