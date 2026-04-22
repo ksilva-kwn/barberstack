@@ -48,7 +48,7 @@ export default function AsaasSetupPage() {
 
   const currentUrl = onboardingUrl ?? urlData?.url ?? null;
 
-  const handleActivate = async () => {
+  const handleOpenOnboarding = async () => {
     setActivating(true);
     setActivationError('');
     try {
@@ -56,8 +56,9 @@ export default function AsaasSetupPage() {
       const url = res.data.onboardingUrl;
       if (url) {
         setOnboardingUrl(url);
+        window.open(url, '_blank', 'noopener,noreferrer');
       } else {
-        setActivationError('Link de acesso indisponível no momento. Tente novamente em alguns instantes ou acesse diretamente em asaas.com com o e-mail da barbearia.');
+        setActivationError('Link indisponível no momento. Tente novamente em alguns instantes.');
       }
       qc.invalidateQueries({ queryKey: ['asaas-account-status'] });
       qc.invalidateQueries({ queryKey: ['asaas-onboarding-url'] });
@@ -120,13 +121,13 @@ export default function AsaasSetupPage() {
           )}
 
           <button
-            onClick={handleActivate}
+            onClick={handleOpenOnboarding}
             disabled={activating}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
           >
             {activating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Ativando...</>
-              : <><Building2 className="w-4 h-4" /> Ativar conta de pagamentos <ArrowRight className="w-4 h-4" /></>}
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Abrindo...</>
+              : <><Building2 className="w-4 h-4" /> Ativar e acessar cadastro <ArrowRight className="w-4 h-4" /></>}
           </button>
         </div>
       </div>
@@ -246,13 +247,13 @@ export default function AsaasSetupPage() {
           </a>
         ) : (
           <button
-            onClick={handleActivate}
+            onClick={handleOpenOnboarding}
             disabled={activating}
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {activating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Buscando link...</>
-              : <><RefreshCw className="w-4 h-4" /> Gerar link de acesso</>}
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Abrindo...</>
+              : <><ExternalLink className="w-4 h-4" /> Acessar cadastro no Asaas</>}
           </button>
         )}
 
