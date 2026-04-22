@@ -180,7 +180,9 @@ export async function submitBankAccount(barbershopId: string, data: {
   const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
   if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
 
-  const client = createSubAccountAsaasClient(shop.asaasApiKey);
+  if (!shop.asaasAccountId) throw new Error('Subconta Asaas não encontrada');
+
+  const client = createMasterAsaasClient();
 
   const payload = {
     bank: { code: data.bankCode, name: data.bankName },
@@ -193,10 +195,8 @@ export async function submitBankAccount(barbershopId: string, data: {
     bankAccountType: data.bankAccountType,
   };
 
-  console.log('[submitBankAccount] payload:', JSON.stringify(payload));
-
   try {
-    const response = await client.post('/myAccount/bankAccount', payload);
+    const response = await client.post(`/accounts/${shop.asaasAccountId}/bankAccount`, payload);
     return response.data;
   } catch (err: any) {
     console.error('[submitBankAccount] Asaas error status:', err?.response?.status);
