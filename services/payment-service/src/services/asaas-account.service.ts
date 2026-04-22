@@ -181,7 +181,8 @@ export async function submitBankAccount(barbershopId: string, data: {
   if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
 
   const client = createSubAccountAsaasClient(shop.asaasApiKey);
-  const response = await client.post('/myAccount/bankAccount', {
+
+  const payload = {
     bank: { code: data.bankCode, name: data.bankName },
     accountName: 'Conta Principal',
     ownerName: data.ownerName,
@@ -190,8 +191,18 @@ export async function submitBankAccount(barbershopId: string, data: {
     account: data.account.replace(/\D/g, ''),
     accountDigit: data.accountDigit,
     bankAccountType: data.bankAccountType,
-  });
-  return response.data;
+  };
+
+  console.log('[submitBankAccount] payload:', JSON.stringify(payload));
+
+  try {
+    const response = await client.post('/myAccount/bankAccount', payload);
+    return response.data;
+  } catch (err: any) {
+    console.error('[submitBankAccount] Asaas error status:', err?.response?.status);
+    console.error('[submitBankAccount] Asaas error data:', JSON.stringify(err?.response?.data ?? err.message));
+    throw err;
+  }
 }
 
 /**
