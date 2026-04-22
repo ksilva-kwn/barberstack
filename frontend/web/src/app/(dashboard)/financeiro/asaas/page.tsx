@@ -202,9 +202,20 @@ export default function AsaasSetupPage() {
           </p>
         </div>
 
+        {/* O que vai acontecer */}
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+          <p>
+            Ao clicar no botão abaixo, <strong className="text-foreground">uma nova aba será aberta</strong> com
+            o painel da Asaas já logado na sua conta. Preencha seus dados bancários e envie os documentos
+            solicitados. Quando terminar, <strong className="text-foreground">feche a aba e volte para o Barberstack</strong> —
+            clique em "Atualizar" para ver o novo status.
+          </p>
+        </div>
+
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           {[
-            'Informe seus dados bancários para receber saques',
+            'Informe sua conta bancária para receber saques',
             'Envie RG/CNH e comprovante de atividade',
             'Aguarde aprovação (normalmente 1 dia útil)',
           ].map((t, i) => (
@@ -225,7 +236,7 @@ export default function AsaasSetupPage() {
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
           >
             <ExternalLink className="w-4 h-4" />
-            Abrir cadastro no Asaas
+            Ir para o cadastro no Asaas
           </a>
         ) : (
           <button
