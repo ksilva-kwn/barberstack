@@ -81,8 +81,12 @@ export default function PainelHome() {
             </div>
             <div>
               <p className="font-semibold text-sm">Assinatura</p>
-              {sub ? (
+              {sub?.status === 'ACTIVE' ? (
                 <p className="text-xs text-emerald-500 mt-0.5">{sub.clientPlan.name} · Ativo</p>
+              ) : sub?.status === 'PENDING_PAYMENT' ? (
+                <p className="text-xs text-blue-500 mt-0.5">{sub.clientPlan.name} · Aguardando pagamento</p>
+              ) : sub?.status === 'CANCELING' ? (
+                <p className="text-xs text-amber-500 mt-0.5">{sub.clientPlan.name} · Cancelando</p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5">Nenhum plano ativo</p>
               )}

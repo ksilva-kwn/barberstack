@@ -216,6 +216,13 @@ subscriptionRouter.get('/my', async (req: Request, res: Response) => {
   const clientId    = req.headers['x-user-id'] as string;
   const barbershopId = req.headers['x-barbershop-id'] as string;
 
+  // Expira automaticamente PENDING_PAYMENT com mais de 30 minutos
+  const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+  await prisma.clientSubscription.updateMany({
+    where: { clientId, barbershopId, status: 'PENDING_PAYMENT', createdAt: { lt: thirtyMinsAgo } },
+    data: { status: 'CANCELED', canceledAt: new Date() },
+  });
+
   const sub = await prisma.clientSubscription.findFirst({
     where: { clientId, barbershopId, status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'DEFAULTING', 'CANCELING'] } },
     include: {
