@@ -183,12 +183,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
 
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px ${G.goldGlow}` }}>
-              <Scissors style={{ width: 17, height: 17, color: '#0D0D0B' }} />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.02em', fontFamily: G.serif }}><span style={{ color: G.gold }}>Barber</span>stack</span>
-          </div>
+          <img src="/logo.png" alt="BarberStack" style={{ height: 36, width: 'auto', filter: 'invert(1)' }} />
 
           {/* Links */}
           <nav style={{ display: 'flex', gap: 28, fontSize: 13 }} className="hidden md:flex">
@@ -524,12 +519,7 @@ export default function LandingPage() {
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: `1px solid ${G.goldBorder}`, padding: '32px 24px', backgroundColor: G.bg }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 7, background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Scissors style={{ width: 12, height: 12, color: '#0D0D0B' }} />
-            </div>
-            <span style={{ fontFamily: G.serif, fontWeight: 800, fontSize: 14 }}><span style={{ color: G.gold }}>Barber</span>stack</span>
-          </div>
+          <img src="/logo.png" alt="BarberStack" style={{ height: 28, width: 'auto', filter: 'invert(1)' }} />
           <p style={{ fontSize: 12, color: G.muted }}>© 2026 Barberstack. Todos os direitos reservados.</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 12, color: G.muted }}>
             {['Privacidade', 'Termos', 'Suporte'].map(l => (

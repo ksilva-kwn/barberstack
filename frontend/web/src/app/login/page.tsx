@@ -56,13 +56,8 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400 }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 36 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px ${G.goldGlow}` }}>
-            <Scissors style={{ width: 18, height: 18, color: '#0D0D0B' }} />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', color: G.white }}>
-            <span style={{ color: G.gold }}>Barber</span>stack
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
+          <img src="/logo.png" alt="BarberStack" style={{ height: 40, width: 'auto', filter: 'invert(1)' }} />
         </div>
 
         {/* Card */}
