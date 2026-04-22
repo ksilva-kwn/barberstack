@@ -141,6 +141,56 @@ function TransferModal({ balance, onClose }: { balance: number; onClose: () => v
   );
 }
 
+function AsaasActivationCard() {
+  const qc = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleActivate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await paymentApi.activate();
+      const url = res.data?.onboardingUrl;
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        setError('Link de ativação indisponível. Acesse asaas.com e faça login com o e-mail da barbearia para completar o cadastro.');
+      }
+      qc.invalidateQueries({ queryKey: ['asaas-balance'] });
+    } catch {
+      setError('Erro ao buscar link de ativação. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-5">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+          <AlertCircle className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-amber-400 text-sm">Conta de pagamentos não ativada</p>
+          <p className="text-amber-400/80 text-xs mt-1 leading-relaxed">
+            Sua subconta Asaas foi criada mas ainda precisa ser ativada. Clique em ativar e complete o cadastro informando um celular válido — isso leva menos de 2 minutos.
+          </p>
+          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+        </div>
+        <button
+          onClick={handleActivate}
+          disabled={loading}
+          className="shrink-0 flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
+        >
+          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {loading ? 'Aguarde...' : 'Ativar conta'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function BalancoPage() {
   const [rangeIdx, setRangeIdx] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -215,10 +265,7 @@ export default function BalancoPage() {
           </button>
         </div>
       ) : asaasBalance && !asaasBalance.configured ? (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>Subconta Asaas ainda não configurada. Ela é criada automaticamente quando a barbearia se cadastra.</span>
-        </div>
+        <AsaasActivationCard />
       ) : null}
 
       {/* KPIs */}

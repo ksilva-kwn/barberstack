@@ -96,12 +96,18 @@ export async function getOnboardingUrl(barbershopId: string): Promise<string | n
   if (!shop.asaasAccountId) return null;
 
   const client = createMasterAsaasClient();
-  try {
-    const response = await client.get(`/accounts/${shop.asaasAccountId}/onboardingUrl`);
-    return response.data?.onboardingUrl ?? response.data?.url ?? null;
-  } catch {
-    return null;
+
+  // Tenta /loginUrl primeiro, cai em /onboardingUrl se não existir
+  for (const endpoint of [`/accounts/${shop.asaasAccountId}/loginUrl`, `/accounts/${shop.asaasAccountId}/onboardingUrl`]) {
+    try {
+      const response = await client.get(endpoint);
+      const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
+      if (url) return url;
+    } catch {
+      // tenta o próximo
+    }
   }
+  return null;
 }
 
 /**
