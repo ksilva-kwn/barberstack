@@ -103,8 +103,14 @@ paymentsRouter.post('/bank-account', async (req: Request, res: Response) => {
     const result = await submitBankAccount(barbershopId, { bankCode, bankName, ownerName, cpfCnpj, agency, account, accountDigit: accountDigit ?? '', bankAccountType: bankAccountType ?? 'CONTA_CORRENTE' });
     return res.json(result);
   } catch (err: any) {
-    console.error('[payment/bank-account] Erro:', err?.response?.data ?? err.message);
-    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+    console.error('[payment/bank-account] status:', err?.response?.status);
+    console.error('[payment/bank-account] data:', JSON.stringify(err?.response?.data));
+    console.error('[payment/bank-account] message:', err?.message);
+    const description = err?.response?.data?.errors?.[0]?.description
+      || err?.response?.data?.message
+      || err?.message
+      || 'Erro desconhecido';
+    return res.status(400).json({ error: description });
   }
 });
 
