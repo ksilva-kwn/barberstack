@@ -19,6 +19,7 @@ FROM --platform=linux/amd64 base AS deps
 ARG SERVICE
 COPY package.json pnpm-workspace.yaml ./
 COPY packages/database/package.json ./packages/database/
+COPY packages/logger/package.json ./packages/logger/
 COPY services/${SERVICE}/package.json ./services/${SERVICE}/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
@@ -32,11 +33,13 @@ COPY --from=deps /app/packages/database/node_modules ./packages/database/node_mo
 COPY --from=deps /app/services/${SERVICE}/node_modules ./services/${SERVICE}/node_modules
 COPY tsconfig.base.json ./
 COPY packages/database ./packages/database
+COPY packages/logger ./packages/logger
 COPY services/${SERVICE} ./services/${SERVICE}
 
 # Gera o cliente Prisma incluindo o engine musl-arm64 (binaryTargets no schema)
 RUN cd packages/database && npx prisma generate
 RUN pnpm --filter @barberstack/database build
+RUN pnpm --filter @barberstack/logger build
 RUN pnpm --filter @barberstack/${SERVICE} build
 
 # Cria bundle de produção (roda em amd64, sem QEMU)
