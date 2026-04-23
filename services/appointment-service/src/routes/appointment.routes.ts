@@ -96,6 +96,47 @@ appointmentRouter.post('/', async (req: Request, res: Response) => {
   return res.status(201).json(appointment);
 });
 
+// Atualizar agendamento completo (cliente, horário, serviços, observações)
+appointmentRouter.patch('/:id', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { clientId, clientName, notes, serviceIds, scheduledAt, professionalId } = req.body;
+
+  const updateData: any = {};
+  if (notes !== undefined)         updateData.notes         = notes;
+  if (scheduledAt !== undefined)   updateData.scheduledAt   = new Date(scheduledAt);
+  if (professionalId !== undefined) updateData.professionalId = professionalId;
+
+  // Client: prefer linked clientId, else free-text name
+  if (clientId !== undefined)     { updateData.clientId = clientId; updateData.clientName = null; }
+  else if (clientName !== undefined) { updateData.clientName = clientName; updateData.clientId = null; }
+
+  // Services: if provided, recalculate duration + totalAmount
+  if (Array.isArray(serviceIds) && serviceIds.length > 0) {
+    const services = await prisma.service.findMany({
+      where: { id: { in: serviceIds }, barbershopId },
+    });
+    updateData.durationMins = services.reduce((s, sv) => s + sv.durationMins, 0);
+    updateData.totalAmount  = services.reduce((s, sv) => s + Number(sv.price), 0);
+    updateData.services = {
+      deleteMany: {},
+      create: services.map(sv => ({ serviceId: sv.id, price: sv.price, durationMins: sv.durationMins })),
+    };
+  }
+
+  const appointment = await prisma.appointment.update({
+    where: { id: req.params.id },
+    data: updateData,
+    include: {
+      professional: { include: { user: { select: { name: true } } } },
+      services: { include: { service: true } },
+      client: { select: { name: true, phone: true } },
+      appointmentProducts: { include: { product: true } },
+    },
+  });
+
+  return res.json(appointment);
+});
+
 // Atualizar status do agendamento (Chegou, Finalizou, Faltou, etc.)
 appointmentRouter.patch('/:id/status', async (req: Request, res: Response) => {
   const { status } = req.body;

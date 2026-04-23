@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Repeat2, Users, CreditCard, AlertTriangle, Loader2, X,
-         ToggleLeft, ToggleRight, ExternalLink, Pencil, Ban, Check, Zap } from 'lucide-react';
+         ToggleLeft, ToggleRight, ExternalLink, Pencil, Ban, Check, Zap, MapPin } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
 import { format } from 'date-fns';
@@ -45,7 +45,8 @@ function PlanModal({
   const [price, setPrice]             = useState(plan?.price?.toString() ?? '');
   const [description, setDescription] = useState(plan?.description ?? '');
   const [billingCycle, setBillingCycle] = useState(plan?.billingCycle ?? 'monthly');
-  const [isFeatured, setIsFeatured]   = useState(plan?.isFeatured ?? false);
+  const [isFeatured, setIsFeatured]           = useState(plan?.isFeatured ?? false);
+  const [allowMultiBranch, setAllowMultiBranch] = useState(plan?.allowMultiBranch ?? false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
     plan?.services.map(s => s.serviceId) ?? [],
   );
@@ -68,12 +69,12 @@ function PlanModal({
       if (isEdit) {
         await subscriptionApi.updatePlan(plan.id, {
           name, price: Number(price), description: description || null,
-          isFeatured, serviceIds: selectedServiceIds,
+          isFeatured, allowMultiBranch, serviceIds: selectedServiceIds,
         });
       } else {
         await subscriptionApi.createPlan({
           name, price: Number(price), description: description || undefined,
-          billingCycle, isFeatured, serviceIds: selectedServiceIds,
+          billingCycle, isFeatured, allowMultiBranch, serviceIds: selectedServiceIds,
         });
       }
       qc.invalidateQueries({ queryKey: ['plans'] });
@@ -143,6 +144,32 @@ function PlanModal({
               </div>
               <div className={`w-10 h-6 rounded-full transition-colors relative ${isFeatured ? 'bg-yellow-500' : 'bg-muted'}`}>
                 <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${isFeatured ? 'translate-x-5' : 'translate-x-1'}`} />
+              </div>
+            </button>
+
+            {/* Multi-filial toggle */}
+            <button
+              type="button"
+              onClick={() => setAllowMultiBranch(v => !v)}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition-colors ${
+                allowMultiBranch
+                  ? 'border-sky-500/50 bg-sky-500/10 text-sky-500'
+                  : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MapPin className={`w-4 h-4 ${allowMultiBranch ? 'text-sky-500' : 'text-muted-foreground'}`} />
+                <div className="text-left">
+                  <p className={`text-sm font-medium ${allowMultiBranch ? 'text-sky-500' : 'text-foreground'}`}>
+                    Válido em todas as filiais
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Cliente pode usar o plano em qualquer unidade
+                  </p>
+                </div>
+              </div>
+              <div className={`w-10 h-6 rounded-full transition-colors relative ${allowMultiBranch ? 'bg-sky-500' : 'bg-muted'}`}>
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${allowMultiBranch ? 'translate-x-5' : 'translate-x-1'}`} />
               </div>
             </button>
 

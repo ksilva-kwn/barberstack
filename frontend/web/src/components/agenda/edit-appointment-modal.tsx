@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Loader2, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 import { Appointment, appointmentApi } from '@/lib/appointment.api';
-import { BarbershopService } from '@/lib/barbershop.api';
+import { BarbershopService, Client, barbershopApi } from '@/lib/barbershop.api';
 
 interface Props {
   appointment: Appointment;
@@ -16,9 +17,101 @@ interface Props {
 const inputCls =
   'w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors';
 
+// ── Client search combobox ────────────────────────────────────────────────────
+function ClientSearch({
+  value,
+  onChange,
+}: {
+  value: Client | null;
+  onChange: (c: Client | null) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { data: clients = [], isFetching } = useQuery({
+    queryKey: ['clients-search', search],
+    queryFn: () => barbershopApi.clients(search || undefined).then(r => r.data),
+    enabled: open,
+  });
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  if (value) {
+    return (
+      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-primary text-sm">
+        <div>
+          <span className="font-medium text-foreground">{value.name}</span>
+          {value.phone && <span className="text-muted-foreground ml-2 text-xs">{value.phone}</span>}
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="text-muted-foreground hover:text-foreground ml-2"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-input focus-within:ring-2 focus-within:ring-ring transition-colors">
+        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <input
+          className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
+          placeholder="Buscar cliente por nome..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={() => setOpen(true)}
+        />
+        {isFetching && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
+      </div>
+
+      {open && (
+        <div className="absolute z-50 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+          {clients.length === 0 ? (
+            <p className="px-3 py-2.5 text-xs text-muted-foreground">
+              {isFetching ? 'Buscando...' : 'Nenhum cliente encontrado'}
+            </p>
+          ) : (
+            clients.map((c: Client) => (
+              <button
+                key={c.id}
+                type="button"
+                onMouseDown={() => { onChange(c); setOpen(false); setSearch(''); }}
+                className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-accent transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                  {c.phone && <p className="text-xs text-muted-foreground truncate">{c.phone}</p>}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main modal ────────────────────────────────────────────────────────────────
 export function EditAppointmentModal({ appointment, services, onClose, onSaved }: Props) {
   const scheduled = new Date(appointment.scheduledAt);
-  const [clientName, setClientName] = useState(appointment.client?.name ?? appointment.clientName ?? '');
+
+  // Pre-populate with existing client if linked
+  const [selectedClient, setSelectedClient] = useState<Client | null>(
+    appointment.client
+      ? { id: appointment.clientId ?? '', name: appointment.client.name, email: '', phone: appointment.client.phone ?? null, createdAt: '' }
+      : null
+  );
   const [date, setDate] = useState(format(scheduled, 'yyyy-MM-dd'));
   const [time, setTime] = useState(format(scheduled, 'HH:mm'));
   const [notes, setNotes] = useState(appointment.notes ?? '');
@@ -28,11 +121,10 @@ export function EditAppointmentModal({ appointment, services, onClose, onSaved }
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const toggleService = (id: string) => {
+  const toggleService = (id: string) =>
     setSelectedServiceIds(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
-  };
 
   const handleSave = async () => {
     if (!date || !time) { setError('Informe a data e o horário.'); return; }
@@ -42,8 +134,9 @@ export function EditAppointmentModal({ appointment, services, onClose, onSaved }
     try {
       const scheduledAt = new Date(`${date}T${time}`).toISOString();
       await appointmentApi.update(appointment.id, {
-        clientName: clientName || undefined,
-        notes: notes || undefined,
+        clientId:   selectedClient?.id && selectedClient.id !== '' ? selectedClient.id : undefined,
+        clientName: !selectedClient?.id ? (selectedClient?.name ?? undefined) : undefined,
+        notes:      notes || undefined,
         serviceIds: selectedServiceIds,
         scheduledAt,
       });
@@ -72,36 +165,22 @@ export function EditAppointmentModal({ appointment, services, onClose, onSaved }
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-          {/* Client */}
-          <label className="flex flex-col gap-1.5">
+
+          {/* Client search */}
+          <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cliente</span>
-            <input
-              className={inputCls}
-              placeholder="Nome do cliente"
-              value={clientName}
-              onChange={e => setClientName(e.target.value)}
-            />
-          </label>
+            <ClientSearch value={selectedClient} onChange={setSelectedClient} />
+          </div>
 
           {/* Date + Time */}
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Data</span>
-              <input
-                type="date"
-                className={inputCls}
-                value={date}
-                onChange={e => setDate(e.target.value)}
-              />
+              <input type="date" className={inputCls} value={date} onChange={e => setDate(e.target.value)} />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Horário</span>
-              <input
-                type="time"
-                className={inputCls}
-                value={time}
-                onChange={e => setTime(e.target.value)}
-              />
+              <input type="time" className={inputCls} value={time} onChange={e => setTime(e.target.value)} />
             </label>
           </div>
 
@@ -115,15 +194,17 @@ export function EditAppointmentModal({ appointment, services, onClose, onSaved }
                   return (
                     <label
                       key={s.id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-accent transition-colors"
-                      style={{ borderColor: checked ? 'hsl(var(--primary))' : undefined, background: checked ? 'hsl(var(--primary)/0.06)' : undefined }}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
+                      style={{
+                        borderColor: checked ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                        background: checked ? 'hsl(var(--primary)/0.06)' : undefined,
+                      }}
                     >
                       <span
-                        className="flex items-center justify-center w-4 h-4 rounded border flex-shrink-0"
+                        className="flex items-center justify-center w-4 h-4 rounded border flex-shrink-0 transition-colors"
                         style={{
                           background: checked ? 'hsl(var(--primary))' : 'transparent',
                           borderColor: checked ? 'hsl(var(--primary))' : 'hsl(var(--border))',
-                          transition: 'background 0.15s, border-color 0.15s',
                         }}
                       >
                         {checked && (

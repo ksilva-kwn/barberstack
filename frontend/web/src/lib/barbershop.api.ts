@@ -4,6 +4,9 @@ export interface Branch {
   id: string;
   barbershopId: string;
   name: string;
+  cnpj: string | null;
+  email: string | null;
+  managerName: string | null;
   address: string | null;
   phone: string | null;
   city: string | null;

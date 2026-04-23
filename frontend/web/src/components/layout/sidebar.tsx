@@ -9,9 +9,14 @@ import {
   FileText, CheckSquare, BarChart2, TrendingUp, TrendingDown, Scale,
   Wallet, UserPlus, UserX, MapPin, UserCog, Scissors, Globe,
   PackagePlus, Coffee, CreditCard, ArrowUpRight, PanelLeftClose, PanelLeftOpen,
+  ChevronsUpDown,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { barbershopApi } from '@/lib/barbershop.api';
+import { useBranchStore } from '@/store/branch.store';
+import { useAuthStore } from '@/store/auth.store';
 
 const A = '#D4A24C';
 const S = {
@@ -102,6 +107,15 @@ const planLabel: Record<string, string> = {
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const storeUser = useAuthStore(s => s.user);
+  const barbershopId = storeUser?.barbershopId ?? '';
+  const { activeBranchId, setActiveBranch } = useBranchStore();
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches', barbershopId],
+    queryFn: () => barbershopApi.branches(barbershopId).then(r => r.data),
+    enabled: !!barbershopId && storeUser?.role === 'ADMIN',
+  });
 
   // Collapsed state (persisted)
   const [collapsed, setCollapsed] = useState(false);
@@ -159,7 +173,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
             <img src="/bzinho.png" alt="" style={{ width: 20, height: 20 * (183 / 148), objectFit: 'contain', flexShrink: 0 }} />
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <span style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: '-0.02em', color: S.text }}>
                 barberstack
               </span>
@@ -167,6 +181,32 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 <p style={{ fontSize: 10.5, color: S.textDim, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {user.barbershop.name}
                 </p>
+              )}
+              {/* Branch selector — only when >1 branch */}
+              {branches.length > 1 && (
+                <div style={{ marginTop: 6, position: 'relative' }}>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <select
+                      value={activeBranchId ?? ''}
+                      onChange={e => setActiveBranch(e.target.value || null)}
+                      style={{
+                        appearance: 'none', WebkitAppearance: 'none',
+                        width: '100%', paddingLeft: 8, paddingRight: 22, paddingTop: 4, paddingBottom: 4,
+                        borderRadius: 6, fontSize: 11, fontFamily: 'inherit',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${activeBranchId ? A + '55' : S.border}`,
+                        color: activeBranchId ? A : S.textMuted,
+                        cursor: 'pointer', outline: 'none',
+                      }}
+                    >
+                      <option value="" style={{ background: S.bg, color: S.textMuted }}>Todas as filiais</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id} style={{ background: S.bg, color: S.text }}>{b.name}</option>
+                      ))}
+                    </select>
+                    <ChevronsUpDown size={10} style={{ position: 'absolute', right: 6, color: S.textDim, pointerEvents: 'none' }} />
+                  </div>
+                </div>
               )}
             </div>
           </div>

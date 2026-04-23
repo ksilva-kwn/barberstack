@@ -16,6 +16,7 @@ export interface ClientPlan {
   billingCycle: 'monthly' | 'weekly';
   isActive: boolean;
   isFeatured: boolean;
+  allowMultiBranch: boolean;
   createdAt: string;
   services: PlanService[];
   _count?: { subscriptions: number };
@@ -54,12 +55,12 @@ export const subscriptionApi = {
 
   createPlan: (data: {
     name: string; price: number; billingCycle: string;
-    description?: string; isFeatured?: boolean; serviceIds: string[];
+    description?: string; isFeatured?: boolean; allowMultiBranch?: boolean; serviceIds: string[];
   }) => api.post<ClientPlan>('/api/subscriptions/plans', data),
 
   updatePlan: (id: string, data: {
     name?: string; price?: number;
-    description?: string | null; isFeatured?: boolean; serviceIds?: string[];
+    description?: string | null; isFeatured?: boolean; allowMultiBranch?: boolean; serviceIds?: string[];
   }) => api.put<ClientPlan>(`/api/subscriptions/plans/${id}`, data),
 
   togglePlan: (id: string) =>

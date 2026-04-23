@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
+import { useBranchStore } from '@/store/branch.store';
 import { barbershopApi } from '@/lib/barbershop.api';
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
 import { AppointmentOriginChart } from '@/components/dashboard/origin-chart';
@@ -96,19 +97,24 @@ function KpiCard({ d }: { d: KpiData }) {
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { activeBranchId } = useBranchStore();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const barbershopId = user?.barbershopId ?? '';
   const firstName = user?.name?.split(' ')[0] ?? '';
 
   const [filterProfessionalId, setFilterProfessionalId] = useState('');
+  // filterBranchId: defaults to global branch switcher, can be overridden locally
   const [filterBranchId, setFilterBranchId]             = useState('');
   const [filterMonths, setFilterMonths]                  = useState(6);
 
+  // Use global branch if no local override is set
+  const effectiveBranchId = filterBranchId || activeBranchId || '';
+
   const { data: kpis, isLoading } = useQuery({
-    queryKey: ['kpis', barbershopId, filterProfessionalId, filterBranchId],
+    queryKey: ['kpis', barbershopId, filterProfessionalId, effectiveBranchId],
     queryFn: () => barbershopApi.kpis(barbershopId, {
       professionalId: filterProfessionalId || undefined,
-      branchId: filterBranchId || undefined,
+      branchId: effectiveBranchId || undefined,
     }).then(r => r.data),
     enabled: !!barbershopId && !isSuperAdmin,
   });
@@ -233,13 +239,13 @@ export default function DashboardPage() {
             <RevenueChart
               barbershopId={barbershopId}
               professionalId={filterProfessionalId || undefined}
-              branchId={filterBranchId || undefined}
+              branchId={effectiveBranchId || undefined}
               months={filterMonths}
             />
             <AppointmentOriginChart
               barbershopId={barbershopId}
               professionalId={filterProfessionalId || undefined}
-              branchId={filterBranchId || undefined}
+              branchId={effectiveBranchId || undefined}
             />
           </div>
 
