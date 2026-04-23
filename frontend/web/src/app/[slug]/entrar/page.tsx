@@ -160,38 +160,20 @@ export default function PortalLoginPage() {
             )}
 
             {siteKey && (
-              <>
+              <div
+                onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
+                className="rounded-lg overflow-hidden"
+                style={{ cursor: captchaToken ? 'default' : 'pointer' }}
+              >
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={siteKey}
                   onSuccess={token => { setCaptchaToken(token); setCaptchaVerifying(false); }}
                   onExpire={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
                   onError={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
-                  options={{ theme: 'auto', execution: 'execute', size: 'invisible' }}
+                  options={{ theme: 'auto', execution: 'execute', size: 'flexible', appearance: 'always' }}
                 />
-                <button
-                  type="button"
-                  onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${captchaToken ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-input bg-background hover:border-primary/40'}`}
-                >
-                  <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors ${captchaToken ? 'bg-emerald-500 border-emerald-500' : 'border-input'}`}>
-                    {captchaVerifying && !captchaToken && (
-                      <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-                    )}
-                    {captchaToken && (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                    )}
-                  </span>
-                  <span className={`text-sm flex-1 text-left ${captchaToken ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                    {captchaToken ? 'Verificado' : captchaVerifying ? 'Verificando...' : 'Não sou um robô'}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/50 text-right leading-tight">
-                    Cloudflare<br/>Turnstile
-                  </span>
-                </button>
-              </>
+              </div>
             )}
 
             <button

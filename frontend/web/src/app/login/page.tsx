@@ -232,51 +232,19 @@ export default function LoginPage() {
 
             {/* Captcha */}
             {siteKey && (
-              <>
+              <div
+                onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
+                style={{ cursor: captchaToken ? 'default' : 'pointer', borderRadius: 10, overflow: 'hidden' }}
+              >
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={siteKey}
                   onSuccess={token => { setCaptchaToken(token); setCaptchaVerifying(false); }}
                   onExpire={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
                   onError={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
-                  options={{ theme: 'dark', execution: 'execute', size: 'invisible' }}
+                  options={{ theme: 'dark', execution: 'execute', size: 'flexible', appearance: 'always' }}
                 />
-                <button
-                  type="button"
-                  onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '11px 14px', borderRadius: 10, border: `1px solid ${captchaToken ? '#22c55e55' : G.borderStrong}`,
-                    background: captchaToken ? 'rgba(34,197,94,0.06)' : G.bg,
-                    cursor: captchaToken ? 'default' : 'pointer',
-                    transition: 'border-color 0.2s, background 0.2s', width: '100%',
-                  }}
-                >
-                  <span style={{
-                    width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${captchaToken ? '#22c55e' : G.borderStrong}`,
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    background: captchaToken ? '#22c55e' : 'transparent',
-                    transition: 'background 0.2s, border-color 0.2s',
-                  }}>
-                    {captchaVerifying && !captchaToken && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={G.textDim} strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                      </svg>
-                    )}
-                    {captchaToken && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                    )}
-                  </span>
-                  <span style={{ fontSize: 13, color: captchaToken ? '#22c55e' : G.textMuted }}>
-                    {captchaToken ? 'Verificado' : captchaVerifying ? 'Verificando...' : 'Não sou um robô'}
-                  </span>
-                  <span style={{ marginLeft: 'auto', fontSize: 10, color: G.textDim, textAlign: 'right', lineHeight: 1.3 }}>
-                    Cloudflare<br/>Turnstile
-                  </span>
-                </button>
-              </>
+              </div>
             )}
 
             {/* Submit */}
