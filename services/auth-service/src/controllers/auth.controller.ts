@@ -208,6 +208,20 @@ export class AuthController {
         },
       });
 
+      await tx.barbershopBranch.create({
+        data: {
+          barbershopId: barbershop.id,
+          name: barbershopName,
+          phone: barbershopPhone,
+          email: barbershopEmail,
+          address: address ?? null,
+          city: city ?? null,
+          state: state ?? null,
+          zipCode: zipCode ?? null,
+          isMain: true,
+        },
+      });
+
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await tx.user.create({
         data: { name, email, passwordHash, phone, role: UserRole.ADMIN, barbershopId: barbershop.id },

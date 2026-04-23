@@ -239,23 +239,48 @@ barbershopRouter.put('/:id/business-hours', async (req: Request, res: Response) 
 
 // Listar filiais
 barbershopRouter.get('/:id/branches', async (req: Request, res: Response) => {
-  const branches = await prisma.barbershopBranch.findMany({
+  let branches = await prisma.barbershopBranch.findMany({
     where: { barbershopId: req.params.id },
     orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
   });
+
+  // Auto-seed main branch for accounts created before branch support
+  if (branches.length === 0) {
+    const shop = await prisma.barbershop.findUnique({ where: { id: req.params.id } });
+    if (shop) {
+      const main = await prisma.barbershopBranch.create({
+        data: {
+          barbershopId: shop.id,
+          name: shop.name,
+          phone: shop.phone,
+          email: shop.email,
+          address: shop.address ?? null,
+          city: shop.city ?? null,
+          state: shop.state ?? null,
+          zipCode: shop.zipCode ?? null,
+          isMain: true,
+        },
+      });
+      branches = [main];
+    }
+  }
+
   return res.json(branches);
 });
 
 // Criar filial
 barbershopRouter.post('/:id/branches', async (req: Request, res: Response) => {
   const schema = z.object({
-    name:    z.string().min(2),
-    address: z.string().nullable().optional(),
-    phone:   z.string().nullable().optional(),
-    city:    z.string().nullable().optional(),
-    state:   z.string().max(2).nullable().optional(),
-    zipCode: z.string().nullable().optional(),
-    isMain:  z.boolean().optional(),
+    name:        z.string().min(2),
+    cnpj:        z.string().nullable().optional(),
+    email:       z.string().nullable().optional(),
+    managerName: z.string().nullable().optional(),
+    address:     z.string().nullable().optional(),
+    phone:       z.string().nullable().optional(),
+    city:        z.string().nullable().optional(),
+    state:       z.string().max(2).nullable().optional(),
+    zipCode:     z.string().nullable().optional(),
+    isMain:      z.boolean().optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -277,14 +302,17 @@ barbershopRouter.post('/:id/branches', async (req: Request, res: Response) => {
 // Atualizar filial
 barbershopRouter.put('/:id/branches/:branchId', async (req: Request, res: Response) => {
   const schema = z.object({
-    name:     z.string().min(2).optional(),
-    address:  z.string().nullable().optional(),
-    phone:    z.string().nullable().optional(),
-    city:     z.string().nullable().optional(),
-    state:    z.string().max(2).nullable().optional(),
-    zipCode:  z.string().nullable().optional(),
-    isMain:   z.boolean().optional(),
-    isActive: z.boolean().optional(),
+    name:        z.string().min(2).optional(),
+    cnpj:        z.string().nullable().optional(),
+    email:       z.string().nullable().optional(),
+    managerName: z.string().nullable().optional(),
+    address:     z.string().nullable().optional(),
+    phone:       z.string().nullable().optional(),
+    city:        z.string().nullable().optional(),
+    state:       z.string().max(2).nullable().optional(),
+    zipCode:     z.string().nullable().optional(),
+    isMain:      z.boolean().optional(),
+    isActive:    z.boolean().optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });

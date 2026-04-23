@@ -142,8 +142,8 @@ function PlanModal({
                   </p>
                 </div>
               </div>
-              <div className={`w-10 h-6 rounded-full transition-colors relative ${isFeatured ? 'bg-yellow-500' : 'bg-muted'}`}>
-                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${isFeatured ? 'translate-x-5' : 'translate-x-1'}`} />
+              <div className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden ${isFeatured ? 'bg-yellow-500' : 'bg-muted'}`}>
+                <span className={`absolute top-1 left-0 w-4 h-4 rounded-full bg-white shadow transition-transform ${isFeatured ? 'translate-x-5' : 'translate-x-1'}`} />
               </div>
             </button>
 
@@ -168,8 +168,8 @@ function PlanModal({
                   </p>
                 </div>
               </div>
-              <div className={`w-10 h-6 rounded-full transition-colors relative ${allowMultiBranch ? 'bg-sky-500' : 'bg-muted'}`}>
-                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${allowMultiBranch ? 'translate-x-5' : 'translate-x-1'}`} />
+              <div className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden ${allowMultiBranch ? 'bg-sky-500' : 'bg-muted'}`}>
+                <span className={`absolute top-1 left-0 w-4 h-4 rounded-full bg-white shadow transition-transform ${allowMultiBranch ? 'translate-x-5' : 'translate-x-1'}`} />
               </div>
             </button>
 

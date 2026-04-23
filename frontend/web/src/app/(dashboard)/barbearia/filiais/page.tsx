@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MapPin, Phone, Pencil, Trash2, Loader2, X, Check, Star, Mail, Building2 } from 'lucide-react';
+import { Plus, MapPin, Phone, Pencil, Trash2, Loader2, X, Star, Mail, Building2 } from 'lucide-react';
 import { barbershopApi, Branch } from '@/lib/barbershop.api';
 import { useAuthStore } from '@/store/auth.store';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -34,7 +34,7 @@ function fmtZip(v: string) {
 
 const EMPTY_FORM = {
   name: '', cnpj: '', email: '', managerName: '',
-  address: '', phone: '', city: '', state: '', zipCode: '', isMain: false,
+  address: '', phone: '', city: '', state: '', zipCode: '',
 };
 
 function BranchModal({ initial, onClose, onSave }: {
@@ -53,7 +53,6 @@ function BranchModal({ initial, onClose, onSave }: {
     city:        initial?.city        ?? '',
     state:       initial?.state       ?? '',
     zipCode:     initial?.zipCode     ?? '',
-    isMain:      initial?.isMain      ?? false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
@@ -169,17 +168,6 @@ function BranchModal({ initial, onClose, onSave }: {
                 <input className={inputCls} value={form.state} onChange={e => set('state', e.target.value.toUpperCase().slice(0, 2))} placeholder="SP" maxLength={2} />
               </div>
             </div>
-
-            {/* Principal */}
-            <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
-              <div
-                onClick={() => set('isMain', !form.isMain)}
-                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${form.isMain ? 'bg-primary border-primary' : 'border-border'}`}
-              >
-                {form.isMain && <Check className="w-3 h-3 text-primary-foreground" />}
-              </div>
-              <span className="text-sm text-foreground">Marcar como filial principal</span>
-            </label>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
