@@ -4,40 +4,26 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Calendar,
-  Receipt,
-  DollarSign,
-  Users,
-  Repeat2,
-  Building2,
-  Package,
-  UtensilsCrossed,
-  Settings,
-  LogOut,
-  ChevronDown,
-  ExternalLink,
-  FileText,
-  CheckSquare,
-  BarChart2,
-  TrendingUp,
-  TrendingDown,
-  Scale,
-  Wallet,
-  UserPlus,
-  UserX,
-  MapPin,
-  UserCog,
-  Scissors,
-  Globe,
-  PackagePlus,
-  Coffee,
-  CreditCard,
-  ArrowUpRight,
+  LayoutDashboard, Calendar, Receipt, DollarSign, Users, Repeat2,
+  Building2, Package, UtensilsCrossed, LogOut, ChevronDown, ExternalLink,
+  FileText, CheckSquare, BarChart2, TrendingUp, TrendingDown, Scale,
+  Wallet, UserPlus, UserX, MapPin, UserCog, Scissors, Globe,
+  PackagePlus, Coffee, CreditCard, ArrowUpRight,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+
+const A = '#D4A24C';
+const S = {
+  bg:           '#0A0A0B',
+  border:       'rgba(255,255,255,0.06)',
+  borderStrong: 'rgba(255,255,255,0.1)',
+  text:         '#F4F4F5',
+  textMuted:    '#A1A1AA',
+  textDim:      '#71717A',
+  hover:        'rgba(255,255,255,0.04)',
+  active:       'rgba(255,255,255,0.06)',
+};
 
 interface SubItem {
   label: string;
@@ -54,91 +40,66 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', adminOnly: false },
+  { label: 'Agenda',    icon: Calendar,        href: '/agenda',    adminOnly: false },
   {
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    href: '/dashboard',
-    adminOnly: false,
-  },
-  {
-    label: 'Agenda',
-    icon: Calendar,
-    href: '/agenda',
-    adminOnly: false,
-  },
-  {
-    label: 'Caixa',
-    icon: Receipt,
-    adminOnly: true,
+    label: 'Caixa', icon: Receipt, adminOnly: true,
     children: [
-      { label: 'Comandas abertas',  href: '/financeiro/comandas',          icon: <FileText className="w-3.5 h-3.5" /> },
-      { label: 'Comandas fechadas', href: '/financeiro/comandas/fechadas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',        href: '/financeiro/relatorios',        icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Comandas abertas',  href: '/financeiro/comandas',          icon: <FileText size={13} /> },
+      { label: 'Comandas fechadas', href: '/financeiro/comandas/fechadas', icon: <CheckSquare size={13} /> },
+      { label: 'Relatórios',        href: '/financeiro/relatorios',        icon: <BarChart2 size={13} /> },
     ],
   },
   {
-    label: 'Financeiro',
-    icon: DollarSign,
-    adminOnly: true,
+    label: 'Financeiro', icon: DollarSign, adminOnly: true,
     children: [
-      { label: 'Comissões',           href: '/financeiro/comissoes',            icon: <TrendingUp className="w-3.5 h-3.5" /> },
-      { label: 'Pagamento comissões', href: '/financeiro/comissoes/pagamentos', icon: <Wallet className="w-3.5 h-3.5" /> },
-      { label: 'Balanço',             href: '/financeiro/balanco',              icon: <Scale className="w-3.5 h-3.5" /> },
-      { label: 'Contas a pagar',      href: '/financeiro/contas-pagar',        icon: <TrendingDown className="w-3.5 h-3.5" /> },
-      { label: 'Contas a receber',    href: '/financeiro/contas-receber',      icon: <Wallet className="w-3.5 h-3.5" /> },
-      { label: 'Criar despesa',       href: '/financeiro/despesas',            icon: <TrendingDown className="w-3.5 h-3.5" /> },
-      { label: 'Criar receita',       href: '/financeiro/receitas',            icon: <TrendingUp className="w-3.5 h-3.5" /> },
+      { label: 'Comissões',           href: '/financeiro/comissoes',            icon: <TrendingUp size={13} /> },
+      { label: 'Pagamento comissões', href: '/financeiro/comissoes/pagamentos', icon: <Wallet size={13} /> },
+      { label: 'Balanço',             href: '/financeiro/balanco',              icon: <Scale size={13} /> },
+      { label: 'Contas a pagar',      href: '/financeiro/contas-pagar',        icon: <TrendingDown size={13} /> },
+      { label: 'Contas a receber',    href: '/financeiro/contas-receber',      icon: <Wallet size={13} /> },
+      { label: 'Criar despesa',       href: '/financeiro/despesas',            icon: <TrendingDown size={13} /> },
+      { label: 'Criar receita',       href: '/financeiro/receitas',            icon: <TrendingUp size={13} /> },
     ],
   },
   {
-    label: 'Clientes',
-    icon: Users,
-    adminOnly: true,
+    label: 'Clientes', icon: Users, adminOnly: true,
     children: [
-      { label: 'Cadastrar clientes',    href: '/clientes',            icon: <UserPlus className="w-3.5 h-3.5" /> },
-      { label: 'Clientes bloqueados',   href: '/clientes/bloqueados', icon: <UserX className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',            href: '/clientes/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Cadastrar clientes',  href: '/clientes',            icon: <UserPlus size={13} /> },
+      { label: 'Clientes bloqueados', href: '/clientes/bloqueados', icon: <UserX size={13} /> },
+      { label: 'Relatórios',          href: '/clientes/relatorios', icon: <BarChart2 size={13} /> },
     ],
   },
   {
-    label: 'Assinaturas',
-    icon: Repeat2,
-    adminOnly: true,
+    label: 'Assinaturas', icon: Repeat2, adminOnly: true,
     children: [
-      { label: 'Planos & Assinantes', href: '/assinaturas',            icon: <CreditCard className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',          href: '/assinaturas/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
-      { label: 'Saque',               href: '/assinaturas/saque',      icon: <ArrowUpRight className="w-3.5 h-3.5" /> },
-      { label: 'Conta Asaas',         href: '/financeiro/asaas',       icon: <Wallet className="w-3.5 h-3.5" /> },
+      { label: 'Planos & Assinantes', href: '/assinaturas',            icon: <CreditCard size={13} /> },
+      { label: 'Relatórios',          href: '/assinaturas/relatorios', icon: <BarChart2 size={13} /> },
+      { label: 'Saque',               href: '/assinaturas/saque',      icon: <ArrowUpRight size={13} /> },
+      { label: 'Conta Asaas',         href: '/financeiro/asaas',       icon: <Wallet size={13} /> },
     ],
   },
   {
-    label: 'Barbearia',
-    icon: Building2,
-    adminOnly: true,
+    label: 'Barbearia', icon: Building2, adminOnly: true,
     children: [
-      { label: 'Filiais',           href: '/barbearia/filiais',  icon: <MapPin className="w-3.5 h-3.5" /> },
-      { label: 'Profissionais',     href: '/barbeiros',          icon: <UserCog className="w-3.5 h-3.5" /> },
-      { label: 'Serviços',          href: '/servicos',           icon: <Scissors className="w-3.5 h-3.5" /> },
-      { label: 'Página do cliente', href: '/barbearia/portal',   icon: <Globe className="w-3.5 h-3.5" /> },
-      { label: 'Configurações',     href: '/configuracoes',      icon: <Settings className="w-3.5 h-3.5" /> },
+      { label: 'Filiais',           href: '/barbearia/filiais', icon: <MapPin size={13} /> },
+      { label: 'Profissionais',     href: '/barbeiros',         icon: <UserCog size={13} /> },
+      { label: 'Serviços',          href: '/servicos',          icon: <Scissors size={13} /> },
+      { label: 'Página do cliente', href: '/barbearia/portal',  icon: <Globe size={13} /> },
     ],
   },
   {
-    label: 'Estoque',
-    icon: Package,
-    adminOnly: true,
+    label: 'Estoque', icon: Package, adminOnly: true,
     children: [
-      { label: 'Produtos',    href: '/estoque',           icon: <PackagePlus className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios',  href: '/estoque/relatorios', icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Produtos',   href: '/estoque',            icon: <PackagePlus size={13} /> },
+      { label: 'Relatórios', href: '/estoque/relatorios', icon: <BarChart2 size={13} /> },
     ],
   },
   {
-    label: 'Bar / Cozinha',
-    icon: UtensilsCrossed,
-    adminOnly: true,
+    label: 'Bar / Cozinha', icon: UtensilsCrossed, adminOnly: true,
     children: [
-      { label: 'Produtos',   href: '/bar/produtos',    icon: <Coffee className="w-3.5 h-3.5" /> },
-      { label: 'Relatórios', href: '/bar/relatorios',  icon: <BarChart2 className="w-3.5 h-3.5" /> },
+      { label: 'Produtos',   href: '/bar/produtos',   icon: <Coffee size={13} /> },
+      { label: 'Relatórios', href: '/bar/relatorios', icon: <BarChart2 size={13} /> },
     ],
   },
 ];
@@ -180,33 +141,28 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const filtered = navItems.filter(item => !item.adminOnly || user?.role === 'ADMIN');
 
   return (
-    <aside
-      className="w-64 flex flex-col h-full shrink-0 border-r border-white/10"
-      style={{
-        backgroundColor: 'hsl(var(--sidebar))',
-        // Force dark-theme CSS vars so the sidebar looks the same in light and dark mode
-        ['--foreground' as string]:          '38 18% 90%',
-        ['--muted-foreground' as string]:    '38 8% 52%',
-        ['--primary' as string]:             '38 65% 52%',
-        ['--primary-foreground' as string]:  '0 0% 5%',
-        ['--accent' as string]:              '0 0% 16%',
-        ['--accent-foreground' as string]:   '38 18% 90%',
-        ['--border' as string]:              '38 8% 20%',
-      }}
-    >
+    <aside style={{
+      width: 240, display: 'flex', flexDirection: 'column', height: '100%', flexShrink: 0,
+      background: S.bg, borderRight: `1px solid ${S.border}`,
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    }}>
       {/* Logo */}
-      <div className="p-5 border-b border-white/10">
-        <div className="flex items-center gap-2.5">
-          <img src="/favicon.png" alt="BarberStack" style={{ height: 32, width: 'auto' }} />
-          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#F3F0EA', fontFamily: "'Inter', sans-serif" }}>BarberStack</span>
+      <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${S.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src="/bzinho.png" alt="" style={{ width: 20, height: 20 * (183 / 148), objectFit: 'contain' }} />
+          <span style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif", fontWeight: 600, fontSize: 15.5, letterSpacing: '-0.02em', color: S.text }}>
+            barberstack
+          </span>
         </div>
         {user?.barbershop && (
-          <p className="text-xs text-muted-foreground mt-1.5 truncate">{user.barbershop.name}</p>
+          <p style={{ fontSize: 11, color: S.textDim, marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user.barbershop.name}
+          </p>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
+      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
         {filtered.map((item) => {
           const Icon = item.icon;
           const hasChildren = !!item.children?.length;
@@ -222,15 +178,20 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 key={item.label}
                 href={item.href}
                 onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                )}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '7px 10px', borderRadius: 8, textDecoration: 'none',
+                  fontSize: 13, fontWeight: isActive ? 500 : 400,
+                  color: isActive ? A : S.textMuted,
+                  background: isActive ? `${A}10` : 'transparent',
+                  borderLeft: isActive ? `2px solid ${A}` : '2px solid transparent',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = S.hover; e.currentTarget.style.color = S.text; } }}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = S.textMuted; } }}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
+                <Icon size={15} style={{ flexShrink: 0 }} />
+                <span>{item.label}</span>
               </Link>
             );
           }
@@ -239,47 +200,52 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             <div key={item.label}>
               <button
                 onClick={() => toggleItem(item.label)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  isActive && !isOpen
-                    ? 'bg-primary text-primary-foreground'
-                    : isActive
-                      ? 'text-foreground bg-accent'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                )}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '7px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: isActive ? 500 : 400, textAlign: 'left',
+                  color: isActive && !isOpen ? A : isActive ? S.text : S.textMuted,
+                  background: isActive && !isOpen ? `${A}10` : isActive ? S.active : 'transparent',
+                  borderLeft: isActive && !isOpen ? `2px solid ${A}` : '2px solid transparent',
+                  fontFamily: 'inherit', transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = isActive ? S.active : S.hover; if (!isActive) e.currentTarget.style.color = S.text; }}
+                onMouseLeave={e => { e.currentTarget.style.background = (isActive && !isOpen) ? `${A}10` : isActive ? S.active : 'transparent'; if (!isActive) e.currentTarget.style.color = S.textMuted; }}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                <ChevronDown
-                  className={cn(
-                    'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
-                    isOpen && 'rotate-180',
-                  )}
-                />
+                <Icon size={15} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>{item.label}</span>
+                <ChevronDown size={13} style={{ flexShrink: 0, transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'none' }} />
               </button>
 
-              <div
-                className={cn(
-                  'overflow-hidden transition-all duration-200',
-                  isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
-                )}
-              >
-                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-white/10 pl-3 pb-1">
+              {/* Children */}
+              <div style={{
+                overflow: 'hidden', transition: 'max-height 0.2s ease, opacity 0.2s',
+                maxHeight: isOpen ? '500px' : '0', opacity: isOpen ? 1 : 0,
+              }}>
+                <div style={{
+                  marginLeft: 24, marginTop: 2, marginBottom: 4,
+                  paddingLeft: 12, borderLeft: `1px solid ${S.border}`,
+                  display: 'flex', flexDirection: 'column', gap: 1,
+                }}>
                   {item.children!.map((child) => {
-                    const childActive = pathname === child.href;
+                    const childActive = pathname === child.href || pathname.startsWith(child.href + '/');
                     return (
                       <Link
                         key={child.href}
                         href={child.href}
                         onClick={onClose}
-                        className={cn(
-                          'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors',
-                          childActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                        )}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '6px 8px', borderRadius: 6, textDecoration: 'none',
+                          fontSize: 12, fontWeight: childActive ? 500 : 400,
+                          color: childActive ? A : S.textDim,
+                          background: childActive ? `${A}0E` : 'transparent',
+                          transition: 'background 0.15s, color 0.15s',
+                        }}
+                        onMouseEnter={e => { if (!childActive) { e.currentTarget.style.background = S.hover; e.currentTarget.style.color = S.textMuted; } }}
+                        onMouseLeave={e => { if (!childActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = S.textDim; } }}
                       >
-                        {child.icon && <span className="shrink-0">{child.icon}</span>}
+                        {child.icon && <span style={{ flexShrink: 0, color: 'inherit', display: 'flex' }}>{child.icon}</span>}
                         {child.label}
                       </Link>
                     );
@@ -291,42 +257,62 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      {/* Portal do cliente */}
+      {/* Portal link */}
       {user?.barbershop?.slug && (
-        <div className="px-4 pb-2">
+        <div style={{ padding: '0 10px 6px' }}>
           <a
             href={`/${user.barbershop.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 8, textDecoration: 'none',
+              fontSize: 12, color: S.textDim, transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = S.hover; e.currentTarget.style.color = S.textMuted; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = S.textDim; }}
           >
-            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Portal do cliente</span>
+            <ExternalLink size={13} style={{ flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Portal do cliente</span>
           </a>
         </div>
       )}
 
-      {/* User / Logout */}
-      <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm">
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+      {/* User footer */}
+      <div style={{ padding: '12px 10px', borderTop: `1px solid ${S.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', borderRadius: 8 }}>
+          {/* Avatar */}
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+            background: `${A}20`, border: `1px solid ${A}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 700, color: A,
+          }}>
             {initials}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-foreground font-medium truncate text-xs">{user?.name ?? '—'}</p>
-            <p className="text-muted-foreground truncate text-xs">
+
+          {/* Name + plan */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: S.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.name ?? '—'}
+            </p>
+            <p style={{ fontSize: 10.5, color: S.textDim, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user?.barbershop?.saasPlan
                 ? (planLabel[user.barbershop.saasPlan] ?? user.barbershop.saasPlan)
                 : (user?.role ?? '—')}
             </p>
           </div>
+
           <ThemeToggle />
+
           <button
             onClick={logout}
-            className="text-muted-foreground hover:text-destructive transition-colors"
             title="Sair"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: S.textDim, display: 'flex', padding: 2, transition: 'color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+            onMouseLeave={e => (e.currentTarget.style.color = S.textDim)}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut size={15} />
           </button>
         </div>
       </div>

@@ -5,51 +5,73 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { Menu } from 'lucide-react';
 
+const S = {
+  bg:     '#0A0A0B',
+  border: 'rgba(255,255,255,0.06)',
+  text:   '#F4F4F5',
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <AuthGuard>
-      <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'hsl(var(--background))' }}>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: S.bg }}>
+
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 30,
+              background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+            }}
+            className="lg:hidden"
           />
         )}
 
-        {/* Sidebar — fixed on mobile, static on desktop */}
+        {/* Sidebar */}
         <div
-          className={`
-            fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
-            lg:relative lg:translate-x-0 lg:z-auto
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          `}
+          className="lg:relative lg:translate-x-0 lg:z-auto"
+          style={{
+            position: 'fixed', inset: '0 auto 0 0', zIndex: 40,
+            transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.25s ease',
+          }}
         >
           <Sidebar onClose={() => setSidebarOpen(false)} />
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Main content area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           {/* Mobile top bar */}
           <div
-            className="lg:hidden flex items-center gap-3 px-4 py-3 border-b shrink-0"
-            style={{ borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--sidebar))' }}
+            className="lg:hidden"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 16px', flexShrink: 0,
+              borderBottom: `1px solid ${S.border}`,
+              background: S.bg,
+            }}
           >
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              style={{
+                padding: 6, borderRadius: 8, background: 'none', border: 'none',
+                cursor: 'pointer', color: '#71717A', display: 'flex',
+              }}
             >
-              <Menu className="w-5 h-5" />
+              <Menu size={20} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/favicon.png" alt="BarberStack" style={{ height: 26, width: 'auto' }} />
-              <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em', color: 'hsl(var(--foreground))', fontFamily: "'Inter', sans-serif" }}>BarberStack</span>
+              <img src="/bzinho.png" alt="" style={{ width: 20, height: 20 * (183 / 148), objectFit: 'contain' }} />
+              <span style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: '-0.02em', color: S.text }}>
+                barberstack
+              </span>
             </div>
           </div>
 
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
             {children}
           </main>
         </div>

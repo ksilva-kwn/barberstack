@@ -1,547 +1,432 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Scissors, Menu, X, Calendar, Receipt, TrendingUp, Users,
-  Repeat2, Package, UtensilsCrossed, Check, ArrowRight,
-  BarChart3, Shield, Zap, Star, ChevronDown,
-} from 'lucide-react';
 
-// ─── Palette — Old Money / Vintage Barbershop ─────────────────────────────────
+const A = '#D4A24C';
 const G = {
-  bg:          '#0D0D0B',
-  card:        '#131210',
-  cardGlass:   'rgba(14,12,10,0.82)',
-  gold:        '#C4A47C',
-  goldBright:  '#D8BC96',
-  goldGlow:    'rgba(196,164,124,0.22)',
-  goldBorder:  'rgba(196,164,124,0.22)',
-  goldBorderBright: 'rgba(196,164,124,0.45)',
-  white:       '#F3F0EA',
-  offWhite:    '#E4DDD2',
-  muted:       '#7A746C',
-  faint:       '#2A2620',
-  sectionAlt:  '#0F0D0B',
-  serif:       "'Inter', 'Helvetica Neue', Arial, sans-serif",
-  sans:        "'Inter', 'Helvetica Neue', Arial, sans-serif",
+  bg:           '#0B0A09',
+  bgCard:       '#1A1714',
+  bgCard2:      '#221E1A',
+  border:       'rgba(255,240,210,0.06)',
+  borderStrong: 'rgba(255,240,210,0.12)',
+  text:         '#F5EFE4',
+  textMuted:    '#A79E8F',
+  textDim:      '#6B6459',
 };
 
-// ─── Barber Pole (CSS cylinder, animated stripes) ────────────────────────────
-function BarberPole({ width = 12, height = 52 }: { width?: number; height?: number }) {
+const font = {
+  sans:    "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  display: "'Space Grotesk', 'Inter', sans-serif",
+  mono:    "'JetBrains Mono', ui-monospace, monospace",
+};
+
+const noiseBg = `radial-gradient(ellipse 80% 50% at 50% -10%, ${A}22 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 100% 100%, ${A}11 0%, transparent 60%), ${G.bg}`;
+
+function CheckIcon() {
   return (
-    <div style={{
-      position: 'relative', width, height,
-      borderRadius: 999,
-      overflow: 'hidden',
-      border: '1px solid rgba(255,255,255,0.12)',
-      boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.5), inset -1px 0 3px rgba(255,255,255,0.08), 0 2px 10px rgba(0,0,0,0.4)',
-      flexShrink: 0,
-    }}>
-      {/* Rotating stripes */}
-      <div style={{
-        position: 'absolute', inset: '-20px',
-        background: `repeating-linear-gradient(
-          -55deg,
-          #B91C1C 0px, #B91C1C 7px,
-          #f3f3f3 7px, #f3f3f3 14px,
-          #1D4ED8 14px, #1D4ED8 21px,
-          #f3f3f3 21px, #f3f3f3 28px
-        )`,
-        backgroundSize: `${width * 3}px 56px`,
-        animation: 'barber-spin 1.8s linear infinite',
-      }} />
-      {/* 3-D sheen */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.25) 100%)',
-        pointerEvents: 'none',
-      }} />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 17L17 7M7 7h10v10" />
+    </svg>
+  );
+}
+
+function Logo() {
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <img src="/bzinho.png" alt="" style={{ height: 28, width: 'auto' }} />
+      <span style={{ fontFamily: font.display, fontWeight: 600, fontSize: 18, letterSpacing: '-0.02em', color: G.text }}>
+        barberstack
+      </span>
     </div>
   );
 }
 
-// ─── FadeUp helper ────────────────────────────────────────────────────────────
-function FadeUp({ children, delay = 0, className = '', style }: { children: React.ReactNode; delay?: number; className?: string; style?: React.CSSProperties }) {
+function PrimaryButton({ children, href, size = 'md' }: { children: React.ReactNode; href?: string; size?: 'sm' | 'md' | 'lg' }) {
+  const pad = size === 'lg' ? '15px 26px' : size === 'sm' ? '8px 14px' : '12px 20px';
+  const fs = size === 'lg' ? 14.5 : size === 'sm' ? 12.5 : 13.5;
+  const style: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: pad, borderRadius: 10, fontSize: fs,
+    fontFamily: font.sans, fontWeight: 600, letterSpacing: '-0.01em',
+    background: `linear-gradient(180deg, ${A} 0%, ${A}dd 100%)`,
+    color: '#0B0A09', border: `1px solid ${A}`,
+    boxShadow: `0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 30px -10px ${A}66`,
+    cursor: 'pointer', textDecoration: 'none',
+  };
+  if (href) return <Link href={href} style={style}>{children}</Link>;
+  return <button style={style}>{children}</button>;
+}
+
+function GhostButton({ children, href }: { children: React.ReactNode; href?: string }) {
+  const style: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '15px 26px', borderRadius: 10, fontSize: 14.5,
+    fontFamily: font.sans, fontWeight: 600, letterSpacing: '-0.01em',
+    background: 'transparent', color: G.text,
+    border: `1px solid ${G.borderStrong}`,
+    cursor: 'pointer', textDecoration: 'none',
+  };
+  if (href) return <Link href={href} style={style}>{children}</Link>;
+  return <button style={style}>{children}</button>;
+}
+
+function MiniChip({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div className={className} style={style}
-      initial={{ opacity: 0, y: 36 }} whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-    >{children}</motion.div>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500,
+      fontFamily: font.sans, background: 'rgba(52,211,153,0.1)',
+      color: '#6EE7B7', border: '1px solid rgba(52,211,153,0.3)',
+    }}>
+      {children}
+    </span>
   );
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const features = [
-  { icon: Calendar,        title: 'Agenda inteligente',  desc: 'Grade visual por barbeiro, drag & drop, bloqueios de horário e recorrências automáticas.' },
-  { icon: Receipt,         title: 'Caixa & Comandas',    desc: 'Abertura e fechamento de comandas com controle completo de formas de pagamento.' },
-  { icon: TrendingUp,      title: 'Financeiro completo', desc: 'Comissões, balanço, contas a pagar/receber e relatórios detalhados por período.' },
-  { icon: Users,           title: 'Gestão de clientes',  desc: 'Cadastro, histórico de visitas, bloqueio e métricas de recorrência.' },
-  { icon: Repeat2,         title: 'Assinaturas',         desc: 'Planos mensais para fidelizar clientes com benefícios exclusivos.' },
-  { icon: Package,         title: 'Estoque',             desc: 'Controle de produtos com baixa automática ao fechar comandas.' },
-  { icon: UtensilsCrossed, title: 'Bar / Cozinha',       desc: 'Cardápio integrado na comanda — ideal para barbearias com bar.' },
-  { icon: BarChart3,       title: 'Relatórios',          desc: 'Dashboards de faturamento, origem dos agendamentos e desempenho da equipe.' },
-  { icon: Shield,          title: 'Multi-filial',        desc: 'Gerencie todas as unidades a partir de um único painel administrativo.' },
-];
-
-const plans = [
-  { name: 'Bronze', price: 'R$ 89',  period: '/mês', desc: '1 profissional', features: ['1 barbeiro', 'Agenda & Caixa', 'Clientes', 'Relatórios básicos'],                          cta: 'Começar grátis',  h: false },
-  { name: 'Prata',  price: 'R$ 149', period: '/mês', desc: 'Equipe crescendo', features: ['Até 5 barbeiros', 'Tudo do Bronze', 'Financeiro', 'Assinaturas', 'Suporte prioritário'], cta: 'Começar grátis',  h: true  },
-  { name: 'Ouro',   price: 'R$ 249', period: '/mês', desc: 'Redes e franquias', features: ['Ilimitados', 'Tudo do Prata', 'Multi-filial', 'Bar/Cozinha', 'API'],                   cta: 'Falar com vendas', h: false },
-];
-
-const testimonials = [
-  { name: 'Rodrigo Lima',  role: 'Barbearia do Ro',  text: 'Agenda cheia, financeiro no controle e clientes mais satisfeitos. Não consigo imaginar sem o Barberstack.' },
-  { name: 'Carlos Mendes', role: 'Studio Black',     text: 'Controlo 3 unidades por um único painel. Nunca foi tão fácil gerenciar minha rede de barbearias.' },
-  { name: 'André Souza',   role: 'BarberHub',        text: 'A agenda visual é incrível. Meus clientes adoram agendar pelo portal. Extremamente profissional.' },
-];
-
-// ─── Dashboard mockup ─────────────────────────────────────────────────────────
-function DashMockup() {
+function DashboardMockCard() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40, rotateY: -8 }} animate={{ opacity: 1, y: 0, rotateY: 0 }}
-      transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      style={{ borderRadius: 18, overflow: 'hidden', border: `1px solid ${G.goldBorder}`, boxShadow: `0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px ${G.goldBorder}, inset 0 1px 0 ${G.goldBorderBright}`, backgroundColor: G.card, backdropFilter: 'blur(20px)' }}
-    >
-      {/* Titlebar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderBottom: `1px solid ${G.goldBorder}`, background: 'rgba(0,0,0,0.3)' }}>
-        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#FF5F57' }} />
-        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#FFBD2E' }} />
-        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#28C840' }} />
-        <span style={{ marginLeft: 10, fontSize: 10, fontFamily: 'monospace', color: G.muted }}>barberstack.app/dashboard</span>
+    <div style={{
+      background: G.bgCard, borderRadius: 16, border: `1px solid ${G.borderStrong}`,
+      padding: 18, boxShadow: `0 40px 80px -30px rgba(0,0,0,0.7), 0 0 0 1px ${A}22`,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div>
+          <div style={{ fontFamily: font.mono, fontSize: 9.5, letterSpacing: '0.1em', color: G.textDim, textTransform: 'uppercase' }}>
+            Faturamento · Abril
+          </div>
+          <div style={{ fontFamily: font.display, fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em', marginTop: 2, color: G.text }}>
+            R$ 38.420<span style={{ color: G.textDim, fontSize: 18 }}>,00</span>
+          </div>
+        </div>
+        <MiniChip>↗ +22%</MiniChip>
       </div>
-      <div style={{ display: 'flex', height: 290 }}>
-        {/* Sidebar */}
-        <div style={{ width: 44, background: 'rgba(0,0,0,0.4)', borderRight: `1px solid ${G.goldBorder}`, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, gap: 10 }}>
-          {[BarChart3, Calendar, Receipt, Users, Package].map((Icon, i) => (
-            <div key={i} style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: i === 0 ? `${G.gold}20` : 'transparent', border: i === 0 ? `1px solid ${G.goldBorder}` : 'none' }}>
-              <Icon style={{ width: 14, height: 14, color: i === 0 ? G.gold : G.muted }} />
+      <svg viewBox="0 0 300 80" style={{ width: '100%', height: 80 }}>
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={A} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={A} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d="M0,60 L20,52 L40,55 L60,42 L80,48 L100,35 L120,40 L140,28 L160,32 L180,22 L200,26 L220,18 L240,22 L260,12 L280,18 L300,8 L300,80 L0,80 Z" fill="url(#chartGrad)" />
+        <path d="M0,60 L20,52 L40,55 L60,42 L80,48 L100,35 L120,40 L140,28 L160,32 L180,22 L200,26 L220,18 L240,22 L260,12 L280,18 L300,8" fill="none" stroke={A} strokeWidth="1.5" />
+      </svg>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 14 }}>
+        {[
+          { l: 'Assinantes', v: '128', d: '+12' },
+          { l: 'Cortes',     v: '421', d: '+48' },
+          { l: 'Ticket',     v: 'R$ 89', d: '+8%' },
+        ].map((k, i) => (
+          <div key={i} style={{ background: G.bg, borderRadius: 10, padding: 10, border: `1px solid ${G.border}` }}>
+            <div style={{ fontSize: 9.5, color: G.textDim, fontFamily: font.mono, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{k.l}</div>
+            <div style={{ fontFamily: font.display, fontSize: 18, fontWeight: 600, marginTop: 2, color: G.text }}>{k.v}</div>
+            <div style={{ fontSize: 10, color: '#6EE7B7', marginTop: 1 }}>↗ {k.d}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeatureCard({ big, title, body, kpi, kpiLabel, icon }: {
+  big?: boolean; title: string; body: string; kpi?: string; kpiLabel?: string; icon: string;
+}) {
+  const icons: Record<string, React.ReactNode> = {
+    wallet:   <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a1 1 0 0 1 1 1v3Z"/><path d="M18 12h.01"/></svg>,
+    calendar: <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+    chart:    <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>,
+    bank:     <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11"/></svg>,
+    users:    <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    box:      <svg width={big ? 20 : 16} height={big ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke={A} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>,
+  };
+  return (
+    <div style={{
+      padding: big ? 32 : 24, borderRadius: 20,
+      background: big ? `linear-gradient(135deg, ${G.bgCard2} 0%, ${G.bgCard} 100%)` : G.bgCard,
+      border: `1px solid ${big ? A + '33' : G.border}`,
+      gridColumn: big ? 'span 1' : 'auto',
+      gridRow: big ? 'span 2' : 'auto',
+      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      minHeight: big ? 320 : 140, position: 'relative', overflow: 'hidden',
+    }}>
+      {big && (
+        <div style={{
+          position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: '50%',
+          background: `radial-gradient(circle, ${A}22 0%, transparent 70%)`,
+        }} />
+      )}
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          width: big ? 44 : 36, height: big ? 44 : 36, borderRadius: 10,
+          background: `${A}18`, border: `1px solid ${A}33`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {icons[icon]}
+        </div>
+      </div>
+      <div style={{ position: 'relative' }}>
+        {kpi && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: font.display, fontSize: 56, fontWeight: 600, letterSpacing: '-0.04em', color: A, lineHeight: 1 }}>
+              {kpi}
+            </div>
+            <div style={{ fontFamily: font.mono, fontSize: 10.5, letterSpacing: '0.1em', color: G.textDim, textTransform: 'uppercase', marginTop: 4 }}>
+              {kpiLabel}
+            </div>
+          </div>
+        )}
+        <div style={{ fontFamily: font.display, fontSize: big ? 22 : 17, fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 8, color: G.text }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 13, lineHeight: 1.55, color: G.textMuted }}>{body}</div>
+      </div>
+    </div>
+  );
+}
+
+function PricingCard({ tier, price, subtitle, features, highlight }: {
+  tier: string; price: string; subtitle: string; features: string[]; highlight?: boolean;
+}) {
+  return (
+    <div style={{
+      padding: 32, borderRadius: 20,
+      background: highlight ? `linear-gradient(180deg, ${A}14 0%, ${G.bgCard} 70%)` : G.bgCard,
+      border: `1px solid ${highlight ? A + '66' : G.border}`,
+      position: 'relative', display: 'flex', flexDirection: 'column', gap: 20,
+    }}>
+      {highlight && (
+        <div style={{
+          position: 'absolute', top: -10, right: 20, padding: '4px 10px',
+          background: A, color: '#0B0A09', borderRadius: 999, fontSize: 10,
+          fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: font.mono,
+        }}>
+          + Popular
+        </div>
+      )}
+      <div>
+        <div style={{ fontFamily: font.display, fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: highlight ? A : G.text }}>
+          {tier}
+        </div>
+        <div style={{ fontSize: 12.5, color: G.textMuted, marginTop: 2 }}>{subtitle}</div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+        <span style={{ fontSize: 15, color: G.textMuted, fontFamily: font.mono }}>R$</span>
+        <span style={{ fontFamily: font.display, fontSize: 54, fontWeight: 600, letterSpacing: '-0.04em', color: G.text }}>{price}</span>
+        <span style={{ fontSize: 13, color: G.textMuted }}>/mês</span>
+      </div>
+      <div style={{ height: 1, background: G.border }} />
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {features.map((f, i) => (
+          <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: G.text }}>
+            <CheckIcon />{f}
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/register"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: '12px 20px', borderRadius: 10, fontSize: 13.5,
+          fontFamily: font.sans, fontWeight: 600, letterSpacing: '-0.01em',
+          textDecoration: 'none', marginTop: 'auto',
+          ...(highlight
+            ? { background: `linear-gradient(180deg, ${A} 0%, ${A}dd 100%)`, color: '#0B0A09', border: `1px solid ${A}` }
+            : { background: 'transparent', color: G.text, border: `1px solid ${G.borderStrong}` }),
+        }}
+      >
+        Começar com {tier}
+      </Link>
+    </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <div style={{ width: '100%', minHeight: '100vh', background: noiseBg, fontFamily: font.sans, color: G.text, position: 'relative', overflow: 'hidden' }}>
+      {/* Grain */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.35, zIndex: 0,
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0 0.5 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+      }} />
+
+      {/* NAV */}
+      <nav style={{
+        position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 56px', borderBottom: `1px solid ${G.border}`,
+      }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 36, fontSize: 13, color: G.textMuted }}>
+          <span style={{ cursor: 'pointer' }}>Recursos</span>
+          <span style={{ cursor: 'pointer' }}>Planos</span>
+          <span style={{ cursor: 'pointer' }}>Barbearias</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <Link href="/login" style={{ fontSize: 13, color: G.textMuted, textDecoration: 'none' }}>Entrar</Link>
+          <PrimaryButton href="/register" size="sm">Começar grátis</PrimaryButton>
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '70px 56px 80px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', maxWidth: 1200 }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px',
+              border: `1px solid ${A}44`, borderRadius: 999, fontSize: 11.5,
+              fontFamily: font.mono, letterSpacing: '0.1em', color: A, marginBottom: 36, textTransform: 'uppercase',
+              background: `${A}0D`,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: 99, background: A, display: 'inline-block' }} />
+              Novo · Asaas White-Label integrado
+            </div>
+            <h1 style={{
+              fontFamily: font.display, fontSize: 68, fontWeight: 600, letterSpacing: '-0.04em',
+              lineHeight: 1, margin: 0, color: G.text,
+            }}>
+              Pare de perder<br />
+              dinheiro em<br />
+              <span style={{ fontStyle: 'italic', color: A }}>planilhas.</span>
+            </h1>
+            <p style={{ fontSize: 15, lineHeight: 1.65, color: G.textMuted, marginTop: 28, maxWidth: 460 }}>
+              Barberstack unifica agenda, comandas, comissões e pagamentos.
+              Banking integrado via Asaas — receba, pague e saque direto do painel.
+            </p>
+            <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+              <PrimaryButton href="/register" size="lg">
+                Começar grátis <ArrowRightIcon />
+              </PrimaryButton>
+              <GhostButton href="/login">Já tenho conta</GhostButton>
+            </div>
+            <div style={{ display: 'flex', gap: 24, marginTop: 32, fontSize: 11.5, color: G.textDim, fontFamily: font.mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              <span>✓ 14 dias grátis</span>
+              <span>✓ Sem cartão</span>
+              <span>✓ Setup em 10 min</span>
+            </div>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <DashboardMockCard />
+          </div>
+        </div>
+      </section>
+
+      {/* LOGO STRIP */}
+      <div style={{
+        position: 'relative', zIndex: 1, padding: '24px 56px',
+        display: 'flex', alignItems: 'center', gap: 48,
+        borderTop: `1px solid ${G.border}`, borderBottom: `1px solid ${G.border}`,
+        fontFamily: font.mono, fontSize: 10, letterSpacing: '0.15em', color: G.textDim,
+        textTransform: 'uppercase', justifyContent: 'space-between',
+      }}>
+        <span>+480 barbearias confiam</span>
+        {['Vintage Barber', 'Corte&Co', 'NAVALHA', 'Barba Negra', 'Don Caetano'].map(name => (
+          <span key={name} style={{ fontFamily: font.display, fontSize: 17, fontWeight: 500, color: G.textMuted, letterSpacing: '-0.02em' }}>
+            {name}
+          </span>
+        ))}
+      </div>
+
+      {/* FEATURES */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '100px 56px 60px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 48 }}>
+          <div>
+            <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: '0.2em', color: A, textTransform: 'uppercase', marginBottom: 14 }}>
+              — O stack completo
+            </div>
+            <h2 style={{ fontFamily: font.display, fontSize: 44, fontWeight: 600, letterSpacing: '-0.035em', margin: 0, lineHeight: 1.05, color: G.text }}>
+              Tudo que sua barbearia precisa,<br />
+              <span style={{ fontStyle: 'italic', color: A }}>sem mensalidades escondidas.</span>
+            </h2>
+          </div>
+          <div style={{ fontSize: 13.5, color: G.textMuted, maxWidth: 280, lineHeight: 1.6 }}>
+            Um só sistema para agenda, comandas, comissões, estoque e pagamentos — com banking integrado via Asaas.
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 16 }}>
+          <FeatureCard big title="Assinaturas recorrentes" kpi="+38%" kpiLabel="ticket médio"
+            body="Planos mensais com Pix automático. Seu cliente paga, seu caixa não para." icon="wallet" />
+          <FeatureCard title="Agenda & comandas" body="Timeline por profissional, fechamento rápido, lembretes via WhatsApp." icon="calendar" />
+          <FeatureCard title="Comissões auto." body="Cálculo por serviço, por barbeiro, por período. Sem planilha." icon="chart" />
+          <FeatureCard title="Banking Asaas" body="Subconta white-label. Receba, pague e saque dentro do app." icon="bank" />
+          <FeatureCard title="Multi-filial" body="Gerencie várias unidades. Dados nunca se cruzam (multi-tenant)." icon="users" />
+          <FeatureCard title="Estoque & produtos" body="Baixa automática na comanda. Alertas de ruptura." icon="box" />
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '20px 56px 80px' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0,
+          border: `1px solid ${G.border}`, borderRadius: 20, overflow: 'hidden',
+          background: `linear-gradient(180deg, ${G.bgCard} 0%, ${G.bg} 100%)`,
+        }}>
+          {[
+            { v: '480+',    l: 'Barbearias ativas' },
+            { v: '2.1M',    l: 'Cortes agendados' },
+            { v: 'R$ 48M',  l: 'Transacionados' },
+            { v: '4,9/5',   l: 'Avaliação média' },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: '32px 28px', borderRight: i < 3 ? `1px solid ${G.border}` : 'none' }}>
+              <div style={{ fontFamily: font.display, fontSize: 42, fontWeight: 600, letterSpacing: '-0.04em', color: G.text, marginBottom: 6 }}>
+                {s.v}
+              </div>
+              <div style={{ fontFamily: font.mono, fontSize: 10.5, letterSpacing: '0.1em', color: G.textDim, textTransform: 'uppercase' }}>
+                {s.l}
+              </div>
             </div>
           ))}
         </div>
-        {/* Main */}
-        <div style={{ flex: 1, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-            {[{ l: 'Faturamento', v: 'R$ 8.4k', c: G.gold }, { l: 'Clientes', v: '312', c: '#4ade80' }, { l: 'Concluídos', v: '47', c: '#a78bfa' }].map(({ l, v, c }) => (
-              <div key={l} style={{ background: G.cardGlass, border: `1px solid ${G.goldBorder}`, borderRadius: 10, padding: '8px 10px', backdropFilter: 'blur(8px)' }}>
-                <div style={{ fontSize: 9, color: G.muted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{l}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: c, fontFamily: G.serif }}>{v}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: G.cardGlass, border: `1px solid ${G.goldBorder}`, borderRadius: 10, padding: '10px 12px', flex: 1, backdropFilter: 'blur(8px)' }}>
-            <div style={{ fontSize: 9, color: G.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Faturamento mensal</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 60 }}>
-              {[38,56,44,72,52,84,62,78,55,88,68,96].map((h, i) => (
-                <div key={i} style={{ flex: 1, borderRadius: '3px 3px 0 0', height: `${h}%`, backgroundColor: i === 11 ? G.gold : `${G.gold}2A`, transition: 'height 0.3s' }} />
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {[['Samuel — Corte + Barba', 'R$ 80'], ['Pedro — Corte', 'R$ 45']].map(([name, val]) => (
-              <div key={name} style={{ display: 'flex', justifyContent: 'space-between', background: G.cardGlass, border: `1px solid ${G.goldBorder}`, borderRadius: 8, padding: '5px 10px', fontSize: 11, backdropFilter: 'blur(8px)' }}>
-                <span style={{ color: G.offWhite }}>{name}</span>
-                <span style={{ color: G.gold, fontWeight: 700 }}>{val}</span>
-              </div>
-            ))}
-          </div>
+      </section>
+
+      {/* PRICING */}
+      <section style={{ position: 'relative', zIndex: 1, padding: '40px 56px 100px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: '0.2em', color: A, textTransform: 'uppercase', marginBottom: 14 }}>— Planos</div>
+          <h2 style={{ fontFamily: font.display, fontSize: 40, fontWeight: 600, letterSpacing: '-0.035em', margin: 0, color: G.text }}>
+            Do solo-barber à <span style={{ fontStyle: 'italic', color: A }}>rede de filiais.</span>
+          </h2>
         </div>
-      </div>
-    </motion.div>
-  );
-}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <PricingCard tier="Bronze" price="49" subtitle="Solo-barber"
+            features={['1 profissional', '80 cortes/mês', 'Agenda + comandas', 'WhatsApp básico']} />
+          <PricingCard tier="Prata" price="99" subtitle="Barbearia pequena" highlight
+            features={['4 profissionais', '400 cortes/mês', 'Assinaturas + Asaas', 'Comissões automáticas', 'Relatórios FinOps']} />
+          <PricingCard tier="Ouro" price="199" subtitle="Rede / multi-filial"
+            features={['Profissionais ilimitados', 'Cortes ilimitados', 'Multi-filial', 'White-label', 'Suporte prioritário']} />
+        </div>
+      </section>
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function LandingPage() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  const heroBg = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1920&q=85';
-
-  const dividerStyle = { height: 1, background: `linear-gradient(to right, transparent, ${G.goldBorder}, transparent)`, margin: '0 auto', maxWidth: 600 };
-
-  return (
-    <div style={{ backgroundColor: G.bg, color: G.white, minHeight: '100vh', overflowX: 'hidden', fontFamily: G.sans }}>
-
-      {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40,
-        transition: 'all 0.3s ease',
-        backgroundColor: scrolled ? 'rgba(13,13,11,0.94)' : 'transparent',
-        borderBottom: scrolled ? `1px solid ${G.goldBorder}` : '1px solid transparent',
-        backdropFilter: scrolled ? 'blur(24px)' : 'none',
+      {/* FOOTER */}
+      <footer style={{
+        position: 'relative', zIndex: 1, padding: '48px 56px 28px',
+        borderTop: `1px solid ${G.border}`,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
       }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src="/favicon.png" alt="BarberStack" style={{ height: 34, width: 'auto' }} />
-            <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: G.white, fontFamily: G.serif }}>BarberStack</span>
-          </div>
-
-          {/* Links */}
-          <nav style={{ display: 'flex', gap: 28, fontSize: 13 }} className="hidden md:flex">
-            {['Funcionalidades', 'Como funciona', 'Planos', 'Depoimentos'].map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`}
-                style={{ color: G.muted, textDecoration: 'none', transition: 'color 0.2s' }}
-                onMouseEnter={e => (e.currentTarget.style.color = G.white)}
-                onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
-              >{item}</a>
-            ))}
-          </nav>
-
-          {/* Right cluster */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link href="/login" className="hidden sm:inline-flex" style={{ fontSize: 13, padding: '7px 16px', borderRadius: 10, border: `1px solid ${G.goldBorder}`, color: G.muted, textDecoration: 'none', transition: 'all 0.2s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = G.white; (e.currentTarget as HTMLElement).style.borderColor = G.goldBorderBright; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = G.muted;  (e.currentTarget as HTMLElement).style.borderColor = G.goldBorder; }}
-            >Entrar</Link>
-
-            <Link href="/register" style={{
-              fontSize: 13, fontWeight: 700, padding: '8px 20px', borderRadius: 10, textDecoration: 'none',
-              background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`,
-              color: '#0D0D0B', boxShadow: `0 4px 18px ${G.goldGlow}`,
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.04)'; (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 28px ${G.goldGlow}`; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 18px ${G.goldGlow}`; }}
-            >Teste grátis</Link>
-
-            <button className="md:hidden" onClick={() => setMenuOpen(o => !o)} style={{ padding: 8, borderRadius: 8, backgroundColor: 'transparent', border: `1px solid ${G.goldBorder}`, color: G.muted, cursor: 'pointer' }}>
-              {menuOpen ? <X style={{ width: 18, height: 18 }} /> : <Menu style={{ width: 18, height: 18 }} />}
-            </button>
+        <div>
+          <Logo />
+          <div style={{ fontSize: 12, color: G.textDim, marginTop: 12 }}>
+            © 2026 Barberstack · Feito para barbeiros que levam o ofício a sério.
           </div>
         </div>
-        {menuOpen && (
-          <div style={{ background: G.card, borderTop: `1px solid ${G.goldBorder}`, padding: '16px 24px' }} className="md:hidden">
-            {['Funcionalidades', 'Como funciona', 'Planos', 'Depoimentos'].map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} style={{ display: 'block', padding: '8px 0', color: G.muted, textDecoration: 'none', fontSize: 14, borderBottom: `1px solid ${G.faint}` }} onClick={() => setMenuOpen(false)}>{item}</a>
-            ))}
-          </div>
-        )}
-      </header>
-
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-
-        {/* Photo background */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <img src={heroBg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-          {/* 80% dark overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,9,7,0.82)' }} />
-          {/* Vignette */}
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 120% 100% at 50% 50%, transparent 30%, rgba(0,0,0,0.5) 100%)' }} />
-          {/* Left side darker for text legibility */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,9,7,0.55) 0%, transparent 60%)' }} />
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto', padding: '110px 24px 80px', width: '100%' }}>
-          <div style={{ display: 'grid', gap: 56, alignItems: 'center' }} className="grid grid-cols-1 lg:grid-cols-2">
-
-            {/* Left */}
-            <div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
-                  padding: '6px 14px', borderRadius: 999, marginBottom: 28,
-                  background: `${G.gold}14`, border: `1px solid ${G.goldBorder}`, color: G.gold,
-                }}>
-                  <Zap style={{ width: 11, height: 11 }} /> Sistema completo para barbearias
-                </span>
-              </motion.div>
-
-              <motion.h1 initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                style={{ fontFamily: G.serif, fontSize: 'clamp(40px, 5vw, 62px)', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.02em', marginBottom: 24, color: G.white }}
-              >
-                Gerencie sua<br />barbearia<br />
-                <em style={{ fontStyle: 'italic', color: G.gold, fontFamily: G.serif }}>como nunca antes</em>
-              </motion.h1>
-
-              {/* Decorative gold rule */}
-              <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.7, delay: 0.6 }}
-                style={{ width: 80, height: 1, background: `linear-gradient(to right, ${G.gold}, transparent)`, marginBottom: 24, transformOrigin: 'left' }}
-              />
-
-              <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
-                style={{ fontSize: 16, color: G.muted, lineHeight: 1.7, maxWidth: 420, marginBottom: 36 }}
-              >
-                Agenda, financeiro, estoque e muito mais — tudo em um só lugar. Simplifique sua operação e foque no que importa.
-              </motion.p>
-
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.38 }}
-                style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 48 }}
-              >
-                <Link href="/register" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px',
-                  borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: 'none',
-                  background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`,
-                  color: '#0D0D0B', boxShadow: `0 12px 36px ${G.goldGlow}`,
-                  transition: 'transform 0.15s',
-                }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.04)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                >Criar conta grátis <ArrowRight style={{ width: 16, height: 16 }} /></Link>
-
-                <a href="#como-funciona" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px',
-                  borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: 'none',
-                  border: `1px solid ${G.goldBorder}`, color: G.muted, transition: 'all 0.2s',
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = G.white; (e.currentTarget as HTMLElement).style.borderColor = G.goldBorderBright; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = G.muted; (e.currentTarget as HTMLElement).style.borderColor = G.goldBorder; }}
-                >Ver demonstração</a>
-              </motion.div>
-
-              {/* Stats — glassmorphism chips */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.52 }}
-                style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}
-              >
-                {[{ v: '2.500+', l: 'Barbearias ativas' }, { v: '156%', l: 'Aumento de receita' }, { v: '99,9%', l: 'Uptime' }].map(({ v, l }) => (
-                  <div key={l} style={{
-                    padding: '10px 16px', borderRadius: 12, background: G.cardGlass,
-                    border: `1px solid ${G.goldBorder}`, backdropFilter: 'blur(16px)',
-                    boxShadow: `inset 0 1px 0 ${G.goldBorderBright}`,
-                  }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: G.gold, fontFamily: G.serif, letterSpacing: '-0.01em' }}>{v}</div>
-                    <div style={{ fontSize: 10, color: G.muted, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{l}</div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Right — Dashboard */}
-            <div className="hidden lg:block">
-              <DashMockup />
-            </div>
-          </div>
-
-          {/* Scroll cue */}
-          <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2.5, repeat: Infinity }}
-            style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: G.muted, opacity: 0.5 }}
-          >
-            <span style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Scroll</span>
-            <ChevronDown style={{ width: 14, height: 14 }} />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ────────────────────────────────────────────────────── */}
-      <section id="funcionalidades" style={{ padding: '100px 24px', backgroundColor: G.sectionAlt }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <FadeUp style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: G.gold, marginBottom: 14 }}>Funcionalidades</p>
-            <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: G.white, marginBottom: 14, letterSpacing: '-0.02em' }}>Tudo que sua barbearia precisa</h2>
-            <p style={{ fontSize: 15, color: G.muted, maxWidth: 460, margin: '0 auto', lineHeight: 1.65 }}>Uma plataforma unificada desde o agendamento até o fechamento do caixa.</p>
-          </FadeUp>
-
-          <div style={{ display: 'grid', gap: 14 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ icon: Icon, title, desc }, i) => (
-              <FadeUp key={title} delay={i * 0.04}>
-                <motion.div
-                  style={{
-                    padding: '22px 20px', borderRadius: 16,
-                    border: `1px solid ${G.goldBorder}`,
-                    background: `repeating-linear-gradient(135deg, rgba(255,255,255,0.008) 0px, rgba(255,255,255,0.008) 1px, transparent 1px, transparent 6px), ${G.card}`,
-                    height: '100%', cursor: 'default',
-                    boxShadow: `inset 0 1px 0 ${G.goldBorder}`,
-                  }}
-                  whileHover={{ y: -5, borderColor: G.goldBorderBright, boxShadow: `0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 ${G.goldBorderBright}` }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `${G.gold}16`, border: `1px solid ${G.goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                    <Icon style={{ width: 18, height: 18, color: G.gold }} />
-                  </div>
-                  <p style={{ fontFamily: G.serif, fontWeight: 700, fontSize: 15, color: G.white, marginBottom: 6 }}>{title}</p>
-                  <p style={{ fontSize: 13, color: G.muted, lineHeight: 1.65 }}>{desc}</p>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div style={dividerStyle} />
-
-      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-      <section id="como-funciona" style={{ padding: '100px 24px', backgroundColor: G.bg }}>
-        <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <FadeUp style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: G.gold, marginBottom: 14 }}>Como funciona</p>
-            <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: G.white, letterSpacing: '-0.02em' }}>Pronto em minutos</h2>
-          </FadeUp>
-          <div style={{ display: 'grid', gap: 40 }} className="grid grid-cols-1 md:grid-cols-3">
-            {[
-              { n: '01', t: 'Crie sua conta',     d: 'Cadastre sua barbearia, adicione os profissionais e configure os serviços.' },
-              { n: '02', t: 'Configure a agenda', d: 'Defina horários, bloqueios e ative o portal do cliente para agendamentos.' },
-              { n: '03', t: 'Gerencie e cresça',  d: 'Acompanhe financeiro, estoque e desempenho em tempo real.' },
-            ].map(({ n, t, d }, i) => (
-              <FadeUp key={n} delay={i * 0.12}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
-                  <div style={{ width: 60, height: 60, borderRadius: 16, background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: G.serif, fontWeight: 900, fontSize: 20, color: '#0D0D0B', boxShadow: `0 8px 24px ${G.goldGlow}` }}>{n}</div>
-                  <p style={{ fontFamily: G.serif, fontWeight: 700, fontSize: 16, color: G.white }}>{t}</p>
-                  <p style={{ fontSize: 13, color: G.muted, lineHeight: 1.65 }}>{d}</p>
-                </div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div style={dividerStyle} />
-
-      {/* ── PLANS ───────────────────────────────────────────────────────── */}
-      <section id="planos" style={{ padding: '100px 24px', backgroundColor: G.sectionAlt }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <FadeUp style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: G.gold, marginBottom: 14 }}>Planos</p>
-            <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: G.white, letterSpacing: '-0.02em', marginBottom: 10 }}>Simples e transparente</h2>
-            <p style={{ fontSize: 14, color: G.muted }}>14 dias grátis em qualquer plano. Sem cartão de crédito.</p>
-          </FadeUp>
-          <div style={{ display: 'grid', gap: 18 }} className="grid grid-cols-1 md:grid-cols-3">
-            {plans.map(({ name, price, period, desc, features: fs, cta, h }, i) => (
-              <FadeUp key={name} delay={i * 0.08}>
-                <motion.div
-                  style={{
-                    borderRadius: 18, padding: '26px 22px', height: '100%', display: 'flex', flexDirection: 'column',
-                    border: `1px solid ${h ? G.goldBorderBright : G.goldBorder}`,
-                    background: h
-                      ? `linear-gradient(135deg, rgba(196,164,124,0.18) 0%, rgba(196,164,124,0.08) 100%), ${G.card}`
-                      : `repeating-linear-gradient(135deg, rgba(255,255,255,0.006) 0px, rgba(255,255,255,0.006) 1px, transparent 1px, transparent 6px), ${G.card}`,
-                    backdropFilter: 'blur(16px)',
-                    boxShadow: h ? `0 24px 60px ${G.goldGlow}, inset 0 1px 0 ${G.goldBorderBright}` : `inset 0 1px 0 ${G.goldBorder}`,
-                    position: 'relative', overflow: 'hidden',
-                  }}
-                  whileHover={{ y: -6 }} transition={{ duration: 0.2 }}
-                >
-                  {h && <div style={{ position: 'absolute', top: -2, left: '50%', transform: 'translateX(-50%)', background: `linear-gradient(90deg, ${G.gold}, ${G.goldBright})`, color: '#0D0D0B', fontSize: 9, fontWeight: 800, padding: '4px 14px', borderRadius: 999, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Mais popular</div>}
-                  <p style={{ fontFamily: G.serif, fontWeight: 700, fontSize: 16, color: G.white, marginBottom: 6, marginTop: h ? 10 : 0 }}>{name}</p>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 5 }}>
-                    <span style={{ fontFamily: G.serif, fontSize: 38, fontWeight: 900, color: h ? G.gold : G.white }}>{price}</span>
-                    <span style={{ fontSize: 12, color: G.muted, paddingBottom: 8 }}>{period}</span>
-                  </div>
-                  <p style={{ fontSize: 11, color: G.muted, marginBottom: 20 }}>{desc}</p>
-                  <ul style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-                    {fs.map(f => (
-                      <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: G.offWhite }}>
-                        <Check style={{ width: 14, height: 14, flexShrink: 0, color: G.gold }} />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register" style={{
-                    display: 'block', textAlign: 'center', padding: '11px', borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: 'none',
-                    background: h ? `linear-gradient(135deg, ${G.gold}, ${G.goldBright})` : 'transparent',
-                    color: h ? '#0D0D0B' : G.gold,
-                    border: h ? 'none' : `1px solid ${G.goldBorder}`,
-                    transition: 'opacity 0.2s',
-                  }}>{cta}</Link>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div style={dividerStyle} />
-
-      {/* ── TESTIMONIALS ────────────────────────────────────────────────── */}
-      <section id="depoimentos" style={{ padding: '100px 24px', backgroundColor: G.bg }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <FadeUp style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: G.gold, marginBottom: 14 }}>Depoimentos</p>
-            <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: G.white, letterSpacing: '-0.02em' }}>
-              Quem usa, <em style={{ fontStyle: 'italic', color: G.gold }}>aprova</em>
-            </h2>
-          </FadeUp>
-          <div style={{ display: 'grid', gap: 16 }} className="grid grid-cols-1 md:grid-cols-3">
-            {testimonials.map(({ name, role, text }, i) => (
-              <FadeUp key={name} delay={i * 0.08}>
-                <motion.div
-                  style={{
-                    padding: '24px 20px', borderRadius: 16,
-                    border: `1px solid ${G.goldBorder}`,
-                    background: `${G.card}CC`,
-                    backdropFilter: 'blur(12px)',
-                    boxShadow: `inset 0 1px 0 ${G.goldBorder}`,
-                  }}
-                  whileHover={{ y: -4, borderColor: G.goldBorderBright }} transition={{ duration: 0.2 }}
-                >
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
-                    {Array.from({ length: 5 }).map((_, k) => (<Star key={k} style={{ width: 13, height: 13, color: G.gold, fill: G.gold }} />))}
-                  </div>
-                  <p style={{ fontSize: 13, color: G.muted, lineHeight: 1.75, marginBottom: 20 }}>"{text}"</p>
-                  <div style={{ borderTop: `1px solid ${G.faint}`, paddingTop: 14 }}>
-                    <p style={{ fontFamily: G.serif, fontSize: 14, fontWeight: 700, color: G.white }}>{name}</p>
-                    <p style={{ fontSize: 11, color: G.muted, marginTop: 2 }}>{role}</p>
-                  </div>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA FINAL ───────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', backgroundColor: G.sectionAlt }}>
-        <FadeUp>
-          <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', borderRadius: 24, padding: '64px 40px', position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, rgba(196,164,124,0.22) 0%, rgba(196,164,124,0.08) 100%), ${G.card}`, border: `1px solid ${G.goldBorderBright}`, boxShadow: `0 32px 80px ${G.goldGlow}` }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255,255,255,0.04), transparent)', pointerEvents: 'none' }} />
-            {/* Decorative barber pole in corner */}
-            <div style={{ position: 'absolute', right: 24, top: '50%', transform: 'translateY(-50%)', opacity: 0.35 }}>
-              <BarberPole width={14} height={80} />
-            </div>
-            <div style={{ position: 'relative' }}>
-              <h2 style={{ fontFamily: G.serif, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: G.white, marginBottom: 12, letterSpacing: '-0.02em' }}>
-                Comece <em style={{ fontStyle: 'italic', color: G.gold }}>hoje mesmo</em>
-              </h2>
-              <p style={{ fontSize: 15, color: G.muted, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>14 dias grátis, sem cartão de crédito. Configure em minutos.</p>
-              <Link href="/register" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px',
-                borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: 'none',
-                background: `linear-gradient(135deg, ${G.gold}, ${G.goldBright})`,
-                color: '#0D0D0B', boxShadow: `0 10px 30px ${G.goldGlow}`,
-                transition: 'transform 0.15s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.04)')}
-                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-              >Criar conta grátis <ArrowRight style={{ width: 16, height: 16 }} /></Link>
-            </div>
-          </div>
-        </FadeUp>
-      </section>
-
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: `1px solid ${G.goldBorder}`, padding: '32px 24px', backgroundColor: G.bg }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="/favicon.png" alt="BarberStack" style={{ height: 26, width: 'auto' }} />
-            <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em', color: G.white, fontFamily: G.serif }}>BarberStack</span>
-          </div>
-          <p style={{ fontSize: 12, color: G.muted }}>© 2026 Barberstack. Todos os direitos reservados.</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 12, color: G.muted }}>
-            {['Privacidade', 'Termos', 'Suporte'].map(l => (
-              <a key={l} href="#" style={{ color: G.muted, textDecoration: 'none', transition: 'color 0.2s' }}
-                onMouseEnter={e => (e.currentTarget.style.color = G.white)}
-                onMouseLeave={e => (e.currentTarget.style.color = G.muted)}
-              >{l}</a>
-            ))}
-            <a href="https://www.asaas.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', marginLeft: 16 }}>
-              <img
-                src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Negativo-Branco.svg?id=2af74ea1-31d2-4c5c-a544-7cfd4e879fcc"
-                alt="Serviços financeiros Asaas"
-                style={{ height: 36, objectFit: 'contain' }}
-              />
-            </a>
-          </div>
+        <div style={{ display: 'flex', gap: 32, fontSize: 12, color: G.textMuted }}>
+          <span style={{ cursor: 'pointer' }}>Produto</span>
+          <span style={{ cursor: 'pointer' }}>Planos</span>
+          <span style={{ cursor: 'pointer' }}>Status</span>
+          <span style={{ cursor: 'pointer' }}>Termos</span>
         </div>
       </footer>
     </div>

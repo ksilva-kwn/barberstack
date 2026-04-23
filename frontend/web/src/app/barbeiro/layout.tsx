@@ -4,9 +4,9 @@ import { BarberSidebar } from '@/components/layout/barber-sidebar';
 export default function BarberLayout({ children }: { children: React.ReactNode }) {
   return (
     <BarberGuard>
-      <div className="flex h-screen bg-background overflow-hidden">
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0A0A0B' }}>
         <BarberSidebar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
           {children}
         </main>
       </div>
