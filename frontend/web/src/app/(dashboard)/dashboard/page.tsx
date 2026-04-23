@@ -17,6 +17,18 @@ const S = {
   bg:           'hsl(var(--background))',
 };
 
+const dashCss = `
+  .dash-kpi-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .dash-kpi-row > * { flex: 1; min-width: 0; }
+  .dash-charts  { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .dash-bottom  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) {
+    .dash-kpi-row > * { min-width: calc(50% - 6px); max-width: calc(50% - 6px); }
+    .dash-charts  { grid-template-columns: 1fr; }
+    .dash-bottom  { grid-template-columns: 1fr; }
+  }
+`;
+
 function Sparkline({ positive = true }: { positive?: boolean }) {
   const color = positive ? A : '#f87171';
   const d = positive
@@ -157,6 +169,8 @@ export default function DashboardPage() {
   ];
 
   return (
+    <>
+    <style>{dashCss}</style>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Header ── */}
@@ -208,12 +222,12 @@ export default function DashboardPage() {
       ) : (
         <>
           {/* ── KPI row ── */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="dash-kpi-row">
             {kpiCards.map((d, i) => <KpiCard key={i} d={d} />)}
           </div>
 
           {/* ── Charts row ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+          <div className="dash-charts">
             <RevenueChart
               barbershopId={barbershopId}
               professionalId={filterProfessionalId || undefined}
@@ -229,7 +243,7 @@ export default function DashboardPage() {
 
           {/* ── Professionals + Inadimplentes ── */}
           {((professionals && professionals.length > 0) || (kpis?.defaulting ?? 0) > 0) && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="dash-bottom">
               {/* Professional rankings */}
               {professionals && professionals.length > 0 && (
                 <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: 14, padding: '18px 20px' }}>
@@ -280,5 +294,6 @@ export default function DashboardPage() {
         </>
       )}
     </div>
+    </>
   );
 }

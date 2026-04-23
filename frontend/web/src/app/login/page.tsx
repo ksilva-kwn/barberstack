@@ -32,6 +32,17 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
+const loginCss = `
+  .login-grid { display: grid; grid-template-columns: clamp(340px,50%,600px) 1fr; }
+  .login-left  { display: flex; }
+  .login-right { padding: 44px 56px; display: flex; flex-direction: column; }
+  @media (max-width: 768px) {
+    .login-grid  { grid-template-columns: 1fr; }
+    .login-left  { display: none; }
+    .login-right { padding: 40px 24px; }
+  }
+`;
+
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
   const { token, user } = useAuthStore();
@@ -61,17 +72,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      width: '100%', minHeight: '100vh', display: 'grid',
-      gridTemplateColumns: 'clamp(340px, 50%, 600px) 1fr',
+    <>
+    <style>{loginCss}</style>
+    <div className="login-grid" style={{
+      width: '100%', minHeight: '100vh',
       background: G.bg,
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       color: G.text,
     }}>
       {/* ── Left: marketing panel ── */}
-      <div style={{
+      <div className="login-left" style={{
         position: 'relative', padding: '44px 56px',
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        flexDirection: 'column', justifyContent: 'space-between',
         overflow: 'hidden',
         background: `radial-gradient(ellipse at 30% 20%, ${A}22 0%, transparent 60%), linear-gradient(160deg, ${G.bgCard2} 0%, ${G.bg} 100%)`,
         borderRight: `1px solid ${G.border}`,
@@ -127,7 +139,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right: form panel ── */}
-      <div style={{ padding: '44px 56px', display: 'flex', flexDirection: 'column' }}>
+      <div className="login-right">
         <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 13, color: G.textMuted }}>
           Ainda não tem conta?{' '}
           <Link href="/register" style={{ color: A, marginLeft: 8, fontWeight: 500, textDecoration: 'none' }}>
@@ -265,5 +277,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

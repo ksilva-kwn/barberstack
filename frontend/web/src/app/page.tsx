@@ -60,7 +60,7 @@ const css = `
     .lp-feature-right { display: none; }
     .lp-feature-h2 { font-size: 32px !important; }
     .lp-feature-grid { grid-template-columns: 1fr; }
-    .lp-feature-big { grid-row: span 1 !important; min-height: 220px !important; }
+    .lp-feature-big { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 220px !important; }
     .lp-stats { padding: 0 20px 56px; }
     .lp-stats-grid { grid-template-columns: 1fr 1fr; }
     .lp-stats-cell { border-right: none !important; border-bottom: 1px solid ${G.border}; }
