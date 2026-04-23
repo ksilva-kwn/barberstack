@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { api } from '@/lib/api';
 import { appointmentApi, AppointmentStatus, Appointment } from '@/lib/appointment.api';
+import { BarbershopService } from '@/lib/barbershop.api';
 import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
 import { EditAppointmentModal } from '@/components/agenda/edit-appointment-modal';
 
@@ -45,7 +46,7 @@ export default function BarberAgendaPage() {
 
   const selectedDow = selectedDate.getDay();
 
-  const { data: services = [] } = useQuery<{ durationMins: number }[]>({
+  const { data: services = [] } = useQuery<BarbershopService[]>({
     queryKey: ['services'],
     queryFn: () => api.get('/api/services').then(r => r.data),
   });
