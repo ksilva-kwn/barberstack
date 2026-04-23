@@ -10,11 +10,15 @@ export interface AuthUser {
   barbershop?: { id: string; name: string; saasPlan: string; slug: string } | null;
 }
 
+const DAY_MS   = 86_400_000;
+const DAY_SEC  = 86_400;
+
 interface AuthState {
   token: string | null;
   refreshToken: string | null;
   user: AuthUser | null;
-  setAuth: (token: string, refreshToken: string, user: AuthUser) => void;
+  expiresAt: number | null;
+  setAuth: (token: string, refreshToken: string, user: AuthUser, rememberMe?: boolean) => void;
   clearAuth: () => void;
 }
 
@@ -24,19 +28,22 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       refreshToken: null,
       user: null,
-      setAuth: (token, refreshToken, user) => {
+      expiresAt: null,
+      setAuth: (token, refreshToken, user, rememberMe = false) => {
+        const maxAgeSec  = rememberMe ? 30 * DAY_SEC : DAY_SEC;
+        const expiresAt  = Date.now() + (rememberMe ? 30 * DAY_MS : DAY_MS);
         if (typeof document !== 'undefined') {
-          document.cookie = 'barberstack-session=1; path=/; max-age=604800; SameSite=Lax';
-          document.cookie = `barberstack-role=${user.role}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `barberstack-session=1; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
+          document.cookie = `barberstack-role=${user.role}; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
         }
-        set({ token, refreshToken, user });
+        set({ token, refreshToken, user, expiresAt });
       },
       clearAuth: () => {
         if (typeof document !== 'undefined') {
           document.cookie = 'barberstack-session=; path=/; max-age=0';
           document.cookie = 'barberstack-role=; path=/; max-age=0';
         }
-        set({ token: null, refreshToken: null, user: null });
+        set({ token: null, refreshToken: null, user: null, expiresAt: null });
       },
     }),
     { name: 'barberstack-auth' },

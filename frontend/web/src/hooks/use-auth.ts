@@ -11,12 +11,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     setLoading(true);
     setError('');
     try {
       const { data } = await authApi.login(email, password);
-      setAuth(data.token, data.refreshToken, data.user);
+      setAuth(data.token, data.refreshToken, data.user, rememberMe);
       const role = data.user?.role;
       router.push(role === 'BARBER' ? '/barbeiro' : '/dashboard');
     } catch (err: any) {

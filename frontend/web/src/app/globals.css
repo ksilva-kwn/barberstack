@@ -94,6 +94,18 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
 
 .btn-gold {
   position: relative; overflow: hidden;
@@ -107,4 +119,36 @@
 .btn-gold:hover::after { opacity: 1; animation: shimmer 0.6s linear; }
 .btn-gold:hover { transform: scale(1.02); box-shadow: 0 8px 24px hsl(var(--primary) / 0.4); }
 
-.animate-fade-in { animation: fade-in 0.4s ease both; }
+.animate-fade-in     { animation: fade-in     0.4s ease both; }
+.animate-fade-in-up  { animation: fade-in-up  0.6s ease both; }
+.animate-fade-in-left{ animation: fade-in-left 0.5s ease both; }
+
+/* scroll-reveal: start hidden, JS adds .revealed */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Landing page card hover glow */
+.lp-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.lp-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 50px -15px rgba(212,162,76,0.18);
+  border-color: rgba(212,162,76,0.2) !important;
+}
+.lp-card-big:hover {
+  box-shadow: 0 30px 70px -20px rgba(212,162,76,0.3);
+}
+
+/* Sidebar collapse transition */
+.sidebar-rail {
+  transition: width 0.22s ease;
+  overflow: hidden;
+}

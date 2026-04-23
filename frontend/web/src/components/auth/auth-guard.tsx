@@ -21,6 +21,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return; // aguarda hydration antes de tomar decisão
 
+    const { expiresAt, clearAuth } = useAuthStore.getState();
+    if (token && expiresAt && Date.now() > expiresAt) {
+      clearAuth();
+      router.replace('/login');
+      return;
+    }
+
     if (!token) {
       router.replace('/login');
       return;
