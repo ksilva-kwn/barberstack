@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const A = '#D4A24C';
 const G = {
@@ -51,6 +52,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   useEffect(() => {
     if (token && user) {
@@ -60,7 +63,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password, rememberMe);
+    await login(email, password, rememberMe, captchaToken ?? undefined);
   };
 
   const inputBase: React.CSSProperties = {
@@ -225,16 +228,27 @@ export default function LoginPage() {
               </p>
             )}
 
+            {/* Captcha */}
+            {siteKey && (
+              <Turnstile
+                siteKey={siteKey}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+                onError={() => setCaptchaToken(null)}
+                options={{ theme: 'dark', size: 'flexible' }}
+              />
+            )}
+
             {/* Submit */}
             <button
-              type="submit" disabled={loading}
+              type="submit" disabled={loading || (!!siteKey && !captchaToken)}
               style={{
                 marginTop: 8, padding: '13px 20px', borderRadius: 10, border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: (loading || (!!siteKey && !captchaToken)) ? 'not-allowed' : 'pointer',
                 background: `linear-gradient(180deg, ${A} 0%, ${A}dd 100%)`,
                 color: '#0B0A09', fontWeight: 600, fontSize: 14, fontFamily: 'inherit',
                 boxShadow: `0 1px 0 rgba(255,255,255,0.2) inset, 0 10px 30px -10px ${A}66`,
-                opacity: loading ? 0.7 : 1, transition: 'opacity 0.2s, transform 0.15s',
+                opacity: (loading || (!!siteKey && !captchaToken)) ? 0.7 : 1, transition: 'opacity 0.2s, transform 0.15s',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >

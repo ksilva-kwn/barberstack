@@ -68,13 +68,14 @@ module "ec2" {
 }
 
 module "amplify" {
-  source        = "./modules/amplify"
-  project       = var.project
-  environment   = var.environment
-  github_repo   = var.github_repo
-  github_token  = module.ssm.github_token
-  api_url       = "https://api.barberstack.kwnsilva.com.br"
-  custom_domain = "barberstack.kwnsilva.com.br"
+  source             = "./modules/amplify"
+  project            = var.project
+  environment        = var.environment
+  github_repo        = var.github_repo
+  github_token       = module.ssm.github_token
+  api_url            = "https://api.barberstack.kwnsilva.com.br"
+  custom_domain      = "barberstack.kwnsilva.com.br"
+  turnstile_site_key = var.turnstile_site_key
 }
 
 # =============================================================================

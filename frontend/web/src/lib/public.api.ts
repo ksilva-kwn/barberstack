@@ -118,10 +118,10 @@ export const portalApi = {
   photos: (slug: string) =>
     publicApi.get<PublicPhoto[]>(`/api/public/shop/${slug}/photos`),
 
-  login: (email: string, password: string) =>
-    publicApi.post<{ token: string; refreshToken: string; user: any }>('/api/auth/login', { email, password }),
+  login: (email: string, password: string, captchaToken?: string) =>
+    publicApi.post<{ token: string; refreshToken: string; user: any }>('/api/auth/login', { email, password, captchaToken }),
 
-  register: (data: { name: string; email: string; password: string; phone?: string; barbershopId: string }) =>
+  register: (data: { name: string; email: string; password: string; phone?: string; barbershopId: string; captchaToken?: string }) =>
     publicApi.post<{ token: string; user: any }>('/api/auth/register', data),
 
   myAppointments: (token: string) =>

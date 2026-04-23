@@ -5,9 +5,27 @@ import jwt from 'jsonwebtoken';
 import { prisma, UserRole, Prisma } from '@barberstack/database';
 import { logger } from '@barberstack/logger';
 
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY ?? '';
+
+async function verifyCaptcha(token: string | undefined): Promise<boolean> {
+  if (!TURNSTILE_SECRET) return true; // dev: skip if not configured
+  if (!token) return false;
+  try {
+    const body = new URLSearchParams({ secret: TURNSTILE_SECRET, response: token });
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST', body,
+    });
+    const data = await res.json() as { success: boolean };
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  captchaToken: z.string().optional(),
 });
 
 const registerSchema = z.object({
@@ -16,6 +34,7 @@ const registerSchema = z.object({
   password: z.string().min(6),
   phone: z.string().optional(),
   barbershopId: z.string().optional(),
+  captchaToken: z.string().optional(),
 });
 
 export class AuthController {
@@ -25,7 +44,11 @@ export class AuthController {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, captchaToken } = parsed.data;
+
+    if (!await verifyCaptcha(captchaToken)) {
+      return res.status(400).json({ error: 'Verificação de segurança inválida. Recarregue a página.' });
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -77,7 +100,11 @@ export class AuthController {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    const { name, email, password, phone, barbershopId } = parsed.data;
+    const { name, email, password, phone, barbershopId, captchaToken } = parsed.data;
+
+    if (!await verifyCaptcha(captchaToken)) {
+      return res.status(400).json({ error: 'Verificação de segurança inválida. Recarregue a página.' });
+    }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {

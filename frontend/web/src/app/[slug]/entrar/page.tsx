@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Scissors, ArrowLeft, Loader2 } from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { portalApi } from '@/lib/public.api';
 
 const inputCls =
@@ -19,6 +20,8 @@ export default function PortalLoginPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   // Redirect if already logged in
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function PortalLoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'login') {
-        const { data } = await portalApi.login(form.email, form.password);
+        const { data } = await portalApi.login(form.email, form.password, captchaToken ?? undefined);
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
         router.push(`/${slug}/painel`);
       } else {
@@ -51,6 +54,7 @@ export default function PortalLoginPage() {
           password: form.password,
           phone: form.phone || undefined,
           barbershopId: shop.id,
+          captchaToken: captchaToken ?? undefined,
         });
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
         router.push(`/${slug}/painel`);
@@ -153,9 +157,19 @@ export default function PortalLoginPage() {
               <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>
             )}
 
+            {siteKey && (
+              <Turnstile
+                siteKey={siteKey}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+                onError={() => setCaptchaToken(null)}
+                options={{ theme: 'auto', size: 'flexible' }}
+              />
+            )}
+
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (!!siteKey && !captchaToken)}
               className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 mt-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -168,7 +182,7 @@ export default function PortalLoginPage() {
               <>Não tem conta?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('register'); setError(''); }}
+                  onClick={() => { setMode('register'); setError(''); setCaptchaToken(null); }}
                   className="text-primary hover:underline font-medium"
                 >
                   Cadastre-se
@@ -178,7 +192,7 @@ export default function PortalLoginPage() {
               <>Já tem conta?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setError(''); }}
+                  onClick={() => { setMode('login'); setError(''); setCaptchaToken(null); }}
                   className="text-primary hover:underline font-medium"
                 >
                   Entrar

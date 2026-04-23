@@ -82,6 +82,19 @@ resource "aws_ssm_parameter" "github_token" {
   tags = { Name = "${var.project}-${var.environment}-github-token" }
 }
 
+resource "aws_ssm_parameter" "turnstile_secret_key" {
+  name        = "${local.prefix}/TURNSTILE_SECRET_KEY"
+  type        = "SecureString"
+  value       = "PLACEHOLDER_ATUALIZE_NO_CONSOLE_SSM"
+  description = "Barberstack — Cloudflare Turnstile secret key | Atualize em: SSM Console > /barberstack/production/TURNSTILE_SECRET_KEY"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  tags = { Name = "${var.project}-${var.environment}-turnstile-secret" }
+}
+
 # ─── Leitura dos valores (para passar ao EC2/RDS/Amplify) ─────────────────────
 
 data "aws_ssm_parameter" "db_password" {
@@ -100,6 +113,12 @@ data "aws_ssm_parameter" "github_token" {
   name            = aws_ssm_parameter.github_token.name
   with_decryption = true
   depends_on      = [aws_ssm_parameter.github_token]
+}
+
+data "aws_ssm_parameter" "turnstile_site_key" {
+  name            = aws_ssm_parameter.turnstile_secret_key.name
+  with_decryption = true
+  depends_on      = [aws_ssm_parameter.turnstile_secret_key]
 }
 
 # ─── IAM Policy — permite ao EC2 ler todos os parâmetros do path ──────────────

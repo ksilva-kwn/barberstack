@@ -28,8 +28,8 @@ export interface RegisterBarbershopPayload {
 }
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<LoginResponse>('/api/auth/login', { email, password }),
+  login: (email: string, password: string, captchaToken?: string) =>
+    api.post<LoginResponse>('/api/auth/login', { email, password, captchaToken }),
 
   logout: (refreshToken: string) =>
     api.post('/api/auth/logout', { refreshToken }),

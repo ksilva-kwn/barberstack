@@ -45,3 +45,9 @@ variable "github_repo" {
   type        = string
   # Definido pelo pipeline via TF_VAR_github_repo usando github.server_url/github.repository
 }
+
+variable "turnstile_site_key" {
+  description = "Cloudflare Turnstile site key (public — prefixo NEXT_PUBLIC_). Obtida no dashboard Cloudflare > Turnstile."
+  type        = string
+  default     = ""
+}

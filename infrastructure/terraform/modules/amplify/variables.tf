@@ -16,3 +16,9 @@ variable "custom_domain" {
   type        = string
   description = "Dominio customizado para o Amplify (ex: barberstack.kwnsilva.com.br)"
 }
+
+variable "turnstile_site_key" {
+  type        = string
+  description = "Cloudflare Turnstile site key (public) — exposta via NEXT_PUBLIC_TURNSTILE_SITE_KEY"
+  default     = ""
+}
