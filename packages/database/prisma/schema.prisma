@@ -217,14 +217,17 @@ model BarbershopBranch {
   barbershopId String
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 
-  name     String
-  address  String?
-  phone    String?
-  city     String?
-  state    String?
-  zipCode  String?
-  isMain   Boolean  @default(false)
-  isActive Boolean  @default(true)
+  name        String
+  cnpj        String?
+  email       String?
+  managerName String?
+  address     String?
+  phone       String?
+  city        String?
+  state       String?
+  zipCode     String?
+  isMain      Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -410,9 +413,10 @@ model ClientPlan {
   description   String?
   price         Decimal  @db.Decimal(10, 2)
   billingCycle  String   @default("monthly") // monthly | weekly
-  isActive      Boolean  @default(true)
-  isFeatured    Boolean  @default(false)    // Exibido como destaque no portal
-  createdAt     DateTime @default(now())
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  allowMultiBranch Boolean  @default(false)
+  createdAt        DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   services      ClientPlanService[]
