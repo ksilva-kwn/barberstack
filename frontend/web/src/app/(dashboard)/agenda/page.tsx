@@ -7,10 +7,11 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 import { barbershopApi, Branch } from '@/lib/barbershop.api';
 import { useAuthStore } from '@/store/auth.store';
-import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
+import { appointmentApi, AppointmentStatus, Appointment } from '@/lib/appointment.api';
 import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
 import { api } from '@/lib/api';
 import { NewAppointmentModal } from '@/components/agenda/new-appointment-modal';
+import { EditAppointmentModal } from '@/components/agenda/edit-appointment-modal';
 
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
@@ -19,6 +20,7 @@ function gcd(a: number, b: number): number {
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
+  const [editingApt, setEditingApt] = useState<Appointment | null>(null);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [selectedProfessionalId, setSelectedProfessionalId] = useState('');
   const queryClient = useQueryClient();
@@ -133,22 +135,32 @@ export default function AgendaPage() {
   const snapMins = Math.min(Math.max(rawGcd, 5), 30);
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex flex-col h-full gap-3">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground font-display tracking-tight">Agenda</h1>
-          <p className="text-muted-foreground text-sm capitalize">
-            {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+      <div className="shrink-0 flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground font-display tracking-tight">Agenda</h1>
+            <p className="text-muted-foreground text-sm capitalize">
+              {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Agendamento
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Filters row — below title */}
+        <div className="flex items-center gap-2 flex-wrap">
           {branches.length > 0 && (
             <select
               value={selectedBranchId}
               onChange={e => { setSelectedBranchId(e.target.value); setSelectedProfessionalId(''); }}
-              className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="px-3 py-1.5 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todas as filiais</option>
               {branches.map(b => (
@@ -160,7 +172,7 @@ export default function AgendaPage() {
             <select
               value={selectedProfessionalId}
               onChange={e => setSelectedProfessionalId(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="px-3 py-1.5 rounded-lg bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todos os barbeiros</option>
               {byBranch.map((p: any) => (
@@ -190,14 +202,6 @@ export default function AgendaPage() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Agendamento
-          </button>
         </div>
       </div>
 
@@ -218,10 +222,10 @@ export default function AgendaPage() {
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}
           onDelete={(id) => deleteMutation.mutate(id)}
+          onEdit={(apt) => setEditingApt(apt)}
         />
       )}
 
-      {/* Modal */}
       {showModal && (
         <NewAppointmentModal
           professionals={professionals}
@@ -230,6 +234,18 @@ export default function AgendaPage() {
           onClose={() => setShowModal(false)}
           onCreated={() => {
             setShowModal(false);
+            queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] });
+          }}
+        />
+      )}
+
+      {editingApt && (
+        <EditAppointmentModal
+          appointment={editingApt}
+          services={services}
+          onClose={() => setEditingApt(null)}
+          onSaved={() => {
+            setEditingApt(null);
             queryClient.invalidateQueries({ queryKey: ['appointments', dateStr] });
           }}
         />

@@ -22,7 +22,7 @@ const navItems = [
   { href: '/barbeiro/folgas',    label: 'Folgas',     icon: CalendarOff     },
 ];
 
-export function BarberSidebar() {
+export function BarberSidebar({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, clearAuth } = useAuthStore();

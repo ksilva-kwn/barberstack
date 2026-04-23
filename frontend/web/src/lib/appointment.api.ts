@@ -86,6 +86,9 @@ export const appointmentApi = {
   resizeDuration: (id: string, durationMins: number) =>
     api.patch<Appointment>(`/api/appointments/${id}/duration`, { durationMins }),
 
+  update: (id: string, payload: { clientName?: string; notes?: string; serviceIds?: string[]; scheduledAt?: string; professionalId?: string }) =>
+    api.patch<Appointment>(`/api/appointments/${id}`, payload),
+
   delete: (id: string) =>
     api.delete(`/api/appointments/${id}`),
 

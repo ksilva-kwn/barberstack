@@ -66,9 +66,10 @@ interface Props {
   onReschedule: (id: string, scheduledAt: string) => void;
   onResize: (id: string, durationMins: number) => void;
   onDelete: (id: string) => void;
+  onEdit?: (apt: Appointment) => void;
 }
 
-export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], businessHoursDay, snapMins = 15, onStatusChange, onReschedule, onResize, onDelete }: Props) {
+export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurringBlocks = [], businessHoursDay, snapMins = 15, onStatusChange, onReschedule, onResize, onDelete, onEdit }: Props) {
   const columnRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Pre-compute business hours overlays
@@ -219,28 +220,26 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
             {/* Business hours — fora do horário (antes da abertura) */}
             {!isClosed && businessHoursDay?.isOpen && beforeOpenHeight > 0 && (
               <div
-                className="absolute left-0 right-0 top-0 z-[4] pointer-events-none"
-                style={{ height: beforeOpenHeight, background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.35)', borderBottom: '1px dashed hsl(var(--border))' }}
+                className="absolute left-0 right-0 top-0 z-[4] pointer-events-none bg-muted/40"
+                style={{ height: beforeOpenHeight, borderBottom: '1px dashed hsl(var(--border))' }}
               >
-                <p className="text-[9px] text-muted-foreground/60 px-1.5 pt-1 font-medium">Fora do horário</p>
+                <p className="text-[9px] text-muted-foreground px-1.5 pt-1 font-medium">Fora do horário</p>
               </div>
             )}
 
             {/* Business hours — fora do horário (depois do fechamento) */}
             {!isClosed && businessHoursDay?.isOpen && afterCloseHeight > 0 && (
               <div
-                className="absolute left-0 right-0 z-[4] pointer-events-none"
-                style={{ top: afterCloseTop, height: afterCloseHeight, background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.35)', borderTop: '1px dashed hsl(var(--border))' }}
+                className="absolute left-0 right-0 z-[4] pointer-events-none bg-muted/40"
+                style={{ top: afterCloseTop, height: afterCloseHeight, borderTop: '1px dashed hsl(var(--border))' }}
               >
-                <p className="text-[9px] text-muted-foreground/60 px-1.5 pt-1 font-medium">Fora do horário</p>
+                <p className="text-[9px] text-muted-foreground px-1.5 pt-1 font-medium">Fora do horário</p>
               </div>
             )}
 
             {/* Business hours — dia fechado */}
             {isClosed && (
-              <div className="absolute inset-0 z-[4] pointer-events-none flex items-center justify-center"
-                style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.015) 6px, rgba(255,255,255,0.015) 12px)', backgroundColor: 'rgba(0,0,0,0.45)' }}
-              />
+              <div className="absolute inset-0 z-[4] pointer-events-none flex items-center justify-center bg-muted/40" />
             )}
 
             {/* Day-off overlay (full day or partial) */}
@@ -299,6 +298,7 @@ export function ScheduleGrid({ professionals, appointments, dayOffs = [], recurr
                 onDragStart={handleDragStart}
                 onResize={onResize}
                 onDelete={onDelete}
+                onEdit={onEdit}
               />
             ))}
           </div>

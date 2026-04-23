@@ -7,13 +7,15 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { api } from '@/lib/api';
-import { appointmentApi, AppointmentStatus } from '@/lib/appointment.api';
+import { appointmentApi, AppointmentStatus, Appointment } from '@/lib/appointment.api';
 import { ScheduleGrid, DayOffBlock, RecurringBlockDisplay } from '@/components/agenda/schedule-grid';
+import { EditAppointmentModal } from '@/components/agenda/edit-appointment-modal';
 
 export default function BarberAgendaPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [editingApt, setEditingApt] = useState<Appointment | null>(null);
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
   const { data: myProfessional } = useQuery({
@@ -132,6 +134,19 @@ export default function BarberAgendaPage() {
           onReschedule={(id, scheduledAt) => rescheduleMutation.mutate({ id, scheduledAt })}
           onResize={(id, durationMins) => resizeMutation.mutate({ id, durationMins })}
           onDelete={(id) => deleteMutation.mutate(id)}
+          onEdit={(apt) => setEditingApt(apt)}
+        />
+      )}
+
+      {editingApt && (
+        <EditAppointmentModal
+          appointment={editingApt}
+          services={services}
+          onClose={() => setEditingApt(null)}
+          onSaved={() => {
+            setEditingApt(null);
+            queryClient.invalidateQueries({ queryKey: ['barber-appointments', dateStr, myProfessional?.id] });
+          }}
         />
       )}
     </div>

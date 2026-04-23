@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { MoreVertical, Check, UserX, Play, CheckCircle, X, Trash2 } from 'lucide-react';
+import { MoreVertical, Check, UserX, Play, CheckCircle, X, Trash2, Pencil } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  SCHEDULED:   'border-sky-400/50     bg-sky-500/20      text-sky-200',
-  CONFIRMED:   'border-emerald-400/50 bg-emerald-500/20  text-emerald-200',
-  IN_PROGRESS: 'border-amber-400/50   bg-amber-500/20    text-amber-200',
-  COMPLETED:   'border-zinc-500/40    bg-zinc-500/15     text-zinc-400',
-  NO_SHOW:     'border-orange-400/50  bg-orange-500/15   text-orange-300',
-  CANCELED:    'border-red-400/40     bg-red-500/15      text-red-300    line-through opacity-60',
+  SCHEDULED:   'border-sky-500/60     bg-sky-500/15      text-sky-700   dark:text-sky-200',
+  CONFIRMED:   'border-emerald-500/60 bg-emerald-500/15  text-emerald-700 dark:text-emerald-200',
+  IN_PROGRESS: 'border-amber-500/60   bg-amber-500/15    text-amber-700 dark:text-amber-200',
+  COMPLETED:   'border-zinc-400/50    bg-zinc-500/10     text-zinc-600  dark:text-zinc-400',
+  NO_SHOW:     'border-orange-500/50  bg-orange-500/10   text-orange-700 dark:text-orange-300',
+  CANCELED:    'border-red-400/40     bg-red-500/10      text-red-600   dark:text-red-300 line-through opacity-60',
   BLOCKED:     'border-border         bg-muted/30        text-muted-foreground',
 };
 
@@ -55,9 +55,10 @@ interface Props {
   onDragStart: (e: React.DragEvent, apt: Appointment) => void;
   onResize: (id: string, newDurationMins: number) => void;
   onDelete: (id: string) => void;
+  onEdit?: (apt: Appointment) => void;
 }
 
-export function AppointmentCard({ appointment, top, height, snapMins = 15, onStatusChange, onDragStart, onResize, onDelete }: Props) {
+export function AppointmentCard({ appointment, top, height, snapMins = 15, onStatusChange, onDragStart, onResize, onDelete, onEdit }: Props) {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [liveHeight, setLiveHeight] = useState<number | null>(null);
   const liveHeightRef = useRef<number | null>(null);
@@ -155,6 +156,15 @@ export function AppointmentCard({ appointment, top, height, snapMins = 15, onSta
                   <p className="px-3 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                     {STATUS_LABEL[appointment.status]}
                   </p>
+                  {onEdit && (
+                    <button
+                      onClick={() => { setMenuOpen(false); onEdit(appointment); }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors text-left"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      Editar
+                    </button>
+                  )}
                   {actions.map((action) => (
                     <button
                       key={action.status}

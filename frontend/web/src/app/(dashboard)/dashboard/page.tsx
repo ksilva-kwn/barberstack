@@ -18,14 +18,16 @@ const S = {
 };
 
 const dashCss = `
-  .dash-kpi-row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .dash-kpi-row > * { flex: 1; min-width: 0; }
+  .dash-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .dash-charts  { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
   .dash-bottom  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 640px) {
-    .dash-kpi-row > * { min-width: calc(50% - 6px); max-width: calc(50% - 6px); }
+  @media (max-width: 700px) {
+    .dash-kpi-row { grid-template-columns: 1fr 1fr; }
     .dash-charts  { grid-template-columns: 1fr; }
     .dash-bottom  { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 400px) {
+    .dash-kpi-row { grid-template-columns: 1fr; }
   }
 `;
 
@@ -64,7 +66,7 @@ function KpiCard({ d }: { d: KpiData }) {
     <div style={{
       background: S.card, border: `1px solid ${S.border}`, borderRadius: 14,
       padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
-      flex: 1, minWidth: 0,
+      minWidth: 0,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: S.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d.title}</span>
