@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Scissors, ArrowLeft, Loader2 } from 'lucide-react';
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { portalApi } from '@/lib/public.api';
 
 const inputCls =
@@ -21,6 +21,8 @@ export default function PortalLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerifying, setCaptchaVerifying] = useState(false);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   // Redirect if already logged in
@@ -158,13 +160,38 @@ export default function PortalLoginPage() {
             )}
 
             {siteKey && (
-              <Turnstile
-                siteKey={siteKey}
-                onSuccess={setCaptchaToken}
-                onExpire={() => setCaptchaToken(null)}
-                onError={() => setCaptchaToken(null)}
-                options={{ theme: 'auto', size: 'flexible' }}
-              />
+              <>
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={siteKey}
+                  onSuccess={token => { setCaptchaToken(token); setCaptchaVerifying(false); }}
+                  onExpire={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
+                  onError={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
+                  options={{ theme: 'auto', execution: 'execute', size: 'invisible' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${captchaToken ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-input bg-background hover:border-primary/40'}`}
+                >
+                  <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors ${captchaToken ? 'bg-emerald-500 border-emerald-500' : 'border-input'}`}>
+                    {captchaVerifying && !captchaToken && (
+                      <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                    )}
+                    {captchaToken && (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                    )}
+                  </span>
+                  <span className={`text-sm flex-1 text-left ${captchaToken ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                    {captchaToken ? 'Verificado' : captchaVerifying ? 'Verificando...' : 'Não sou um robô'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50 text-right leading-tight">
+                    Cloudflare<br/>Turnstile
+                  </span>
+                </button>
+              </>
             )}
 
             <button
@@ -182,7 +209,7 @@ export default function PortalLoginPage() {
               <>Não tem conta?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('register'); setError(''); setCaptchaToken(null); }}
+                  onClick={() => { setMode('register'); setError(''); setCaptchaToken(null); setCaptchaVerifying(false); }}
                   className="text-primary hover:underline font-medium"
                 >
                   Cadastre-se
@@ -192,7 +219,7 @@ export default function PortalLoginPage() {
               <>Já tem conta?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setError(''); setCaptchaToken(null); }}
+                  onClick={() => { setMode('login'); setError(''); setCaptchaToken(null); setCaptchaVerifying(false); }}
                   className="text-primary hover:underline font-medium"
                 >
                   Entrar
