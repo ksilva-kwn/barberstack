@@ -73,8 +73,16 @@ appointmentRouter.post('/', async (req: Request, res: Response) => {
     where: { id: { in: serviceIds }, barbershopId },
   });
 
-  const totalAmount = services.reduce((sum, s) => sum + Number(s.price), 0);
+  // Verifica assinatura ativa do cliente (se houver clientId)
+  const clientId = (rest as any).clientId as string | undefined;
+  const activeSub = clientId ? await prisma.clientSubscription.findFirst({
+    where: { clientId, barbershopId, status: 'ACTIVE' },
+    include: { clientPlan: { include: { services: { select: { serviceId: true } } } } },
+  }) : null;
+  const coveredIds = new Set(activeSub?.clientPlan.services.map(s => s.serviceId) ?? []);
+
   const durationMins = services.reduce((sum, s) => sum + s.durationMins, 0);
+  const totalAmount = services.reduce((sum, s) => sum + (coveredIds.has(s.id) ? 0 : Number(s.price)), 0);
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -83,10 +91,11 @@ appointmentRouter.post('/', async (req: Request, res: Response) => {
       scheduledAt: new Date(scheduledAt),
       totalAmount,
       durationMins,
+      ...(activeSub && { clientSubscriptionId: activeSub.id }),
       services: {
         create: services.map((s) => ({
           serviceId: s.id,
-          price: s.price,
+          price: coveredIds.has(s.id) ? 0 : s.price,
           durationMins: s.durationMins,
         })),
       },
@@ -116,11 +125,19 @@ appointmentRouter.patch('/:id', async (req: Request, res: Response) => {
     const services = await prisma.service.findMany({
       where: { id: { in: serviceIds }, barbershopId },
     });
+    const resolvedClientId = clientId ?? (await prisma.appointment.findUnique({ where: { id: req.params.id }, select: { clientId: true } }))?.clientId;
+    const subForUpdate = resolvedClientId ? await prisma.clientSubscription.findFirst({
+      where: { clientId: resolvedClientId, barbershopId, status: 'ACTIVE' },
+      include: { clientPlan: { include: { services: { select: { serviceId: true } } } } },
+    }) : null;
+    const coveredIdsUpdate = new Set(subForUpdate?.clientPlan.services.map(s => s.serviceId) ?? []);
+
     updateData.durationMins = services.reduce((s, sv) => s + sv.durationMins, 0);
-    updateData.totalAmount  = services.reduce((s, sv) => s + Number(sv.price), 0);
+    updateData.totalAmount  = services.reduce((s, sv) => s + (coveredIdsUpdate.has(sv.id) ? 0 : Number(sv.price)), 0);
+    if (subForUpdate) updateData.clientSubscriptionId = subForUpdate.id;
     updateData.services = {
       deleteMany: {},
-      create: services.map(sv => ({ serviceId: sv.id, price: sv.price, durationMins: sv.durationMins })),
+      create: services.map(sv => ({ serviceId: sv.id, price: coveredIdsUpdate.has(sv.id) ? 0 : sv.price, durationMins: sv.durationMins })),
     };
   }
 
