@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   CheckCircle, Clock, CreditCard, Banknote, Smartphone, Loader2,
-  ChevronDown, Trash2, ShoppingCart, Plus, X, Package,
+  ChevronDown, Trash2, ShoppingCart, Plus, X, Package, Crown,
 } from 'lucide-react';
 import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
 import { productApi, Product } from '@/lib/product.api';
@@ -257,7 +257,12 @@ export default function ComandasAbertasPage() {
 
                 return (
                   <tr key={apt.id} className={cn('border-b border-border/50 last:border-0', i % 2 !== 0 && 'bg-muted/10')}>
-                    <td className="px-4 py-3 font-medium text-foreground">{clientLabel}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <span className="flex items-center gap-1.5">
+                        {clientLabel}
+                        {apt.clientSubscription && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{barber}</td>
                     <td className="px-4 py-3">
                       {/* Serviços */}

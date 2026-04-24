@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, Trash2, Package, ShoppingCart, Plus, X } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, Smartphone, Loader2, RotateCcw, Pencil, Trash2, Package, ShoppingCart, Plus, X, Crown } from 'lucide-react';
 import { appointmentApi, Appointment, PaymentMethod } from '@/lib/appointment.api';
 import { productApi, Product } from '@/lib/product.api';
 import { cn } from '@/lib/utils';
@@ -309,7 +309,12 @@ export default function ComandasFechadasPage() {
                     key={apt.id}
                     className={cn('border-b border-border/50 last:border-0', i % 2 === 0 ? '' : 'bg-muted/10')}
                   >
-                    <td className="px-4 py-3 font-medium text-foreground">{clientLabel}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <span className="flex items-center gap-1.5">
+                        {clientLabel}
+                        {apt.clientSubscription && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{barber}</td>
                     <td className="px-4 py-3">
                       <div className="text-muted-foreground text-xs max-w-[200px] truncate">{services}</div>
