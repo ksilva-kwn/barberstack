@@ -369,14 +369,14 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   if (proFilter)    appointmentsWhere.professionalId = proFilter;
   if (branchFilter) appointmentsWhere.branchId       = branchFilter;
 
-  const [professionals, appointmentsMonth, activeSubscriptions, comandaRevenue, openCommands] = await Promise.all([
+  const [professionals, appointmentsMonth, activeSubscriptions, comandaRevenue, openCommands, subscriptionRevenue] = await Promise.all([
     prisma.professional.count({ where: { barbershopId: id, isActive: true } }),
 
     prisma.appointment.count({ where: appointmentsWhere }),
 
     prisma.clientSubscription.count({ where: { barbershopId: id, status: 'ACTIVE' } }),
 
-    // Receita do mês: comandas pagas (serviços)
+    // Receita do mês: comandas pagas (serviços + produtos)
     prisma.appointment.aggregate({
       where: {
         barbershopId: id,
@@ -398,13 +398,28 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
         ...(branchFilter ? { branchId: branchFilter }       : {}),
       },
     }),
+
+    // Receita de assinaturas: mensalidades pagas no mês corrente
+    prisma.clientSubscription.findMany({
+      where: {
+        barbershopId: id,
+        status: { in: ['ACTIVE', 'DEFAULTING'] },
+        lastPaymentAt: { gte: startOfMonth },
+      },
+      include: { clientPlan: { select: { price: true } } },
+    }),
   ]);
+
+  const subscriptionRevenueMonth = subscriptionRevenue.reduce((s, sub) => s + Number(sub.clientPlan.price), 0);
+  const comandaRevenueMonth = Number(comandaRevenue._sum.totalAmount ?? 0);
 
   return res.json({
     professionals,
     appointmentsMonth,
     activeSubscriptions,
-    revenueMonth: Number(comandaRevenue._sum.totalAmount ?? 0),
+    revenueMonth: comandaRevenueMonth + subscriptionRevenueMonth,
+    comandaRevenue: comandaRevenueMonth,
+    subscriptionRevenue: subscriptionRevenueMonth,
     openCommands,
     defaulting: 0,
   });
@@ -433,23 +448,41 @@ barbershopRouter.get('/:id/revenue-chart', async (req: Request, res: Response) =
     branchId       ? Prisma.sql`AND "branchId" = ${branchId}`             : Prisma.empty,
   ];
 
-  const rows = await prisma.$queryRaw<Array<{ month: string; revenue: number }>>(Prisma.sql`
-    SELECT
-      TO_CHAR(DATE_TRUNC('month', "paidAt"), 'Mon/YY') AS month,
-      SUM("totalAmount")::float                        AS revenue
-    FROM appointments
-    WHERE "barbershopId" = ${id}
-      AND "paymentStatus" = 'PAID'
-      AND "paidAt" >= ${since}
-      ${Prisma.join(extraConds, ' ')}
-    GROUP BY DATE_TRUNC('month', "paidAt")
-    ORDER BY DATE_TRUNC('month', "paidAt") ASC
-  `);
+  const [aptRows, subRows] = await Promise.all([
+    prisma.$queryRaw<Array<{ month: string; revenue: number }>>(Prisma.sql`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', "paidAt"), 'Mon/YY') AS month,
+        SUM("totalAmount")::float                        AS revenue
+      FROM appointments
+      WHERE "barbershopId" = ${id}
+        AND "paymentStatus" = 'PAID'
+        AND "paidAt" >= ${since}
+        ${Prisma.join(extraConds, ' ')}
+      GROUP BY DATE_TRUNC('month', "paidAt")
+      ORDER BY DATE_TRUNC('month', "paidAt") ASC
+    `),
 
-  // Mescla dados reais nos slots
-  for (const row of rows) {
+    prisma.$queryRaw<Array<{ month: string; revenue: number }>>(Prisma.sql`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', cs."lastPaymentAt"), 'Mon/YY') AS month,
+        SUM(cp.price::float)                                        AS revenue
+      FROM client_subscriptions cs
+      JOIN client_plans cp ON cs."clientPlanId" = cp.id
+      WHERE cs."barbershopId" = ${id}
+        AND cs."lastPaymentAt" IS NOT NULL
+        AND cs."lastPaymentAt" >= ${since}
+      GROUP BY DATE_TRUNC('month', cs."lastPaymentAt")
+      ORDER BY DATE_TRUNC('month', cs."lastPaymentAt") ASC
+    `),
+  ]);
+
+  for (const row of aptRows) {
     const slot = allMonths.find(m => m.month === row.month);
-    if (slot) slot.revenue = Number(row.revenue);
+    if (slot) slot.revenue += Number(row.revenue);
+  }
+  for (const row of subRows) {
+    const slot = allMonths.find(m => m.month === row.month);
+    if (slot) slot.revenue += Number(row.revenue);
   }
 
   return res.json(allMonths);
