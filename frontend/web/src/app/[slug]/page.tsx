@@ -6,100 +6,10 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Scissors, MapPin, Phone, Calendar, Loader2, Clock,
   Star, Instagram, ChevronDown, Mail, ArrowRight,
-  LogIn, UserPlus, X, User,
+  LogIn, UserPlus, User,
 } from 'lucide-react';
 import { portalApi, PublicPhoto, PublicBranch, PublicProfessional } from '@/lib/public.api';
-import { motion, AnimatePresence } from 'framer-motion';
-
-// ─── Auth Modal ───────────────────────────────────────────────────────────────
-function AuthModal({
-  slug, barbershopId, onSuccess, onClose,
-}: {
-  slug: string; barbershopId: string; onSuccess: (user: any) => void; onClose: () => void;
-}) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  const submit = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      if (mode === 'login') {
-        const res = await portalApi.login(form.email, form.password);
-        sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify(res.data));
-        onSuccess(res.data.user);
-      } else {
-        const res = await portalApi.register({ name: form.name, email: form.email, password: form.password, phone: form.phone || undefined, barbershopId });
-        sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify(res.data));
-        onSuccess(res.data.user);
-      }
-    } catch (e: any) {
-      setError(e?.response?.data?.error ?? 'Verifique seus dados e tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors placeholder:text-muted-foreground';
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        className="relative w-full max-w-sm rounded-2xl border shadow-2xl p-6"
-        style={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
-          <X className="w-4 h-4" />
-        </button>
-
-        <div className="flex gap-2 mb-6 p-1 rounded-xl" style={{ backgroundColor: 'hsl(var(--muted))' }}>
-          {(['login', 'register'] as const).map(m => (
-            <button key={m} onClick={() => setMode(m)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mode === m ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-              {m === 'login' ? 'Entrar' : 'Criar conta'}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-3">
-          {mode === 'register' && (
-            <input className={inputCls} style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-              placeholder="Seu nome" value={form.name} onChange={e => set('name', e.target.value)} />
-          )}
-          <input className={inputCls} style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-            type="email" placeholder="E-mail" value={form.email} onChange={e => set('email', e.target.value)} />
-          {mode === 'register' && (
-            <input className={inputCls} style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-              type="tel" placeholder="Telefone (opcional)" value={form.phone} onChange={e => set('phone', e.target.value)} />
-          )}
-          <input className={inputCls} style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-            type="password" placeholder="Senha" value={form.password} onChange={e => set('password', e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && submit()} />
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <button onClick={submit} disabled={loading}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
-            style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'login' ? 'Entrar' : 'Criar conta'}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+import { motion } from 'framer-motion';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PortalPage() {
@@ -107,7 +17,6 @@ export default function PortalPage() {
   const router = useRouter();
   const [portalUser, setPortalUser] = useState<any>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const aboutRef = useRef<HTMLElement>(null);
 
@@ -154,23 +63,10 @@ export default function PortalPage() {
     }
   }, [branches]);
 
-  const [loginIntent, setLoginIntent] = useState<'book' | 'account'>('account');
-
   const handleBook = () => {
     const query = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
     if (portalUser) router.push(`/${slug}/agendar${query}`);
-    else { setLoginIntent('book'); setShowAuth(true); }
-  };
-
-  const handleAuthSuccess = (user: any) => {
-    setPortalUser(user);
-    setShowAuth(false);
-    if (loginIntent === 'book') {
-      const query = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
-      router.push(`/${slug}/agendar${query}`);
-    } else {
-      router.push(`/${slug}/painel`);
-    }
+    else router.push(`/${slug}/entrar?next=agendar${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`);
   };
 
   const handleLogout = () => {
@@ -208,13 +104,6 @@ export default function PortalPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}>
 
-      {/* Auth Modal */}
-      <AnimatePresence>
-        {showAuth && shop && (
-          <AuthModal slug={slug} barbershopId={(shop as any).id} onSuccess={handleAuthSuccess} onClose={() => setShowAuth(false)} />
-        )}
-      </AnimatePresence>
-
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
       <header
         className="fixed top-0 inset-x-0 z-20 border-b transition-all duration-300"
@@ -249,10 +138,10 @@ export default function PortalPage() {
               </>
             ) : (
               <>
-                <button onClick={() => { setLoginIntent('account'); setShowAuth(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border transition-colors hover:bg-accent">
+                <button onClick={() => router.push(`/${slug}/entrar`)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border transition-colors hover:bg-accent">
                   <LogIn className="w-3.5 h-3.5" /> Entrar
                 </button>
-                <button onClick={() => { setLoginIntent('account'); setShowAuth(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                <button onClick={() => router.push(`/${slug}/entrar`)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
                   <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Cadastrar</span>
                 </button>
               </>
@@ -485,13 +374,11 @@ export default function PortalPage() {
       </footer>
 
       {/* Mobile sticky CTA */}
-      {!showAuth && (
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 border-t z-10" style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}>
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 border-t z-10" style={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}>
           <button onClick={handleBook} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
             <Calendar className="w-4 h-4" /> Agendar horário
           </button>
         </div>
-      )}
     </div>
   );
 }

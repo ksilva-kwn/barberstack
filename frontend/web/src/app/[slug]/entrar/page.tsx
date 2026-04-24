@@ -43,10 +43,16 @@ export default function PortalLoginPage() {
     setError('');
     setSubmitting(true);
     try {
+      const next = searchParams.get('next');
+      const branchId = searchParams.get('branchId');
+      const redirect = next === 'agendar'
+        ? `/${slug}/agendar${branchId ? `?branchId=${branchId}` : ''}`
+        : `/${slug}/painel`;
+
       if (mode === 'login') {
         const { data } = await portalApi.login(form.email, form.password, captchaToken ?? undefined);
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
-        router.push(`/${slug}/painel`);
+        router.push(redirect);
       } else {
         if (!form.name) { setError('Nome obrigatório'); setSubmitting(false); return; }
         if (!shop) { setError('Erro ao carregar dados da barbearia'); setSubmitting(false); return; }
@@ -59,7 +65,7 @@ export default function PortalLoginPage() {
           captchaToken: captchaToken ?? undefined,
         });
         sessionStorage.setItem(`portal-auth-${slug}`, JSON.stringify({ token: data.token, user: data.user }));
-        router.push(`/${slug}/painel`);
+        router.push(redirect);
       }
     } catch (err: any) {
       const raw = err.response?.data?.error;
