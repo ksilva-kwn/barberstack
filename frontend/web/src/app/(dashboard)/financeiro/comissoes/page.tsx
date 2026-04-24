@@ -6,7 +6,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Loader2, Users, ChevronDown, ChevronUp, Scissors,
-  CreditCard, Settings2, Trophy, Equal, DollarSign,
+  CreditCard, Settings2, Trophy, Equal, DollarSign, AlertTriangle,
 } from 'lucide-react';
 import { financialApi, PlanCommissionModel, PlanCommissionConfig } from '@/lib/financial.api';
 import { cn } from '@/lib/utils';
@@ -244,20 +244,39 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
             ))}
           </div>
 
-          {draftModel === 'FIXED' && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">Valor por atendimento (R$)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={draftFixed}
-                onChange={e => setDraftFixed(e.target.value)}
-                className={cn(inputCls, 'w-32')}
-                placeholder="0,00"
-              />
-            </div>
-          )}
+          {draftModel === 'FIXED' && (() => {
+            const fixedVal  = parseFloat(draftFixed) || 0;
+            const totalApts = report?.totalSubscriptionServices ?? 0;
+            const revenue   = report?.totalRevenue ?? 0;
+            const projected = fixedVal * totalApts;
+            const overBudget = fixedVal > 0 && totalApts > 0 && projected > revenue;
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground whitespace-nowrap">Valor por atendimento (R$)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={draftFixed}
+                    onChange={e => setDraftFixed(e.target.value)}
+                    className={cn(inputCls, 'w-32', overBudget && 'border-amber-500 focus:ring-amber-500/30')}
+                    placeholder="0,00"
+                  />
+                </div>
+                {overBudget && (
+                  <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Com {totalApts} atend. × {fmt(fixedVal)} = <strong>{fmt(projected)}</strong> em comissões,
+                      mas a receita de planos no período é apenas <strong>{fmt(revenue)}</strong>.
+                      O valor fixo excede o que foi arrecadado.
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {draftModel === 'RANKING' && (
             <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
