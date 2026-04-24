@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2 } from 'lucide-react';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { portalApi } from '@/lib/public.api';
 
 const inputCls =
@@ -20,6 +21,9 @@ export function PortalLoginModal({ mode, shopId, onAuth, onClose, onSwitchMode }
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -28,7 +32,7 @@ export function PortalLoginModal({ mode, shopId, onAuth, onClose, onSwitchMode }
     setError(''); setSubmitting(true);
     try {
       if (mode === 'login') {
-        const { data } = await portalApi.login(form.email, form.password);
+        const { data } = await portalApi.login(form.email, form.password, captchaToken ?? undefined);
         onAuth(data.token, data.user);
       } else {
         if (!form.name) { setError('Nome obrigatório'); setSubmitting(false); return; }
@@ -38,6 +42,7 @@ export function PortalLoginModal({ mode, shopId, onAuth, onClose, onSwitchMode }
           password: form.password,
           phone: form.phone || undefined,
           barbershopId: shopId,
+          captchaToken: captchaToken ?? undefined,
         });
         onAuth(data.token, data.user);
       }
@@ -83,7 +88,20 @@ export function PortalLoginModal({ mode, shopId, onAuth, onClose, onSwitchMode }
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <button type="submit" disabled={submitting}
+            {siteKey && (
+              <div className="rounded-lg overflow-hidden">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={siteKey}
+                  onSuccess={setCaptchaToken}
+                  onExpire={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                  options={{ theme: 'auto', size: 'flexible', appearance: 'always' }}
+                />
+              </div>
+            )}
+
+            <button type="submit" disabled={submitting || (!!siteKey && !captchaToken)}
               className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {mode === 'login' ? 'Entrar' : 'Criar conta'}
@@ -92,11 +110,11 @@ export function PortalLoginModal({ mode, shopId, onAuth, onClose, onSwitchMode }
             <p className="text-center text-sm text-muted-foreground">
               {mode === 'login' ? (
                 <>Não tem conta?{' '}
-                  <button type="button" onClick={() => onSwitchMode('register')} className="text-primary hover:underline">Cadastre-se</button>
+                  <button type="button" onClick={() => { onSwitchMode('register'); setCaptchaToken(null); turnstileRef.current?.reset(); }} className="text-primary hover:underline">Cadastre-se</button>
                 </>
               ) : (
                 <>Já tem conta?{' '}
-                  <button type="button" onClick={() => onSwitchMode('login')} className="text-primary hover:underline">Entrar</button>
+                  <button type="button" onClick={() => { onSwitchMode('login'); setCaptchaToken(null); turnstileRef.current?.reset(); }} className="text-primary hover:underline">Entrar</button>
                 </>
               )}
             </p>
