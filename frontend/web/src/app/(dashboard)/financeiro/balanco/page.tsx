@@ -108,6 +108,12 @@ export default function BalancoPage() {
             <span className="text-muted-foreground">Comandas pagas</span>
             <span className="font-semibold text-foreground">{fmt(d.comandaRevenue)}</span>
           </div>
+          {d.subscriptionRevenue > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Assinaturas</span>
+              <span className="font-semibold text-foreground">{fmt(d.subscriptionRevenue)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Receitas manuais</span>
             <span className="font-semibold text-foreground">{fmt(d.manualIncome)}</span>

@@ -55,6 +55,7 @@ export interface BalanceData {
   period: { from: string; to: string };
   comandaRevenue: number;
   comandaQty: number;
+  subscriptionRevenue: number;
   manualIncome: number;
   manualExpense: number;
   pendingIncome: number;

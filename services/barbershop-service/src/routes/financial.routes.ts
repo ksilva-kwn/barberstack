@@ -26,7 +26,7 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
   const dateTo   = to   ? new Date(to)   : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   // Receita de comandas pagas no período
-  const [aptRevenue, manualTx, balanceByMonth] = await Promise.all([
+  const [aptRevenue, manualTx, balanceByMonth, subRevenue] = await Promise.all([
     prisma.$queryRaw<Array<{ total: number; qty: number }>>(Prisma.sql`
       SELECT
         COALESCE(SUM(a."totalAmount"), 0)::float
@@ -55,6 +55,16 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
       },
     }),
 
+    // Receita de assinaturas no período (mensalidades pagas)
+    prisma.clientSubscription.findMany({
+      where: {
+        barbershopId,
+        status: { in: ['ACTIVE', 'DEFAULTING'] },
+        lastPaymentAt: { gte: dateFrom, lte: dateTo },
+      },
+      include: { clientPlan: { select: { price: true } } },
+    }),
+
     // Receita por mês (últimos 6 meses) — comandas
     prisma.$queryRaw<Array<{ month: string; revenue: number; expenses: number }>>(Prisma.sql`
       SELECT
@@ -76,15 +86,16 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
     `),
   ]);
 
-  const comandaRevenue = Number(aptRevenue[0]?.total ?? 0);
-  const comandaQty     = Number(aptRevenue[0]?.qty ?? 0);
+  const comandaRevenue      = Number(aptRevenue[0]?.total ?? 0);
+  const comandaQty          = Number(aptRevenue[0]?.qty ?? 0);
+  const subscriptionRevenue = subRevenue.reduce((s, sub) => s + Number(sub.clientPlan.price), 0);
 
   const manualIncome   = manualTx.filter(t => t.type === 'INCOME'  && t.status === 'PAID').reduce((s, t) => s + Number(t.amount), 0);
   const manualExpense  = manualTx.filter(t => t.type === 'EXPENSE' && t.status === 'PAID').reduce((s, t) => s + Number(t.amount), 0);
   const pendingIncome  = manualTx.filter(t => t.type === 'INCOME'  && t.status === 'PENDING').reduce((s, t) => s + Number(t.amount), 0);
   const pendingExpense = manualTx.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING').reduce((s, t) => s + Number(t.amount), 0);
 
-  const totalRevenue  = comandaRevenue + manualIncome;
+  const totalRevenue  = comandaRevenue + subscriptionRevenue + manualIncome;
   const totalExpenses = manualExpense;
   const netProfit     = totalRevenue - totalExpenses;
 
@@ -105,6 +116,7 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
     period: { from: dateFrom, to: dateTo },
     comandaRevenue,
     comandaQty,
+    subscriptionRevenue,
     manualIncome,
     manualExpense,
     pendingIncome,
