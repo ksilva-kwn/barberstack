@@ -45,6 +45,18 @@ export default function PortalAgendarPage() {
     queryFn: () => portalApi.shop(slug).then(r => r.data),
   });
 
+  const { data: mySubscription } = useQuery({
+    queryKey: ['my-subscription', slug, portalToken],
+    queryFn: () => portalApi.mySubscription(portalToken!, slug).then(r => r.data),
+    enabled: !!portalToken,
+  });
+
+  const coveredServiceIds = new Set(
+    mySubscription?.status === 'ACTIVE'
+      ? (mySubscription.clientPlan.services ?? []).map(s => s.service.id)
+      : []
+  );
+
   const { data: branches = [] } = useQuery<PublicBranch[]>({
     queryKey: ['public-branches', slug],
     queryFn: () => portalApi.branches(slug).then(r => r.data),
@@ -90,7 +102,7 @@ export default function PortalAgendarPage() {
 
   const selectedServices = availableServices.filter(s => selectedServiceIds.includes(s.id));
   const totalDuration = selectedServices.reduce((sum, s) => sum + s.durationMins, 0);
-  const totalAmount = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+  const totalAmount = selectedServices.reduce((sum, s) => sum + (coveredServiceIds.has(s.id) ? 0 : Number(s.price)), 0);
 
   useEffect(() => { setSelectedServiceIds([]); setSelectedTime(''); }, [professionalId]);
   useEffect(() => { setSelectedTime(''); }, [scheduledDate, selectedServiceIds]);
@@ -284,6 +296,7 @@ export default function PortalAgendarPage() {
               <div className="space-y-2">
                 {availableServices.map(s => {
                   const selected = selectedServiceIds.includes(s.id);
+                  const covered = coveredServiceIds.has(s.id);
                   return (
                     <button
                       key={s.id}
@@ -295,9 +308,22 @@ export default function PortalAgendarPage() {
                           : 'border-border bg-background text-foreground hover:bg-accent'
                       }`}
                     >
-                      <span className="font-medium">{s.name}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium">{s.name}</span>
+                        {covered && (
+                          <span className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                            Incluso
+                          </span>
+                        )}
+                      </div>
                       <span className="text-muted-foreground text-xs shrink-0 ml-4">
-                        {s.durationMins}min · R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {s.durationMins}min ·{' '}
+                        {covered ? (
+                          <span className="line-through mr-1">{Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        ) : null}
+                        <span className={covered ? 'text-green-600 dark:text-green-400 font-semibold' : ''}>
+                          {covered ? 'R$ 0,00' : `R$ ${Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        </span>
                       </span>
                     </button>
                   );
