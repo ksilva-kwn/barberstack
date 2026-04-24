@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
   SCHEDULED:   'border-sky-500/60     bg-sky-500/15      text-sky-700   dark:text-sky-200',
   CONFIRMED:   'border-emerald-500/60 bg-emerald-500/15  text-emerald-700 dark:text-emerald-200',
   IN_PROGRESS: 'border-amber-500/60   bg-amber-500/15    text-amber-700 dark:text-amber-200',
-  COMPLETED:   'border-zinc-400/50    bg-zinc-500/10     text-zinc-600  dark:text-zinc-400',
+  COMPLETED:   'border-zinc-600       bg-zinc-800        text-zinc-200',
   NO_SHOW:     'border-orange-500/50  bg-orange-500/10   text-orange-700 dark:text-orange-300',
   CANCELED:    'border-red-400/40     bg-red-500/10      text-red-600   dark:text-red-300 line-through opacity-60',
   BLOCKED:     'border-border         bg-muted/30        text-muted-foreground',
@@ -120,17 +120,17 @@ export function AppointmentCard({ appointment, top, height, snapMins = 15, onSta
         'absolute left-1 right-1 rounded border overflow-visible transition-[border-color,background-color,opacity]',
         !isDone && 'cursor-grab active:cursor-grabbing',
         STATUS_STYLES[appointment.status],
-        isDone && 'opacity-50',
+        appointment.status === 'CANCELED' || appointment.status === 'NO_SHOW' ? 'opacity-50' : '',
       )}
       style={{ top, height: displayHeight, zIndex: menuOpen ? 30 : 1 }}
     >
       <div className="flex h-full px-1.5 py-1 gap-1 min-w-0 overflow-visible">
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1 min-w-0">
-            <p className="text-xs font-semibold truncate leading-tight">{clientLabel}</p>
+          <div className="flex items-center gap-1 overflow-hidden">
+            <p className="text-xs font-semibold truncate leading-tight min-w-0">{clientLabel}</p>
             {appointment.clientSubscription && (
-              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide bg-amber-400/30 text-amber-700 dark:text-amber-300 px-1 rounded leading-tight">
+              <span className="shrink-0 text-[9px] font-bold bg-amber-400/30 text-amber-600 dark:text-amber-300 px-1 rounded leading-tight">
                 P
               </span>
             )}
