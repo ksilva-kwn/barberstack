@@ -113,14 +113,18 @@ export default function AgendamentosPage() {
           </section>
 
           {/* Histórico */}
-          {past.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico</h2>
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico</h2>
+            {past.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-border bg-card text-center">
+                <p className="text-sm text-muted-foreground">Nenhum histórico encontrado</p>
+              </div>
+            ) : (
               <div className="space-y-3">
                 {past.map(apt => <AppointmentCard key={apt.id} apt={apt} />)}
               </div>
-            </section>
-          )}
+            )}
+          </section>
         </>
       )}
     </div>

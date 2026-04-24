@@ -129,18 +129,21 @@ publicAppointmentRouter.get('/my-appointments', async (req: Request, res: Respon
   }
 
   let clientId: string;
+  let barbershopId: string | undefined;
   try {
     const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET!) as any;
     clientId = payload.sub;
+    barbershopId = payload.barbershopId ?? undefined;
   } catch {
     return res.status(401).json({ error: 'Token inválido' });
   }
 
   const now = new Date();
+  const baseWhere = { clientId, ...(barbershopId ? { barbershopId } : {}) };
 
   const [upcoming, past] = await Promise.all([
     prisma.appointment.findMany({
-      where: { clientId, scheduledAt: { gte: now }, status: { notIn: ['CANCELED', 'NO_SHOW'] } },
+      where: { ...baseWhere, scheduledAt: { gte: now }, status: { notIn: ['CANCELED', 'NO_SHOW'] } },
       include: {
         professional: { include: { user: { select: { name: true, avatarUrl: true } } } },
         services: { include: { service: { select: { name: true } } } },
@@ -149,7 +152,7 @@ publicAppointmentRouter.get('/my-appointments', async (req: Request, res: Respon
       take: 5,
     }),
     prisma.appointment.findMany({
-      where: { clientId, scheduledAt: { lt: now } },
+      where: { ...baseWhere, scheduledAt: { lt: now } },
       include: {
         professional: { include: { user: { select: { name: true, avatarUrl: true } } } },
         services: { include: { service: { select: { name: true } } } },
