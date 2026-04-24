@@ -6,13 +6,13 @@ import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  SCHEDULED:   'border-sky-500/60     bg-sky-500/20     text-sky-800     dark:text-sky-200',
-  CONFIRMED:   'border-emerald-500/60 bg-emerald-500/20 text-emerald-800 dark:text-emerald-200',
-  IN_PROGRESS: 'border-violet-500/60  bg-violet-500/20  text-violet-800  dark:text-violet-200',
-  COMPLETED:   'border-zinc-500/60    bg-zinc-400/25    text-zinc-700    dark:bg-zinc-700/60 dark:text-zinc-300',
-  NO_SHOW:     'border-orange-500/60  bg-orange-500/20  text-orange-800  dark:text-orange-200',
-  CANCELED:    'border-red-400/50     bg-red-500/15     text-red-700     dark:text-red-300 line-through opacity-60',
-  BLOCKED:     'border-border         bg-muted/30       text-muted-foreground',
+  SCHEDULED:   'border-sky-400     bg-sky-100     text-sky-800     dark:border-sky-400/50   dark:bg-sky-500/20   dark:text-sky-200',
+  CONFIRMED:   'border-emerald-400 bg-emerald-100 text-emerald-800 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-200',
+  IN_PROGRESS: 'border-violet-400  bg-violet-100  text-violet-800  dark:border-violet-400/50 dark:bg-violet-500/20  dark:text-violet-200',
+  COMPLETED:   'border-zinc-400    bg-zinc-200    text-zinc-700    dark:border-zinc-500/60   dark:bg-zinc-700/60   dark:text-zinc-300',
+  NO_SHOW:     'border-orange-400  bg-orange-100  text-orange-800  dark:border-orange-400/50 dark:bg-orange-500/20  dark:text-orange-200',
+  CANCELED:    'border-red-300     bg-red-100     text-red-700     dark:border-red-400/40    dark:bg-red-400/15    dark:text-red-300 line-through opacity-60',
+  BLOCKED:     'border-border      bg-muted/30    text-muted-foreground',
 };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
