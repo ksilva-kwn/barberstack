@@ -232,17 +232,14 @@ export default function LoginPage() {
 
             {/* Captcha */}
             {siteKey && (
-              <div
-                onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
-                style={{ cursor: captchaToken ? 'default' : 'pointer', borderRadius: 10, overflow: 'hidden' }}
-              >
+              <div style={{ borderRadius: 10, overflow: 'hidden' }}>
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={siteKey}
                   onSuccess={token => { setCaptchaToken(token); setCaptchaVerifying(false); }}
                   onExpire={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
                   onError={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
-                  options={{ theme: 'dark', execution: 'execute', size: 'flexible', appearance: 'always' }}
+                  options={{ theme: 'dark', size: 'flexible', appearance: 'always' }}
                 />
               </div>
             )}

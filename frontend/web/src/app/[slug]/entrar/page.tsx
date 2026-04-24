@@ -160,18 +160,14 @@ export default function PortalLoginPage() {
             )}
 
             {siteKey && (
-              <div
-                onClick={() => { if (!captchaToken) { setCaptchaVerifying(true); turnstileRef.current?.execute(); } }}
-                className="rounded-lg overflow-hidden"
-                style={{ cursor: captchaToken ? 'default' : 'pointer' }}
-              >
+              <div className="rounded-lg overflow-hidden">
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={siteKey}
                   onSuccess={token => { setCaptchaToken(token); setCaptchaVerifying(false); }}
                   onExpire={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
                   onError={() => { setCaptchaToken(null); setCaptchaVerifying(false); }}
-                  options={{ theme: 'auto', execution: 'execute', size: 'flexible', appearance: 'always' }}
+                  options={{ theme: 'auto', size: 'flexible', appearance: 'always' }}
                 />
               </div>
             )}
