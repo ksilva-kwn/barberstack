@@ -354,7 +354,7 @@ financialRouter.get('/plan-commissions', async (req: Request, res: Response): Pr
 
   const shop = await prisma.barbershop.findUniqueOrThrow({
     where: { id: barbershopId },
-    select: { planCommissionModel: true, planCommissionFixedValue: true },
+    select: { planCommissionModel: true, planCommissionFixedValue: true, planCommissionBarbershopRate: true },
   });
 
   // Atendimentos vinculados a planos no período (pagos)
@@ -381,6 +381,9 @@ financialRouter.get('/plan-commissions', async (req: Request, res: Response): Pr
     include: { clientPlan: { select: { price: true } } },
   });
   const totalRevenue = paidSubs.reduce((s, sub) => s + Number(sub.clientPlan.price), 0);
+  const barbershopRate = Number(shop.planCommissionBarbershopRate ?? 0);
+  const distributableRevenue = totalRevenue * (1 - barbershopRate / 100);
+  const barbershopRetention = totalRevenue - distributableRevenue;
 
   // Agrupa atendimentos por barbeiro
   const byPro: Record<string, {
@@ -414,21 +417,23 @@ financialRouter.get('/plan-commissions', async (req: Request, res: Response): Pr
     }
   } else if (model === 'PROPORTIONAL') {
     for (const p of pros) {
-      p.commissionAmount = totalApts > 0 ? (p.totalSubscriptionServices / totalApts) * totalRevenue : 0;
+      p.commissionAmount = totalApts > 0 ? (p.totalSubscriptionServices / totalApts) * distributableRevenue : 0;
     }
   } else if (model === 'RANKING') {
-    // Ordena por atendimentos desc e aplica pesos: 1º→3, 2º→2, demais→1
     pros.sort((a, b) => b.totalSubscriptionServices - a.totalSubscriptionServices);
     const weights = pros.map((_, i) => i === 0 ? 3 : i === 1 ? 2 : 1);
     const totalWeight = weights.reduce((s, w) => s + w, 0);
     for (let i = 0; i < pros.length; i++) {
-      pros[i].commissionAmount = totalWeight > 0 ? (weights[i] / totalWeight) * totalRevenue : 0;
+      pros[i].commissionAmount = totalWeight > 0 ? (weights[i] / totalWeight) * distributableRevenue : 0;
     }
   }
 
   return res.json({
     model,
+    barbershopRate,
     totalRevenue,
+    barbershopRetention,
+    distributableRevenue,
     totalSubscriptionServices: totalApts,
     professionals: pros,
   });
@@ -439,17 +444,18 @@ financialRouter.get('/plan-commission-config', async (req: Request, res: Respons
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const shop = await prisma.barbershop.findUniqueOrThrow({
     where: { id: barbershopId },
-    select: { planCommissionModel: true, planCommissionFixedValue: true },
+    select: { planCommissionModel: true, planCommissionFixedValue: true, planCommissionBarbershopRate: true },
   });
   return res.json({
     model: shop.planCommissionModel,
     fixedValue: shop.planCommissionFixedValue ? Number(shop.planCommissionFixedValue) : null,
+    barbershopRate: Number(shop.planCommissionBarbershopRate ?? 0),
   });
 });
 
 financialRouter.patch('/plan-commission-config', async (req: Request, res: Response): Promise<any> => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
-  const { model, fixedValue } = req.body as { model: string; fixedValue?: number };
+  const { model, fixedValue, barbershopRate } = req.body as { model: string; fixedValue?: number; barbershopRate?: number };
 
   const allowed = ['FIXED', 'PROPORTIONAL', 'RANKING'];
   if (!allowed.includes(model)) {
@@ -458,19 +464,24 @@ financialRouter.patch('/plan-commission-config', async (req: Request, res: Respo
   if (model === 'FIXED' && (!fixedValue || fixedValue <= 0)) {
     return res.status(400).json({ error: 'Informe o valor fixo por atendimento.' });
   }
+  if (barbershopRate !== undefined && (barbershopRate < 0 || barbershopRate > 100)) {
+    return res.status(400).json({ error: 'Taxa da barbearia deve ser entre 0 e 100.' });
+  }
 
   const shop = await prisma.barbershop.update({
     where: { id: barbershopId },
     data: {
-      planCommissionModel:      model,
-      planCommissionFixedValue: model === 'FIXED' ? fixedValue : null,
+      planCommissionModel:           model,
+      planCommissionFixedValue:      model === 'FIXED' ? fixedValue : null,
+      planCommissionBarbershopRate:  barbershopRate ?? 0,
     },
-    select: { planCommissionModel: true, planCommissionFixedValue: true },
+    select: { planCommissionModel: true, planCommissionFixedValue: true, planCommissionBarbershopRate: true },
   });
 
   return res.json({
     model: shop.planCommissionModel,
     fixedValue: shop.planCommissionFixedValue ? Number(shop.planCommissionFixedValue) : null,
+    barbershopRate: Number(shop.planCommissionBarbershopRate ?? 0),
   });
 });
 

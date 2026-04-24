@@ -81,6 +81,7 @@ export type PlanCommissionModel = 'FIXED' | 'PROPORTIONAL' | 'RANKING';
 export interface PlanCommissionConfig {
   model: PlanCommissionModel;
   fixedValue: number | null;
+  barbershopRate: number;
 }
 
 export interface PlanCommissionProfessional {
@@ -92,7 +93,10 @@ export interface PlanCommissionProfessional {
 
 export interface PlanCommissionReport {
   model: PlanCommissionModel;
+  barbershopRate: number;
   totalRevenue: number;
+  barbershopRetention: number;
+  distributableRevenue: number;
   totalSubscriptionServices: number;
   professionals: PlanCommissionProfessional[];
 }
@@ -153,7 +157,7 @@ export const financialApi = {
   planCommissionConfig: () =>
     api.get<PlanCommissionConfig>('/api/financial/plan-commission-config'),
 
-  updatePlanCommissionConfig: (data: { model: PlanCommissionModel; fixedValue?: number }) =>
+  updatePlanCommissionConfig: (data: { model: PlanCommissionModel; fixedValue?: number; barbershopRate?: number }) =>
     api.patch<PlanCommissionConfig>('/api/financial/plan-commission-config', data),
 
   planCommissionPayments: (params?: { year?: number; professionalId?: string }) =>

@@ -123,8 +123,9 @@ model Barbershop {
   asaasWalletId   String? // Wallet ID para saques
 
   // Configuração de comissão sobre assinaturas
-  planCommissionModel      String   @default("PROPORTIONAL") // FIXED | PROPORTIONAL | RANKING
-  planCommissionFixedValue Decimal? @db.Decimal(10, 2)       // Usado apenas no modelo FIXED
+  planCommissionModel           String   @default("PROPORTIONAL") // FIXED | PROPORTIONAL | RANKING
+  planCommissionFixedValue      Decimal? @db.Decimal(10, 2)       // Usado apenas no modelo FIXED
+  planCommissionBarbershopRate  Decimal  @default(0) @db.Decimal(5, 2) // % retida pela barbearia
 
   // Relações
   users         User[]

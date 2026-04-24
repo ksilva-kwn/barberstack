@@ -142,8 +142,9 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
   const qc = useQueryClient();
   const now = new Date();
   const [configOpen, setConfigOpen] = useState(false);
-  const [draftModel, setDraftModel]       = useState<PlanCommissionModel>('PROPORTIONAL');
-  const [draftFixed, setDraftFixed]       = useState('');
+  const [draftModel, setDraftModel]           = useState<PlanCommissionModel>('PROPORTIONAL');
+  const [draftFixed, setDraftFixed]           = useState('');
+  const [draftBarbershopRate, setDraftBarbershopRate] = useState('0');
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['plan-commissions', from, to],
@@ -159,6 +160,7 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
     if (config) {
       setDraftModel(config.model);
       setDraftFixed(config.fixedValue?.toString() ?? '');
+      setDraftBarbershopRate(config.barbershopRate?.toString() ?? '0');
     }
   }, [config]);
 
@@ -166,6 +168,7 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
     mutationFn: () => financialApi.updatePlanCommissionConfig({
       model: draftModel,
       fixedValue: draftModel === 'FIXED' ? parseFloat(draftFixed) : undefined,
+      barbershopRate: parseFloat(draftBarbershopRate) || 0,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plan-commission-config'] });
@@ -204,6 +207,9 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
             </p>
             {config?.model === 'FIXED' && config.fixedValue && (
               <p className="text-xs text-muted-foreground">{fmt(config.fixedValue)} por atendimento</p>
+            )}
+            {config && config.barbershopRate > 0 && (
+              <p className="text-xs text-muted-foreground">{config.barbershopRate}% retido pela barbearia</p>
             )}
           </div>
         </div>
@@ -260,6 +266,27 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
             </p>
           )}
 
+          <div className="border-t border-border pt-4">
+            <p className="text-sm font-semibold text-foreground mb-3">Taxa da barbearia</p>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">% retida pela barbearia</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={draftBarbershopRate}
+                onChange={e => setDraftBarbershopRate(e.target.value)}
+                className={cn(inputCls, 'w-24')}
+                placeholder="0"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Barbeiros dividem os {Math.max(0, 100 - (parseFloat(draftBarbershopRate) || 0))}% restantes pelo modelo acima.
+            </p>
+          </div>
+
           <div className="flex gap-2">
             <button
               onClick={() => saveConfig.mutate()}
@@ -281,14 +308,16 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
 
       {/* KPIs */}
       {report && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: 'Receita de planos no período', value: fmt(report.totalRevenue) },
             { label: 'Atendimentos de plano', value: String(report.totalSubscriptionServices) },
+            { label: 'Retenção da barbearia', value: `${fmt(report.barbershopRetention)} (${report.barbershopRate}%)` },
+            { label: 'Distribuído aos barbeiros', value: fmt(report.distributableRevenue) },
           ].map(k => (
             <div key={k.label} className="bg-card border border-border rounded-xl p-4">
               <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
-              <p className="text-xl font-bold text-foreground">{k.value}</p>
+              <p className="text-lg font-bold text-foreground">{k.value}</p>
             </div>
           ))}
         </div>
