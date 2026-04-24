@@ -377,16 +377,21 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
     prisma.clientSubscription.count({ where: { barbershopId: id, status: 'ACTIVE' } }),
 
     // Receita do mês: comandas pagas (serviços + produtos)
-    prisma.appointment.aggregate({
-      where: {
-        barbershopId: id,
-        paymentStatus: 'PAID',
-        paidAt: { gte: startOfMonth },
-        ...(proFilter    ? { professionalId: proFilter }    : {}),
-        ...(branchFilter ? { branchId: branchFilter }       : {}),
-      },
-      _sum: { totalAmount: true },
-    }),
+    prisma.$queryRaw<Array<{ total: number }>>(Prisma.sql`
+      SELECT COALESCE(SUM(a."totalAmount"), 0)::float
+           + COALESCE(SUM(ap_sum.prod_total), 0)::float AS total
+      FROM "appointments" a
+      LEFT JOIN (
+        SELECT ap."appointmentId", SUM(ap."quantity" * ap."price")::float AS prod_total
+        FROM "appointment_products" ap
+        GROUP BY ap."appointmentId"
+      ) ap_sum ON ap_sum."appointmentId" = a."id"
+      WHERE a."barbershopId" = ${id}
+        AND a."paymentStatus" = 'PAID'
+        AND a."paidAt" >= ${startOfMonth}
+        ${proFilter    ? Prisma.sql`AND a."professionalId" = ${proFilter}` : Prisma.empty}
+        ${branchFilter ? Prisma.sql`AND a."branchId" = ${branchFilter}`   : Prisma.empty}
+    `),
 
     // Comandas abertas = COMPLETED aguardando pagamento
     prisma.appointment.count({
@@ -411,7 +416,7 @@ barbershopRouter.get('/:id/kpis', async (req: Request, res: Response) => {
   ]);
 
   const subscriptionRevenueMonth = subscriptionRevenue.reduce((s, sub) => s + Number(sub.clientPlan.price), 0);
-  const comandaRevenueMonth = Number(comandaRevenue._sum.totalAmount ?? 0);
+  const comandaRevenueMonth = Number((comandaRevenue as Array<{ total: number }>)[0]?.total ?? 0);
 
   return res.json({
     professionals,
