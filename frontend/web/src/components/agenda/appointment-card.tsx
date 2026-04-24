@@ -127,7 +127,14 @@ export function AppointmentCard({ appointment, top, height, snapMins = 15, onSta
       <div className="flex h-full px-1.5 py-1 gap-1 min-w-0 overflow-visible">
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold truncate leading-tight">{clientLabel}</p>
+          <div className="flex items-center gap-1 min-w-0">
+            <p className="text-xs font-semibold truncate leading-tight">{clientLabel}</p>
+            {appointment.clientSubscription && (
+              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide bg-amber-400/30 text-amber-700 dark:text-amber-300 px-1 rounded leading-tight">
+                P
+              </span>
+            )}
+          </div>
           {!compact && (
             <>
               <p className="text-[10px] truncate opacity-75 leading-tight">{serviceNames}</p>

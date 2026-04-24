@@ -48,6 +48,7 @@ export interface Appointment {
   services: AppointmentService[];
   appointmentProducts: AppointmentProduct[];
   client: { name: string; phone: string | null } | null;
+  clientSubscription: { id: string } | null;
 }
 
 export interface CreateAppointmentPayload {

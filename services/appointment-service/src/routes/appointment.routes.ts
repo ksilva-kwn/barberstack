@@ -49,6 +49,7 @@ appointmentRouter.get('/', async (req: Request, res: Response) => {
       services: { include: { service: true } },
       client: { select: { name: true, phone: true } },
       appointmentProducts: { include: { product: true } },
+      clientSubscription: { select: { id: true } },
     },
     orderBy: { scheduledAt: 'asc' },
   });
@@ -131,6 +132,7 @@ appointmentRouter.patch('/:id', async (req: Request, res: Response) => {
       services: { include: { service: true } },
       client: { select: { name: true, phone: true } },
       appointmentProducts: { include: { product: true } },
+      clientSubscription: { select: { id: true } },
     },
   });
 
