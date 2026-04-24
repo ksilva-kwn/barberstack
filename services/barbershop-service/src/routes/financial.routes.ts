@@ -408,7 +408,7 @@ financialRouter.get('/plan-commissions', async (req: Request, res: Response): Pr
 
   const pros = Object.values(byPro);
   const totalApts = pros.reduce((s, p) => s + p.totalSubscriptionServices, 0);
-  const model = shop.planCommissionModel;
+  const model = shop.planCommissionModel ?? 'PROPORTIONAL';
 
   if (model === 'FIXED') {
     const fixedValue = Number(shop.planCommissionFixedValue ?? 0);
@@ -447,7 +447,7 @@ financialRouter.get('/plan-commission-config', async (req: Request, res: Respons
     select: { planCommissionModel: true, planCommissionFixedValue: true, planCommissionBarbershopRate: true },
   });
   return res.json({
-    model: shop.planCommissionModel,
+    model: shop.planCommissionModel ?? 'PROPORTIONAL',
     fixedValue: shop.planCommissionFixedValue ? Number(shop.planCommissionFixedValue) : null,
     barbershopRate: Number(shop.planCommissionBarbershopRate ?? 0),
   });

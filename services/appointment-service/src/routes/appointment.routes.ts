@@ -170,6 +170,18 @@ appointmentRouter.patch('/:id/status', async (req: Request, res: Response) => {
   if (status === 'CANCELED') updates.canceledAt = new Date();
   if (status === 'CONFIRMED') updates.confirmedAt = new Date();
 
+  // Subscription appointments (totalAmount=0): auto-mark as PAID on completion
+  if (status === 'COMPLETED') {
+    const apt = await prisma.appointment.findUnique({
+      where: { id: req.params.id },
+      select: { clientSubscriptionId: true, paymentStatus: true },
+    });
+    if (apt?.clientSubscriptionId && apt.paymentStatus !== 'PAID') {
+      updates.paymentStatus = 'PAID';
+      updates.paidAt = new Date();
+    }
+  }
+
   const appointment = await prisma.appointment.update({
     where: { id: req.params.id },
     data: updates,
