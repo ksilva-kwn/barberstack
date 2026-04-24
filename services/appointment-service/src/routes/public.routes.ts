@@ -190,8 +190,15 @@ publicAppointmentRouter.post('/appointments', async (req: Request, res: Response
     where: { id: { in: serviceIds }, barbershopId },
   });
 
-  const totalAmount = services.reduce((sum, s) => sum + Number(s.price), 0);
+  // Verifica assinatura ativa do cliente nesta barbearia
+  const activeSub = await prisma.clientSubscription.findFirst({
+    where: { clientId, barbershopId, status: 'ACTIVE' },
+    include: { clientPlan: { include: { services: { select: { serviceId: true } } } } },
+  });
+  const coveredIds = new Set(activeSub?.clientPlan.services.map(s => s.serviceId) ?? []);
+
   const durationMins = services.reduce((sum, s) => sum + s.durationMins, 0);
+  const totalAmount = services.reduce((sum, s) => sum + (coveredIds.has(s.id) ? 0 : Number(s.price)), 0);
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -203,10 +210,11 @@ publicAppointmentRouter.post('/appointments', async (req: Request, res: Response
       durationMins,
       origin: 'APP',
       notes,
+      ...(activeSub && { clientSubscriptionId: activeSub.id }),
       services: {
         create: services.map((s) => ({
           serviceId: s.id,
-          price: s.price,
+          price: coveredIds.has(s.id) ? 0 : s.price,
           durationMins: s.durationMins,
         })),
       },
