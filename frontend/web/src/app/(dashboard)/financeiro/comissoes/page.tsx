@@ -266,7 +266,7 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
             </p>
           )}
 
-          <div className="border-t border-border pt-4">
+          {draftModel !== 'FIXED' && <div className="border-t border-border pt-4">
             <p className="text-sm font-semibold text-foreground mb-3">Taxa da barbearia</p>
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">% retida pela barbearia</label>
@@ -285,7 +285,7 @@ function TabPlanos({ from, to }: { from: string; to: string }) {
             <p className="text-xs text-muted-foreground mt-1.5">
               Barbeiros dividem os {Math.max(0, 100 - (parseFloat(draftBarbershopRate) || 0))}% restantes pelo modelo acima.
             </p>
-          </div>
+          </div>}
 
           <div className="flex gap-2">
             <button
