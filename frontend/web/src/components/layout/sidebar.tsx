@@ -9,7 +9,7 @@ import {
   FileText, CheckSquare, BarChart2, TrendingUp, TrendingDown, Scale,
   Wallet, UserPlus, UserX, MapPin, UserCog, Scissors, Globe,
   PackagePlus, Coffee, CreditCard, ArrowUpRight, PanelLeftClose, PanelLeftOpen,
-  ChevronsUpDown,
+  ChevronsUpDown, Settings,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
@@ -76,10 +76,11 @@ const navItems: NavItem[] = [
   {
     label: 'Barbearia', icon: Building2, adminOnly: true,
     children: [
-      { label: 'Filiais',           href: '/barbearia/filiais', icon: <MapPin size={13} /> },
-      { label: 'Profissionais',     href: '/barbeiros',         icon: <UserCog size={13} /> },
-      { label: 'Serviços',          href: '/servicos',          icon: <Scissors size={13} /> },
-      { label: 'Página do cliente', href: '/barbearia/portal',  icon: <Globe size={13} /> },
+      { label: 'Filiais',           href: '/barbearia/filiais',  icon: <MapPin size={13} /> },
+      { label: 'Profissionais',     href: '/barbeiros',          icon: <UserCog size={13} /> },
+      { label: 'Serviços',          href: '/servicos',           icon: <Scissors size={13} /> },
+      { label: 'Configurações',     href: '/configuracoes',      icon: <Settings size={13} /> },
+      { label: 'Página do cliente', href: '/barbearia/portal',   icon: <Globe size={13} /> },
     ],
   },
   {
