@@ -9,7 +9,7 @@ professionalRouter.get('/', async (req: Request, res: Response) => {
   const barbershopId = req.headers['x-barbershop-id'] as string;
   const { branchId } = req.query;
   const where: any = { barbershopId, isActive: true };
-  if (branchId) where.branchId = branchId as string;
+  if (branchId) where.OR = [{ branchId: branchId as string }, { branchId: null }];
 
   const professionals = await prisma.professional.findMany({
     where,

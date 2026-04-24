@@ -41,7 +41,7 @@ export default function AgendaPage() {
   });
 
   const byBranch = selectedBranchId
-    ? allProfessionals.filter(p => p.branchId === selectedBranchId)
+    ? allProfessionals.filter(p => !p.branchId || p.branchId === selectedBranchId)
     : allProfessionals;
   const professionals = selectedProfessionalId
     ? byBranch.filter(p => p.id === selectedProfessionalId)
