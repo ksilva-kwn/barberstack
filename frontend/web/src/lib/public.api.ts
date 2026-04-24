@@ -129,6 +129,11 @@ export const portalApi = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
+  cancelAppointment: (token: string, id: string) =>
+    publicApi.patch(`/api/public/appointments/${id}/cancel`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
   plans: (slug: string) =>
     publicApi.get<PublicPlan[]>(`/api/public/shop/${slug}/plans`),
 

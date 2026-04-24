@@ -46,8 +46,9 @@ export default function PainelHome() {
 
   if (!auth) return null;
 
-  const upcoming = data?.upcoming ?? [];
-  const past     = data?.past ?? [];
+  const upcoming  = data?.upcoming ?? [];
+  const past      = data?.past ?? [];
+  const completed = past.filter(a => a.status === 'COMPLETED');
   const firstName = auth.user?.name?.split(' ')[0] ?? 'Cliente';
 
   return (
@@ -67,8 +68,8 @@ export default function PainelHome() {
         </div>
         <div className="p-4 rounded-2xl border border-border bg-card">
           <p className="text-xs text-muted-foreground mb-1">Histórico</p>
-          <p className="text-3xl font-bold text-primary">{past.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">corte{past.length !== 1 ? 's' : ''} realizados</p>
+          <p className="text-3xl font-bold text-primary">{completed.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">corte{completed.length !== 1 ? 's' : ''} realizados</p>
         </div>
       </div>
 

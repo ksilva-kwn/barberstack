@@ -152,7 +152,7 @@ publicAppointmentRouter.get('/my-appointments', async (req: Request, res: Respon
       take: 5,
     }),
     prisma.appointment.findMany({
-      where: { ...baseWhere, scheduledAt: { lt: now } },
+      where: { ...baseWhere, scheduledAt: { lt: now }, status: { notIn: ['CANCELED', 'NO_SHOW'] } },
       include: {
         professional: { include: { user: { select: { name: true, avatarUrl: true } } } },
         services: { include: { service: { select: { name: true } } } },
@@ -163,6 +163,41 @@ publicAppointmentRouter.get('/my-appointments', async (req: Request, res: Respon
   ]);
 
   return res.json({ upcoming, past });
+});
+
+// Cancelar agendamento pelo portal (cliente pode cancelar próprio agendamento futuro)
+publicAppointmentRouter.patch('/appointments/:id/cancel', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token necessário' });
+  }
+
+  let clientId: string;
+  try {
+    const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET!) as any;
+    clientId = payload.sub;
+  } catch {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: req.params.id },
+    select: { clientId: true, scheduledAt: true, status: true },
+  });
+
+  if (!appointment) return res.status(404).json({ error: 'Agendamento não encontrado' });
+  if (appointment.clientId !== clientId) return res.status(403).json({ error: 'Sem permissão' });
+  if (appointment.scheduledAt <= new Date()) return res.status(400).json({ error: 'Não é possível cancelar agendamentos já realizados' });
+  if (['CANCELED', 'COMPLETED', 'NO_SHOW'].includes(appointment.status)) {
+    return res.status(400).json({ error: 'Agendamento não pode ser cancelado' });
+  }
+
+  const updated = await prisma.appointment.update({
+    where: { id: req.params.id },
+    data: { status: 'CANCELED', canceledAt: new Date() },
+  });
+
+  return res.json(updated);
 });
 
 // Criar agendamento pelo portal do cliente (requer token do cliente via Authorization header)
