@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { MoreVertical, Check, UserX, Play, CheckCircle, X, Trash2, Pencil } from 'lucide-react';
+import { MoreVertical, Check, UserX, Play, CheckCircle, X, Trash2, Pencil, Crown } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/lib/appointment.api';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  SCHEDULED:   'border-sky-500/60     bg-sky-500/15      text-sky-700   dark:text-sky-200',
-  CONFIRMED:   'border-emerald-500/60 bg-emerald-500/15  text-emerald-700 dark:text-emerald-200',
-  IN_PROGRESS: 'border-amber-500/60   bg-amber-500/15    text-amber-700 dark:text-amber-200',
-  COMPLETED:   'border-zinc-600       bg-zinc-800        text-zinc-200',
-  NO_SHOW:     'border-orange-500/50  bg-orange-500/10   text-orange-700 dark:text-orange-300',
-  CANCELED:    'border-red-400/40     bg-red-500/10      text-red-600   dark:text-red-300 line-through opacity-60',
-  BLOCKED:     'border-border         bg-muted/30        text-muted-foreground',
+  SCHEDULED:   'border-sky-400/50   bg-sky-400/20   text-sky-200',
+  CONFIRMED:   'border-emerald-400/50 bg-emerald-400/20 text-emerald-200',
+  IN_PROGRESS: 'border-violet-400/50 bg-violet-400/20 text-violet-200',
+  COMPLETED:   'border-zinc-500/60   bg-zinc-700/60  text-zinc-300',
+  NO_SHOW:     'border-orange-400/50 bg-orange-400/20 text-orange-200',
+  CANCELED:    'border-red-400/40    bg-red-400/15   text-red-300 line-through opacity-60',
+  BLOCKED:     'border-border        bg-muted/30     text-muted-foreground',
 };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -130,9 +130,7 @@ export function AppointmentCard({ appointment, top, height, snapMins = 15, onSta
           <div className="flex items-center gap-1 overflow-hidden">
             <p className="text-xs font-semibold truncate leading-tight min-w-0">{clientLabel}</p>
             {appointment.clientSubscription && (
-              <span className="shrink-0 text-[9px] font-bold bg-amber-400/30 text-amber-600 dark:text-amber-300 px-1 rounded leading-tight">
-                P
-              </span>
+              <Crown className="shrink-0 w-3 h-3 text-amber-400 opacity-80" />
             )}
           </div>
           {!compact && (
