@@ -55,12 +55,15 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
       },
     }),
 
-    // Receita de assinaturas no período (mensalidades pagas)
+    // Receita de assinaturas no período (mensalidades pagas ou criadas no período)
     prisma.clientSubscription.findMany({
       where: {
         barbershopId,
         status: { in: ['ACTIVE', 'DEFAULTING'] },
-        lastPaymentAt: { gte: dateFrom, lte: dateTo },
+        OR: [
+          { lastPaymentAt: { gte: dateFrom, lte: dateTo } },
+          { lastPaymentAt: null, createdAt: { gte: dateFrom, lte: dateTo } },
+        ],
       },
       include: { clientPlan: { select: { price: true } } },
     }),
@@ -383,12 +386,15 @@ financialRouter.get('/plan-commissions', async (req: Request, res: Response): Pr
     },
   });
 
-  // Receita total de assinaturas no período (pagamentos recebidos)
+  // Receita total de assinaturas no período (pagamentos recebidos ou criadas no período)
   const paidSubs = await prisma.clientSubscription.findMany({
     where: {
       barbershopId,
       status: { in: ['ACTIVE', 'DEFAULTING'] },
-      lastPaymentAt: { gte: dateFrom, lte: dateTo },
+      OR: [
+        { lastPaymentAt: { gte: dateFrom, lte: dateTo } },
+        { lastPaymentAt: null, createdAt: { gte: dateFrom, lte: dateTo } },
+      ],
     },
     include: { clientPlan: { select: { price: true } } },
   });

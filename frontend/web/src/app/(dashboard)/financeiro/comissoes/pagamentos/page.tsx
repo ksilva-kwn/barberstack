@@ -372,11 +372,7 @@ export default function CommissionPaymentsPage() {
               <tr className="border-b border-border bg-muted/20">
                 <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground">BARBEIRO</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">COMISSÃO AVULSA</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">
-                  <span className="flex items-center justify-end gap-1">
-                    <Crown className="w-3 h-3 text-amber-400" /> COMISSÃO PLANO
-                  </span>
-                </th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">COMISSÃO PLANO</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">TOTAL</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">STATUS</th>
                 <th className="px-4 py-3" />
