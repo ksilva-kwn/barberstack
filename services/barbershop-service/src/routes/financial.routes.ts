@@ -26,7 +26,7 @@ financialRouter.get('/balance', async (req: Request, res: Response): Promise<any
   const dateTo   = to   ? new Date(to)   : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   // Receita de comandas pagas no período
-  const [aptRevenue, manualTx, balanceByMonth, subRevenue] = await Promise.all([
+  const [aptRevenue, manualTx, subRevenue, balanceByMonth] = await Promise.all([
     prisma.$queryRaw<Array<{ total: number; qty: number }>>(Prisma.sql`
       SELECT
         COALESCE(SUM(a."totalAmount"), 0)::float
