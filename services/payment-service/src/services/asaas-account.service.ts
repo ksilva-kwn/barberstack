@@ -127,15 +127,28 @@ export async function getOnboardingUrl(barbershopId: string): Promise<string | n
 
 /**
  * Atualiza o email da subconta Asaas via POST /myAccount/commercialInfo.
+ * Tenta com a chave da subconta; se falhar por ambiente, usa o master via /accounts/{id}.
  */
 export async function updateSubAccountEmail(barbershopId: string, email: string): Promise<void> {
   const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
-  if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
+  if (!shop.asaasAccountId) throw new Error('Subconta Asaas não configurada');
 
-  const subClient = createSubAccountAsaasClient(shop.asaasApiKey);
-  await subClient.post('/myAccount/commercialInfo', { email });
+  // 1) Tenta com a chave da própria subconta
+  if (shop.asaasApiKey) {
+    try {
+      const subClient = createSubAccountAsaasClient(shop.asaasApiKey);
+      await subClient.post('/myAccount/commercialInfo', { email });
+      logger.info(shop.name, `[asaas/commercialInfo] email atualizado via subconta para ${email}`);
+      return;
+    } catch (err: any) {
+      logger.warn(shop.name, `[asaas/commercialInfo] subconta falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
+    }
+  }
 
-  logger.info(shop.name, `[asaas/commercialInfo] email atualizado para ${email}`);
+  // 2) Fallback: master key via /accounts/{id}/commercialInfo
+  const masterClient = createMasterAsaasClient();
+  await masterClient.post(`/accounts/${shop.asaasAccountId}/commercialInfo`, { email });
+  logger.info(shop.name, `[asaas/commercialInfo] email atualizado via master para ${email}`);
 }
 
 /**
