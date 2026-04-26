@@ -13,6 +13,7 @@ import {
   activateAsaasSubAccount,
   closeAsaasAccount,
   getAccountStatus,
+  updateSubAccountEmail,
 } from '../services/asaas-account.service';
 import { logger } from '@barberstack/logger';
 
@@ -87,6 +88,20 @@ paymentsRouter.get('/account-status', async (req: Request, res: Response) => {
   }
 });
 
+
+// ─── Atualizar email da subconta Asaas ───────────────────────────────────────
+paymentsRouter.patch('/update-email', async (req: Request, res: Response) => {
+  const barbershopId = req.headers['x-barbershop-id'] as string;
+  const { email } = req.body as { email: string };
+  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email inválido' });
+  try {
+    await updateSubAccountEmail(barbershopId, email);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    logger.error(barbershopId, `[update-email] ${JSON.stringify(err?.response?.data ?? err.message)}`);
+    return res.status(400).json({ error: err?.response?.data?.errors?.[0]?.description ?? err.message });
+  }
+});
 
 // ─── [INTERNAL] Fechar subconta Asaas (balance = 0, conta excluída) ──────────
 paymentsRouter.delete('/internal/close-account', async (req: Request, res: Response) => {

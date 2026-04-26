@@ -90,42 +90,52 @@ export async function activateAsaasSubAccount(barbershopId: string) {
 }
 
 /**
- * Retorna o link de onboarding White-Label do Asaas para a subconta completar o cadastro.
+ * Retorna o link de onboarding do Asaas para a subconta enviar documentos.
+ * Usa GET /myAccount/documents e extrai o primeiro onboardingUrl disponível.
  */
 export async function getOnboardingUrl(barbershopId: string): Promise<string | null> {
   const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
-  if (!shop.asaasAccountId) return null;
+  if (!shop.asaasApiKey) return null;
 
-  // 1) Tenta via subconta (própria chave) — /myAccount/loginUrl
-  if (shop.asaasApiKey) {
-    const subClient = createSubAccountAsaasClient(shop.asaasApiKey);
-    for (const endpoint of ['/myAccount/loginUrl', '/myAccount/onboardingUrl']) {
-      try {
-        const response = await subClient.get(endpoint);
-        logger.info(shop.name, `[asaas/loginUrl] subaccount ${endpoint} → ${JSON.stringify(response.data)}`);
-        const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
-        if (url) return url;
-      } catch (err: any) {
-        logger.warn(shop.name, `[asaas/loginUrl] subaccount ${endpoint} falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
-      }
+  const subClient = createSubAccountAsaasClient(shop.asaasApiKey);
+
+  // 1) GET /myAccount/documents — retorna onboardingUrl por documento (fluxo correto da doc)
+  try {
+    const res = await subClient.get('/myAccount/documents');
+    const docs: Array<{ onboardingUrl?: string }> = res.data?.data ?? res.data ?? [];
+    const url = docs.find(d => d.onboardingUrl)?.onboardingUrl ?? null;
+    if (url) {
+      logger.info(shop.name, `[asaas/documents] onboardingUrl encontrada`);
+      return url;
     }
+    logger.warn(shop.name, `[asaas/documents] nenhum documento com onboardingUrl`);
+  } catch (err: any) {
+    logger.warn(shop.name, `[asaas/documents] falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
   }
 
-  // 2) Fallback: via master → /accounts/{id}/loginUrl e /onboardingUrl
-  const masterClient = createMasterAsaasClient();
-  for (const endpoint of [`/accounts/${shop.asaasAccountId}/loginUrl`, `/accounts/${shop.asaasAccountId}/onboardingUrl`]) {
-    try {
-      const response = await masterClient.get(endpoint);
-      logger.info(shop.name, `[asaas/loginUrl] master ${endpoint} → ${JSON.stringify(response.data)}`);
-      const url = response.data?.loginUrl ?? response.data?.onboardingUrl ?? response.data?.url ?? null;
-      if (url) return url;
-    } catch (err: any) {
-      logger.warn(shop.name, `[asaas/loginUrl] master ${endpoint} falhou: ${err?.response?.status} ${JSON.stringify(err?.response?.data ?? err.message)}`);
-    }
+  // 2) Fallback: /myAccount/loginUrl
+  try {
+    const res = await subClient.get('/myAccount/loginUrl');
+    const url = res.data?.loginUrl ?? res.data?.url ?? null;
+    if (url) return url;
+  } catch (err: any) {
+    logger.warn(shop.name, `[asaas/loginUrl] falhou: ${err?.response?.status}`);
   }
 
-  logger.warn(shop.name, `[asaas/loginUrl] nenhum endpoint retornou URL (accountId: ${shop.asaasAccountId})`);
   return null;
+}
+
+/**
+ * Atualiza o email da subconta Asaas via POST /myAccount/commercialInfo.
+ */
+export async function updateSubAccountEmail(barbershopId: string, email: string): Promise<void> {
+  const shop = await prisma.barbershop.findUniqueOrThrow({ where: { id: barbershopId } });
+  if (!shop.asaasApiKey) throw new Error('Subconta Asaas não configurada');
+
+  const subClient = createSubAccountAsaasClient(shop.asaasApiKey);
+  await subClient.post('/myAccount/commercialInfo', { email });
+
+  logger.info(shop.name, `[asaas/commercialInfo] email atualizado para ${email}`);
 }
 
 /**

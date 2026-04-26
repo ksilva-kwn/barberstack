@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle, ArrowRight, Building2, Check, CheckCircle2,
-  ExternalLink, Loader2, RefreshCw, Wallet,
+  ExternalLink, Loader2, RefreshCw, Wallet, Mail,
 } from 'lucide-react';
 import { paymentApi } from '@/lib/payment.api';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,17 @@ export default function AsaasSetupPage() {
   const [activating, setActivating] = useState(false);
   const [activationError, setActivationError] = useState('');
   const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState(false);
+
+  const emailMutation = useMutation({
+    mutationFn: (email: string) => paymentApi.updateEmail(email),
+    onSuccess: () => {
+      setEmailSuccess(true);
+      setNewEmail('');
+      setTimeout(() => setEmailSuccess(false), 4000);
+    },
+  });
 
   const { data: status, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['asaas-account-status'],
@@ -198,6 +209,46 @@ export default function AsaasSetupPage() {
           </div>
         )}
       </div>
+
+      {/* Atualizar email da subconta */}
+      {!fullyActive && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" /> Atualizar email do cadastro
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Se o email cadastrado estiver errado, atualize aqui. O Asaas vai reenviar o link de verificação para o novo endereço.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              placeholder="novo@email.com"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              onClick={() => emailMutation.mutate(newEmail)}
+              disabled={!newEmail.includes('@') || emailMutation.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+            >
+              {emailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
+            </button>
+          </div>
+          {emailSuccess && (
+            <p className="text-xs text-emerald-500 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" /> Email atualizado. O Asaas vai reenviar o link de verificação.
+            </p>
+          )}
+          {emailMutation.isError && (
+            <p className="text-xs text-destructive">
+              {(emailMutation.error as any)?.response?.data?.error ?? 'Erro ao atualizar email.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Onboarding link */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">

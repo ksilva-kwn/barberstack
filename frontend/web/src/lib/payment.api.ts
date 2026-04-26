@@ -37,4 +37,7 @@ export const paymentApi = {
 
   accountStatus: () =>
     api.get<AsaasAccountStatus>('/api/payments/account-status'),
+
+  updateEmail: (email: string) =>
+    api.patch<{ ok: boolean }>('/api/payments/update-email', { email }),
 };
